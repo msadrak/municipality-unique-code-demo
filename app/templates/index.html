@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>دموی سامانه کد یکتای شهرداری</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 30px auto;
+            background: #fff;
+            border-radius: 10px;
+            padding: 20px 25px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        }
+
+        h1 {
+            margin-top: 0;
+            font-size: 20px;
+        }
+
+        h2 {
+            font-size: 18px;
+            margin-top: 25px;
+        }
+
+        label {
+            display: block;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        select,
+        textarea,
+        input[type="date"] {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 6px 8px;
+            margin-top: 4px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 13px;
+        }
+
+        textarea {
+            min-height: 70px;
+            resize: vertical;
+        }
+
+        button {
+            margin-top: 15px;
+            padding: 8px 14px;
+            border-radius: 5px;
+            border: none;
+            background: #1976d2;
+            color: #fff;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            background: #999;
+            cursor: not-allowed;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+        }
+
+        .form-row-4 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 10px;
+        }
+
+        .status {
+            margin-top: 10px;
+            font-size: 13px;
+            color: #444;
+        }
+
+        .status span.code {
+            font-family: monospace;
+            background: #eee;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 13px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 6px 8px;
+            text-align: center;
+        }
+
+        th {
+            background: #fafafa;
+        }
+
+        .filters {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr auto;
+            gap: 10px;
+            align-items: end;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>دموی سامانه کد یکتای شهرداری</h1>
+        <p style="font-size:13px; color:#555;">
+            ابتدا حوزه/منطقه را انتخاب کن؛ اگر «منطقه...» بود، اداره را انتخاب کن؛ بعد قسمت ظاهر می‌شود.
+            برای حوزه‌های معاونتی، اداره غیرفعال است و قسمت‌ها مستقیم زیر همان معاونت‌اند.
+        </p>
+
+        <h2>ثبت اقدام ویژه جدید</h2>
+        <form id="specialActionForm">
+            <div class="form-row">
+                <div>
+                    <label for="areaSelect">حوزه / منطقه</label>
+                    <select id="areaSelect">
+                        <option value="">انتخاب کنید</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="domainSelect">اداره / معاونت (در مناطق)</label>
+                    <select id="domainSelect" disabled>
+                        <option value="">ابتدا حوزه/منطقه</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="orgUnitSelect">قسمت</label>
+                    <select id="orgUnitSelect" required>
+                        <option value="">...</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row-4">
+                <div>
+                    <label for="continuousActionSelect">اقدام مستمر</label>
+                    <select id="continuousActionSelect" required>
+                        <option value="">...</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="actionTypeSelect">نوع اقدام ویژه</label>
+                    <select id="actionTypeSelect" required>
+                        <option value="">...</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="financialEventSelect">رویداد مالی</label>
+                    <select id="financialEventSelect">
+                        <option value="">انتخاب کنید</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="actionDate">تاریخ اقدام</label>
+                    <input type="date" id="actionDate" />
+                </div>
+            </div>
+
+            <label for="description">توضیحات</label>
+            <textarea id="description" placeholder="مثلاً: تعمیر سقف مسجد، تعویض روشنایی و ..."></textarea>
+
+            <button type="submit" id="submitBtn">ثبت اقدام ویژه</button>
+            <div class="status" id="formStatus"></div>
+        </form>
+
+        <h2>لیست اقدامات ثبت‌شده</h2>
+        <div class="filters">
+            <div>
+                <label for="filterOrgUnit">فیلتر قسمت</label>
+                <select id="filterOrgUnit">
+                    <option value="">همه</option>
+                </select>
+            </div>
+            <div>
+                <label for="filterContinuous">فیلتر اقدام مستمر</label>
+                <select id="filterContinuous">
+                    <option value="">همه</option>
+                </select>
+            </div>
+            <div>
+                <label for="filterActionType">فیلتر نوع اقدام ویژه</label>
+                <select id="filterActionType">
+                    <option value="">همه</option>
+                </select>
+            </div>
+            <div>
+                <button type="button" id="filterBtn">اعمال فیلتر</button>
+            </div>
+        </div>
+
+        <table id="actionsTable">
+            <thead>
+                <tr>
+                    <th>کد یونیک</th>
+                    <th>قسمت</th>
+                    <th>اقدام مستمر</th>
+                    <th>نوع اقدام ویژه</th>
+                    <th>توضیح</th>
+                    <th>تاریخ ثبت</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <script>
+        // 27 اداره سراسری
+        const GLOBAL_DEPTS = [
+            "اداره برنامه ریزی و توسعه سرمایه انسانی",
+            "اداره حمل و نفل و ترافیک",
+            "اداره عمران",
+            "اداره فرهنگی و اجتماعی",
+            "امور ارتباطات",
+            "امور املاک",
+            "امور پیشگیری و رفع تخلف",
+            "امور درآمد",
+            "امور دفتری",
+            "امور دفتری خدمات شهری",
+            "امور زیباسازی",
+            "امور سد معبر",
+            "امور سرمایه گذاری و مشارکت ها",
+            "امور شهر",
+            "امور شهرسازی",
+            "امور فضای سبز",
+            "امور کارپردازی",
+            "امور کنترل ساختمان",
+            "امور گشت فنی ساختمان",
+            "امور مالی",
+            "امور محاسبات",
+            "امور منابع انسانی",
+            "امور نگهداری و تعمیرات",
+            "رئیس اداره خدمات شهری",
+            "رئیس اداره شهرسازی",
+            "رئیس اداره مالی و اقتصادی",
+            "مدیر منطقه",
+        ];
+
+        const CENTRAL_AREAS = [
+            "شهرداری مرکزی",
+            "معاونت مالی اقتصادی",
+            "معاونت برنامه ریزی و توسعه انسانی",
+            "معاونت عمران شهری",
+            "معاونت شهرسازی و معماری",
+            "معاونت حمل و نقل و ترافیک",
+            "معاونت خدمات شهری",
+            "معاونت فرهنگی و اجتماعی",
+            "شورای اسلامی شهر",
+        ];
+
+        // لیست رویدادهای مالی (ثابت در فرانت)
+        const FINANCIAL_EVENTS = [
+            { "id": 1, "title": "محاسبه صورت وضعیت پیمانکاران" },
+            { "id": 2, "title": "وصول درآمد" },
+            { "id": 3, "title": "پیش پرداخت و علی‌الحساب" },
+            { "id": 4, "title": "جابجایی وجه بین حساب‌های بانکی" },
+            { "id": 5, "title": "پرداخت تنخواه گردان" },
+            { "id": 6, "title": "تسویه و پرداخت تنخواه گردان" },
+            { "id": 7, "title": "پیش پرداخت غرامت" },
+            { "id": 8, "title": "استرداد درآمد" },
+            { "id": 9, "title": "تعهد اعتبار" },
+            { "id": 10, "title": "استرداد سپرده‌های متفرقه" },
+            { "id": 11, "title": "صدور اسناد اصلاحی (حسابداری)" },
+            { "id": 12, "title": "صدور اسناد برگشت از هزینه" },
+            { "id": 13, "title": "ثبت برداشت‌های غیر چک از حساب‌های بانکی" },
+            { "id": 14, "title": "هزینه‌های جاری" },
+            { "id": 15, "title": "ثبت وجوه واریزی (بدون اعتبارات)" },
+            { "id": 16, "title": "پرداخت حساب‌های پرداختنی سال قبل" },
+            { "id": 17, "title": "اسناد دریافتنی" },
+            { "id": 18, "title": "استرداد و تعویض اسناد دریافتنی" },
+            { "id": 19, "title": "دریافت یا استرداد اسناد ضمانتی جاری" },
+            { "id": 20, "title": "ثبت وجوه برداشتی" },
+            { "id": 21, "title": "اسناد اعتبارات و حسابداری (اصلاحی و ...)" },
+            { "id": 22, "title": "محاسبه صورت وضعیت پیمانکاران بدون پرداخت" },
+            { "id": 23, "title": "ایجاد سند اعتبارات (بدون پرداخت)" },
+            { "id": 24, "title": "پرداخت بدهی‌ها" },
+            { "id": 25, "title": "هزینه‌های جاری و عمرانی (بدون پرداخت)" },
+            { "id": 26, "title": "تسویه بدهی‌ها - علی‌الحساب - تنخواه و ..." },
+            { "id": 27, "title": "رسید انبار" },
+            { "id": 28, "title": "تملک اموال غیرمنقول" },
+            { "id": 29, "title": "حساب‌های آماری" },
+            { "id": 30, "title": "پرداخت‌های انتقالی" },
+            { "id": 31, "title": "پرداخت‌های انتقالی (بدون صندوق)" },
+            { "id": 32, "title": "ثبت وجوه واریزی (بدون صندوق)" },
+            { "id": 33, "title": "عملیات پایان دوره مالی" },
+            { "id": 34, "title": "پرداخت حقوق ماهیانه پرسنل" },
+            { "id": 35, "title": "خزانه‌داری" }
+        ];
+
+        function isRegionArea(label) {
+            return label && (label.startsWith("منطقه") || label === "ناژوان");
+        }
+
+        const areaSelect = document.getElementById("areaSelect");
+        const domainSelect = document.getElementById("domainSelect");
+        const orgUnitSelect = document.getElementById("orgUnitSelect");
+        const continuousActionSelect = document.getElementById("continuousActionSelect");
+        const actionTypeSelect = document.getElementById("actionTypeSelect");
+        const financialEventSelect = document.getElementById("financialEventSelect");
+        const actionDateInput = document.getElementById("actionDate");
+        const descInput = document.getElementById("description");
+        const submitBtn = document.getElementById("submitBtn");
+        const formStatus = document.getElementById("formStatus");
+
+        const filterOrgUnit = document.getElementById("filterOrgUnit");
+        const filterContinuous = document.getElementById("filterContinuous");
+        const filterActionType = document.getElementById("filterActionType");
+        const filterBtn = document.getElementById("filterBtn");
+        const actionsTableBody = document.querySelector("#actionsTable tbody");
+
+        let allOrgUnits = [];
+
+        async function fetchJson(url) {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error("خطا در درخواست: " + res.status);
+            return await res.json();
+        }
+
+        function resetSelect(selectElem, includeEmpty, emptyText = "...") {
+            while (selectElem.options.length > 0) selectElem.remove(0);
+            if (includeEmpty) {
+                const opt = document.createElement("option");
+                opt.value = "";
+                opt.textContent = emptyText;
+                selectElem.appendChild(opt);
+            }
+        }
+
+        function fillSelect(selectElem, items, valueField, textField, includeEmpty) {
+            resetSelect(selectElem, includeEmpty, includeEmpty ? "..." : "");
+            items.forEach(item => {
+                const opt = document.createElement("option");
+                opt.value = item[valueField];
+                opt.textContent = item[textField];
+                selectElem.appendChild(opt);
+            });
+        }
+
+        function extractDeptFromTitle(title) {
+            const parts = String(title).split(" / ");
+            return parts.length >= 2 ? parts[1].trim() : "";
+        }
+
+        function setupOrgUnitCascading() {
+            resetSelect(areaSelect, true, "انتخاب کنید");
+            resetSelect(domainSelect, true, "ابتدا حوزه/منطقه");
+            resetSelect(orgUnitSelect, true, "...");
+
+            const areas = [...new Set(allOrgUnits.map(o => o.area_code))].sort();
+            areas.forEach(label => {
+                if (!label) return;
+                const opt = document.createElement("option");
+                opt.value = label;
+                opt.textContent = label;
+                areaSelect.appendChild(opt);
+            });
+
+            areaSelect.addEventListener("change", () => {
+                const area = areaSelect.value || null;
+                fillDomains(area);
+                fillSections(area, domainSelect.value || null);
+            });
+
+            domainSelect.addEventListener("change", () => {
+                const area = areaSelect.value || null;
+                const domain = domainSelect.value || null;
+                fillSections(area, domain);
+            });
+
+            fillDomains(null);
+            fillSections(null, null);
+        }
+
+        function fillDomains(area) {
+            resetSelect(
+                domainSelect,
+                true,
+                isRegionArea(area) ? "انتخاب اداره" : "غیرفعال"
+            );
+            if (!area) { domainSelect.disabled = false; return; }
+
+            if (isRegionArea(area)) {
+                GLOBAL_DEPTS.forEach(d => {
+                    const opt = document.createElement("option");
+                    opt.value = d;
+                    opt.textContent = d;
+                    domainSelect.appendChild(opt);
+                });
+                domainSelect.disabled = false;
+            } else {
+                domainSelect.disabled = true;
+            }
+        }
+
+        function fillSections(area, domain) {
+            resetSelect(orgUnitSelect, true, "...");
+            if (!area) return;
+
+            let filtered = allOrgUnits.filter(o => o.area_code === area);
+
+            if (isRegionArea(area)) {
+                if (!domain) return;
+                filtered = filtered.filter(
+                    o => extractDeptFromTitle(o.title) === domain
+                );
+            } // برای معاونت‌ها، همین فیلتر حوزه کافی است
+
+            filtered.forEach(o => {
+                const opt = document.createElement("option");
+                opt.value = o.id;
+                opt.textContent = o.title.split(" / ")[0]; // فقط نام قسمت
+                orgUnitSelect.appendChild(opt);
+            });
+        }
+
+        async function loadLookups() {
+            try {
+                const [orgUnits, contActions, actionTypes] = await Promise.all([
+                    fetchJson("/org-units"),
+                    fetchJson("/continuous-actions"),
+                    fetchJson("/action-types")
+                ]);
+
+                allOrgUnits = orgUnits;
+
+                setupOrgUnitCascading();
+
+                fillSelect(filterOrgUnit, orgUnits, "id", "title", false);
+                fillSelect(continuousActionSelect, contActions, "id", "title", true);
+                fillSelect(filterContinuous, contActions, "id", "title", false);
+                fillSelect(actionTypeSelect, actionTypes, "id", "title", true);
+                fillSelect(filterActionType, actionTypes, "id", "title", false);
+
+                // رویدادهای مالی (فقط در فرانت)
+                fillSelect(financialEventSelect, FINANCIAL_EVENTS, "id", "title", true);
+
+            } catch (err) {
+                console.error(err);
+                formStatus.textContent = "خطا در بارگذاری اطلاعات پایه.";
+            }
+        }
+
+        async function loadSpecialActions() {
+            try {
+                const params = new URLSearchParams();
+                if (filterOrgUnit.value) params.append("org_unit_id", filterOrgUnit.value);
+                if (filterContinuous.value) params.append("continuous_action_id", filterContinuous.value);
+                if (filterActionType.value) params.append("action_type_id", filterActionType.value);
+
+                const url = "/special-actions" + (params.toString() ? ("?" + params.toString()) : "");
+                const actions = await fetchJson(url);
+
+                actionsTableBody.innerHTML = "";
+                actions.forEach(a => {
+                    const orgTitle = a.org_unit ? a.org_unit.title : "-";
+                    const contTitle = a.continuous_action ? a.continuous_action.title : "-";
+                    const actTitle = a.action_type ? a.action_type.title : "-";
+                    const created = a.created_at ? new Date(a.created_at).toLocaleString("fa-IR") : "";
+
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `
+                    <td>${a.unique_code}</td>
+                    <td>${orgTitle}</td>
+                    <td>${contTitle}</td>
+                    <td>${actTitle}</td>
+                    <td>${a.description}</td>
+                    <td>${created}</td>
+                `;
+                    actionsTableBody.appendChild(tr);
+                });
+
+                if (actions.length === 0) {
+                    actionsTableBody.innerHTML = `<tr><td colspan="6">هنوز اقدامی ثبت نشده است.</td></tr>`;
+                }
+
+            } catch (err) {
+                console.error(err);
+                actionsTableBody.innerHTML = `<tr><td colspan="6">خطا در بارگذاری لیست اقدامات.</td></tr>`;
+            }
+        }
+
+        document.getElementById("specialActionForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            formStatus.textContent = "";
+            submitBtn.disabled = true;
+
+            const orgId = parseInt(orgUnitSelect.value);
+            const contId = parseInt(continuousActionSelect.value);
+            const actId = parseInt(actionTypeSelect.value);
+            if (!orgId || !contId || !actId) {
+                formStatus.textContent = "لطفاً قسمت، اقدام مستمر و نوع اقدام ویژه را انتخاب کن.";
+                submitBtn.disabled = false;
+                return;
+            }
+
+            // رویداد مالی را در توضیح encode می‌کنیم تا بک‌اند عوض نشود
+            let desc = descInput.value || "";
+            const feId = financialEventSelect.value ? parseInt(financialEventSelect.value) : null;
+            if (feId) {
+                const fe = FINANCIAL_EVENTS.find(x => x.id === feId);
+                const feTitle = fe ? fe.title : "";
+                if (feTitle) {
+                    desc = `[رویداد مالی: ${feTitle}] ` + desc;
+                }
+            }
+
+            const payload = {
+                org_unit_id: orgId,
+                continuous_action_id: contId,
+                action_type_id: actId,
+                description: desc,
+                action_date: actionDateInput.value || null
+            };
+
+            try {
+                const res = await fetch("/special-actions", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                if (!res.ok) {
+                    const txt = await res.text();
+                    throw new Error("خطا در ثبت: " + txt);
+                }
+                const data = await res.json();
+                formStatus.innerHTML = `ثبت شد. کد یونیک: <span class="code">${data.unique_code}</span>`;
+                descInput.value = "";
+                financialEventSelect.value = "";
+                await loadSpecialActions();
+            } catch (err) {
+                console.error(err);
+                formStatus.textContent = err.message;
+            } finally {
+                submitBtn.disabled = false;
+            }
+        });
+
+        filterBtn.addEventListener("click", () => loadSpecialActions());
+
+        window.addEventListener("load", async () => {
+            await loadLookups();
+            await loadSpecialActions();
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,14 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.db
+.env
+.env.*
+*.xlsx
+*.pptx
+*.xls
+*.log
+
+.vscode/
+.idea/
