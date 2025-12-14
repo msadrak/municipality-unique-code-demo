@@ -12,3 +12,22 @@ __pycache__/
 
 .vscode/
 .idea/
+
+# Build artifacts
+.vite/
+node_modules/
+build/
+dist/
+
+# Archives
+*.zip
+
+# Temporary analysis/debug scripts
+analyze_*.py
+check_*.py
+debug_*.py
+verify_*.py
+
+# System
+.DS_Store
+Thumbs.db

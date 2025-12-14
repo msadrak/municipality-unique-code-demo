@@ -1,0 +1,1685 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سامانه تولید شناسه یکتا | شهرداری اصفهان</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+            overflow-x: hidden;
+        }
+
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: left 12px center;
+            padding-left: 36px;
+        }
+
+        .modal-form-field {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .modal-form-field label {
+            min-width: 120px;
+            font-size: 12px;
+            color: #374151;
+        }
+
+        .modal-form-field input,
+        .modal-form-field select {
+            flex: 1;
+            padding: 6px 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .modal-form-field .search-btn {
+            background: #e0e7ff;
+            color: #4f46e5;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .deduction-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .deduction-row label {
+            min-width: 100px;
+            font-size: 11px;
+        }
+
+        .deduction-row input {
+            width: 100px;
+            padding: 4px 8px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 11px;
+            text-align: left;
+            direction: ltr;
+        }
+
+        .calc-result {
+            background: #f3f4f6;
+        }
+
+        /* Prevent overflow from long select options */
+        select {
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        main {
+            overflow-x: hidden;
+        }
+
+        /* Live Code Preview - Minimal Styles */
+        .code-part-minimal {
+            color: #e2e8f0;
+            padding: 2px 4px;
+            transition: color 0.2s ease;
+        }
+
+        .code-part-minimal.filled {
+            color: #22d3ee;
+            animation: glow-once 0.4s ease;
+        }
+
+        @keyframes glow-once {
+            0% {
+                color: #e2e8f0;
+            }
+
+            50% {
+                color: #67e8f9;
+                text-shadow: 0 0 8px rgba(34, 211, 238, 0.5);
+            }
+
+            100% {
+                color: #22d3ee;
+            }
+        }
+
+        /* Similar Code Items - Minimal */
+        .similar-code-item {
+            padding: 12px 16px;
+            border-bottom: 1px solid #f1f5f9;
+            transition: background 0.15s ease;
+            cursor: pointer;
+        }
+
+        .similar-code-item:last-child {
+            border-bottom: none;
+        }
+
+        .similar-code-item:hover {
+            background: #f8fafc;
+        }
+
+        .similar-code-item .code-text {
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            color: #334155;
+            direction: ltr;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 min-h-screen flex flex-col items-center py-10">
+    <!-- Header -->
+    <header class="w-full max-w-5xl bg-white shadow-lg rounded-2xl p-6 mb-8 flex justify-between items-center">
+        <div class="flex items-center gap-4">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/Isfahan_Municipality_Logo.svg/1200px-Isfahan_Municipality_Logo.svg.png"
+                alt="Logo" class="h-16 w-16 object-contain">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800">داشبورد کاربر</h1>
+                <p class="text-sm text-gray-500 mt-1" id="userOrgInfo">شهرداری اصفهان</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-6">
+            <div class="text-left">
+                <div class="text-sm text-gray-400">تاریخ امروز</div>
+                <div class="text-lg font-bold text-blue-600" id="currentDate">1404/09/17</div>
+            </div>
+            <div id="userInfoBox"
+                class="flex items-center gap-3 bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-2 rounded-xl border border-blue-100">
+                <div class="text-right">
+                    <div class="text-sm font-medium text-gray-800" id="userName">در حال بارگذاری...</div>
+                    <div class="text-xs text-gray-500" id="userRole"></div>
+                </div>
+                <button onclick="logout()" class="text-red-500 hover:text-red-700 p-1" title="خروج">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd"
+                            d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1V4a1 1 0 00-1-1H3zm11 4a1 1 0 10-2 0v4a1 1 0 102 0V7z"
+                            clip-rule="evenodd" />
+                        <path d="M7 7a1 1 0 012 0v4a1 1 0 11-2 0V7z" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="w-full max-w-5xl bg-white shadow-xl rounded-2xl overflow-hidden">
+        <!-- Tab Navigation -->
+        <div class="flex border-b border-gray-200 bg-gray-50">
+            <button id="btnTabCreate" onclick="switchTab('create')"
+                class="flex-1 py-4 text-center font-bold text-blue-600 bg-white border-b-2 border-blue-500 transition">
+                <span class="text-lg ml-2">➕</span>
+                ایجاد تراکنش جدید
+            </button>
+            <button id="btnTabMyTx" onclick="switchTab('mytx')"
+                class="flex-1 py-4 text-center font-bold text-gray-500 hover:bg-white transition">
+                <span class="text-lg ml-2">📋</span>
+                تراکنش‌های من
+            </button>
+        </div>
+
+        <!-- CREATE TRANSACTION TAB -->
+        <div id="createTransactionTab">
+            <!-- Wizard Stepper -->
+            <div class="px-8 pt-6 pb-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-100">
+                <div class="flex items-center justify-between">
+                    <!-- Step 1 -->
+                    <div class="flex flex-col items-center step-item" data-step="1">
+                        <div id="stepCircle1"
+                            class="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-md">
+                            ۱</div>
+                        <span class="text-xs mt-2 text-blue-700 font-medium">نوع تراکنش</span>
+                    </div>
+                    <div class="flex-1 h-1 bg-gray-200 mx-2 rounded step-line" id="stepLine1"></div>
+
+                    <!-- Step 2 -->
+                    <div class="flex flex-col items-center step-item" data-step="2">
+                        <div id="stepCircle2"
+                            class="w-10 h-10 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center font-bold text-sm">
+                            ۲</div>
+                        <span class="text-xs mt-2 text-gray-500">حوزه سازمانی</span>
+                    </div>
+                    <div class="flex-1 h-1 bg-gray-200 mx-2 rounded step-line" id="stepLine2"></div>
+
+                    <!-- Step 3 -->
+                    <div class="flex flex-col items-center step-item" data-step="3">
+                        <div id="stepCircle3"
+                            class="w-10 h-10 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center font-bold text-sm">
+                            ۳</div>
+                        <span class="text-xs mt-2 text-gray-500">بودجه</span>
+                    </div>
+                    <div class="flex-1 h-1 bg-gray-200 mx-2 rounded step-line" id="stepLine3"></div>
+
+                    <!-- Step 4 -->
+                    <div class="flex flex-col items-center step-item" data-step="4">
+                        <div id="stepCircle4"
+                            class="w-10 h-10 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center font-bold text-sm">
+                            ۴</div>
+                        <span class="text-xs mt-2 text-gray-500">جزئیات</span>
+                    </div>
+                    <div class="flex-1 h-1 bg-gray-200 mx-2 rounded step-line" id="stepLine4"></div>
+
+                    <!-- Step 5 -->
+                    <div class="flex flex-col items-center step-item" data-step="5">
+                        <div id="stepCircle5"
+                            class="w-10 h-10 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center font-bold text-sm">
+                            ۵</div>
+                        <span class="text-xs mt-2 text-gray-500">ذینفع</span>
+                    </div>
+                    <div class="flex-1 h-1 bg-gray-200 mx-2 rounded step-line" id="stepLine5"></div>
+
+                    <!-- Step 6 -->
+                    <div class="flex flex-col items-center step-item" data-step="6">
+                        <div id="stepCircle6"
+                            class="w-10 h-10 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center font-bold text-sm">
+                            ۶</div>
+                        <span class="text-xs mt-2 text-gray-500">مبلغ</span>
+                    </div>
+                    <div class="flex-1 h-1 bg-gray-200 mx-2 rounded step-line" id="stepLine6"></div>
+
+                    <!-- Step 7 -->
+                    <div class="flex flex-col items-center step-item" data-step="7">
+                        <div id="stepCircle7"
+                            class="w-10 h-10 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center font-bold text-sm">
+                            ۷</div>
+                        <span class="text-xs mt-2 text-gray-500">تایید</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WIZARD STEP CONTENT -->
+            <!-- Step 1: Transaction Type -->
+            <div id="wizardStep1" class="wizard-step p-8 space-y-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">مرحله ۱: نوع تراکنش و سال مالی</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">نوع تراکنش</label>
+                        <select id="transactionType"
+                            class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                            <option value="">انتخاب کنید...</option>
+                            <option value="contractor">پیمانکاران</option>
+                            <option value="expense">هزینه‌های جاری</option>
+                            <option value="refund">استرداد سپرده</option>
+                            <option value="transfer">جابجایی حساب</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">سال مالی</label>
+                        <select id="fiscalYear"
+                            class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                            <option value="1403">۱۴۰۳</option>
+                            <option value="1404" selected>۱۴۰۴</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Organizational Zone (Hidden initially) -->
+            <div id="wizardStep2" class="wizard-step hidden p-8 space-y-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">مرحله ۲: حوزه سازمانی</h3>
+                <div id="wizardModeContainer" class="p-8 space-y-6">
+                    <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">حوزه (منطقه/معاونت)</label>
+                            <select id="zoneSelect"
+                                class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                                <option value="00">انتخاب کنید...</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">اداره</label>
+                            <select id="deptSelect" disabled
+                                class="w-full p-3 border border-gray-300 rounded-xl bg-gray-100">
+                                <option value="00">ابتدا حوزه را انتخاب کنید...</option>
+                            </select>
+                        </div>
+                    </section>
+                    <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">قسمت</label>
+                            <select id="sectionSelect" disabled
+                                class="w-full p-3 border border-gray-300 rounded-xl bg-gray-100">
+                                <option value="000">ابتدا اداره را انتخاب کنید...</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">ردیف بودجه</label>
+                            <select id="budgetSelect" disabled
+                                class="w-full p-3 border border-gray-300 rounded-xl bg-gray-100">
+                                <option value="0000">ابتدا حوزه را انتخاب کنید...</option>
+                            </select>
+                        </div>
+                    </section>
+                    <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">مرکز هزینه</label>
+                            <select id="costCenterSelect"
+                                class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                                <option value="000">انتخاب کنید...</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">فعالیت مستمر</label>
+                            <select id="contActivitySelect"
+                                class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                                <option value="00">انتخاب کنید...</option>
+                            </select>
+                        </div>
+                    </section>
+                    <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">فعالیت غیرمستمر</label>
+                            <input type="text" id="specialActivityInput" placeholder="شرح فعالیت ویژه..."
+                                class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">رویداد مالی</label>
+                            <select id="eventSelect"
+                                class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                                <option value="000">انتخاب کنید...</option>
+                            </select>
+                        </div>
+                    </section>
+                    <!-- Contract Section -->
+                    <section class="bg-blue-50 p-6 rounded-xl border border-blue-100">
+                        <h3 class="text-lg font-bold text-blue-800 mb-4">📄 مشخصات قرارداد / ذینفع</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">نام ذینفع</label>
+                                <input type="text" id="benName" placeholder="مثلاً: شرکت ساختمانی الف"
+                                    class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">شماره قرارداد</label>
+                                <input type="text" id="contractNum" placeholder="مثلاً: 1403/123"
+                                    class="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+                            </div>
+                        </div>
+                        <div class="mt-4 flex justify-end items-center gap-3">
+                            <span id="contractStatusBadge"
+                                class="text-xs bg-green-200 text-green-700 px-2 py-1 rounded-full hidden">✓ ثبت
+                                شده</span>
+                            <button onclick="openContractForm()"
+                                class="text-blue-600 text-sm hover:underline bg-blue-100 px-4 py-2 rounded-lg">➕ ثبت
+                                جزئیات
+                                تکمیلی</button>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- TEST MODE CONTENT -->
+                <div id="testModeContainer" class="hidden p-6">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="bg-gray-50 p-4 rounded-xl border">
+                            <h3 class="font-bold text-gray-800 mb-3">۱. انتخاب رویداد مالی</h3>
+                            <div id="sheetList" class="space-y-2 max-h-80 overflow-y-auto"></div>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-xl border">
+                            <h3 class="font-bold text-gray-800 mb-3">۲. انتخاب درخواست</h3>
+                            <div id="requestList" class="space-y-2 max-h-80 overflow-y-auto"></div>
+                        </div>
+                        <div class="bg-white p-4 rounded-xl border">
+                            <h3 class="font-bold text-gray-800 mb-3">۳. خلاصه موازنه</h3>
+                            <div id="balanceSummary"></div>
+                        </div>
+                    </div>
+                    <div id="transactionsContainer" class="mt-6 hidden">
+                        <h3 class="font-bold text-lg text-gray-800 mb-3">آرتیکل‌های حسابداری</h3>
+                        <div class="overflow-x-auto border rounded-xl">
+                            <table class="w-full text-sm">
+                                <thead class="bg-gray-100 text-gray-700">
+                                    <tr>
+                                        <th class="p-2 text-right">#</th>
+                                        <th class="p-2 text-right">سند</th>
+                                        <th class="p-2 text-right">سرفصل کل</th>
+                                        <th class="p-2 text-right">سرفصل معین</th>
+                                        <th class="p-2 text-right">بدهکار</th>
+                                        <th class="p-2 text-right">بستانکار</th>
+                                        <th class="p-2 text-right">عملیات</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="transactionsTable"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LIVE CODE PREVIEW PANEL - Modern Minimal -->
+                <div id="liveCodePanel" class="p-5 bg-slate-50 border-t border-slate-200">
+                    <!-- Header -->
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 bg-slate-400 rounded-full"></div>
+                            <span class="text-sm font-medium text-slate-600">پیش‌نمایش کد</span>
+                        </div>
+                        <span class="text-xs text-slate-400">زنده</span>
+                    </div>
+
+                    <!-- Code Display - Minimal -->
+                    <div class="bg-slate-800 rounded-lg p-4 mb-4">
+                        <div class="flex flex-wrap items-center justify-center gap-1 font-mono text-sm" dir="ltr"
+                            id="codePartsContainer">
+                            <span id="codePart_zone" class="code-part-minimal">00</span>
+                            <span class="text-slate-500">-</span>
+                            <span id="codePart_dept" class="code-part-minimal">00</span>
+                            <span class="text-slate-500">-</span>
+                            <span id="codePart_section" class="code-part-minimal">000</span>
+                            <span class="text-slate-500">-</span>
+                            <span id="codePart_budget" class="code-part-minimal">0000</span>
+                            <span class="text-slate-500">-</span>
+                            <span id="codePart_cost" class="code-part-minimal">000</span>
+                            <span class="text-slate-500">-</span>
+                            <span id="codePart_cont" class="code-part-minimal">00</span>
+                            <span class="text-slate-500">-</span>
+                            <span id="codePart_special" class="code-part-minimal">000</span>
+                            <span class="text-slate-500">-</span>
+                            <span id="codePart_ben" class="code-part-minimal">000000</span>
+                            <span class="text-slate-500">-</span>
+                            <span id="codePart_event" class="code-part-minimal">000</span>
+                            <span class="text-slate-500">-</span>
+                            <span id="codePart_date" class="code-part-minimal">1403</span>
+                            <span class="text-slate-500">-</span>
+                            <span id="codePart_seq" class="code-part-minimal">001</span>
+                        </div>
+
+                        <!-- Part Labels - Minimal -->
+                        <div class="flex flex-wrap justify-center gap-3 mt-3 text-[9px] text-slate-500 uppercase tracking-wider"
+                            dir="ltr">
+                            <span>zone</span>
+                            <span>dept</span>
+                            <span>section</span>
+                            <span>budget</span>
+                            <span>cost</span>
+                            <span>cont</span>
+                            <span>special</span>
+                            <span>ben</span>
+                            <span>event</span>
+                            <span>year</span>
+                            <span>seq</span>
+                        </div>
+                    </div>
+
+                    <!-- Similar Codes - Minimal -->
+                    <div class="bg-white rounded-lg border border-slate-200">
+                        <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+                            <span class="text-sm font-medium text-slate-700">تراکنش‌های مشابه</span>
+                            <span id="similarCodesCount" class="text-xs text-slate-500">0</span>
+                        </div>
+
+                        <div id="similarCodesList" class="max-h-40 overflow-y-auto">
+                            <div class="text-center text-slate-400 py-6 text-sm">
+                                منطقه را انتخاب کنید
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions Footer -->
+                <div id="wizardActions" class="p-6 bg-gray-50 border-t border-gray-200 flex justify-end">
+                    <button onclick="generateFinalCode()"
+                        class="bg-green-600 text-white px-8 py-3 rounded-xl font-bold text-lg hover:bg-green-700 transition shadow-lg">تولید
+                        شناسه یکتا</button>
+                </div>
+
+                <!-- Result Box -->
+                <div id="resultBox" class="hidden bg-green-50 border-t-4 border-green-500 p-8 text-center">
+                    <div class="text-green-800 font-bold text-lg mb-2">شناسه یکتا تولید شد:</div>
+                    <div class="text-2xl font-mono font-bold text-gray-800 tracking-wider select-all cursor-pointer"
+                        id="finalCode" style="direction: ltr; unicode-bidi: bidi-override;">---</div>
+                    <p class="text-sm text-gray-500 mt-4">برای کپی کردن روی کد کلیک کنید</p>
+                </div>
+    </main>
+
+    <!-- DYNAMIC CONTRACT MODALS -->
+    <!-- Modal 1: پیمانکاران -->
+    <div id="contractorModal"
+        class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-gray-200 rounded-lg shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-y-auto">
+            <div class="bg-gray-300 p-2 flex justify-between items-center border-b">
+                <span class="font-bold text-sm">ایجاد درخواست - محاسبه صورت وضعیت پیمانکاران</span>
+                <button onclick="closeAllModals()" class="text-red-600 font-bold">✕</button>
+            </div>
+            <div class="p-4 bg-gray-100">
+                <!-- Header Row -->
+                <div class="flex gap-4 mb-4 items-center bg-white p-2 rounded">
+                    <div class="modal-form-field"><label>شماره درخواست:</label><input type="text" id="c1_reqNo"
+                            value="8712" readonly class="calc-result"></div>
+                    <div class="modal-form-field"><label>امور حسابداری:</label><select>
+                            <option>پروژه‌های عمرانی</option>
+                        </select></div>
+                    <div class="modal-form-field"><label>تاریخ درخواست:</label><input type="text" value="1404/09/16">
+                    </div>
+                </div>
+                <!-- Main Fields -->
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div class="modal-form-field"><label>شماره پیمانکار:</label><input type="text"
+                            id="c1_contractorNo"><button class="search-btn">🔍</button></div>
+                    <div class="modal-form-field"><label>نام پیمانکار:</label><input type="text" id="c1_contractorName">
+                    </div>
+                    <div class="modal-form-field"><label>شماره قرارداد:</label><input type="text"
+                            id="c1_contractNo"><button class="search-btn">🔍</button></div>
+                    <div class="modal-form-field"><label>ردیف قرارداد:</label><input type="text"></div>
+                    <div class="modal-form-field"><label>شماره صورت وضعیت:</label><input type="number"></div>
+                    <div class="modal-form-field"><label>مبلغ قرارداد:</label><input type="text"
+                            oninput="formatNumber(this)"></div>
+                    <div class="modal-form-field"><label>نام پروژه:</label><input type="text"></div>
+                    <div class="modal-form-field"><label>نوع قرارداد:</label><input type="text"><button
+                            class="search-btn">🔍</button></div>
+                    <div class="modal-form-field"><label>دریافت کننده وجه:</label><input type="text"><button
+                            class="search-btn">🔍</button></div>
+                    <div class="modal-form-field"><label>شماره موضوع:</label><input type="text"><button
+                            class="search-btn">🔍</button></div>
+                    <div class="modal-form-field"><label>مرکز هزینه:</label><input type="text"><button
+                            class="search-btn">🔍</button></div>
+                </div>
+                <div class="modal-form-field mb-4"><label>مبلغ قابل پرداخت:</label><input type="text"
+                        class="bg-blue-100" oninput="formatNumber(this)"></div>
+                <div class="modal-form-field mb-4"><label>توضیحات:</label><input type="text" class="flex-1"></div>
+
+                <!-- Tabs -->
+                <div class="bg-white rounded mt-4">
+                    <div class="flex border-b">
+                        <button class="px-4 py-2 bg-gray-200 border-t border-l border-r rounded-t">پرداخت‌های
+                            مرتبط</button>
+                        <button class="px-4 py-2">مناطق مرتبط</button>
+                        <button class="px-4 py-2">درخواست‌های مرتبط</button>
+                        <button class="px-4 py-2">نامه‌های مرتبط</button>
+                    </div>
+                    <div class="p-4 grid grid-cols-2 gap-6">
+                        <!-- Left: Deductions -->
+                        <div>
+                            <div class="deduction-row"><label>مبلغ ناخالص:</label><input type="text" id="c1_gross"
+                                    oninput="calcContractor()"></div>
+                            <div class="deduction-row"><label>۳٪ مالیات:</label><input type="text" id="c1_tax3"
+                                    class="calc-result" readonly></div>
+                            <div class="deduction-row"><label>۵٪ بیمه:</label><input type="text" id="c1_ins5"
+                                    class="calc-result" readonly></div>
+                            <div class="deduction-row"><label>۱۰٪ حسن انجام کار:</label><input type="text"
+                                    id="c1_perf10" class="calc-result" readonly></div>
+                            <div class="deduction-row"><label>۰/۲٪ کارآموزی:</label><input type="text" id="c1_train"
+                                    class="calc-result" readonly></div>
+                            <div class="deduction-row"><label>علی‌الحساب:</label><input type="text" id="c1_advance"
+                                    oninput="calcContractor()"></div>
+                            <div class="deduction-row"><label>پیش‌پرداخت اولیه:</label><input type="text" id="c1_prepay"
+                                    oninput="calcContractor()"></div>
+                            <div class="deduction-row"><label>متفرقه ۱:</label><input type="text" id="c1_misc"
+                                    oninput="calcContractor()"></div>
+                            <div class="deduction-row font-bold"><label>جمع کسورات:</label><input type="text"
+                                    id="c1_totalDed" class="calc-result font-bold" readonly></div>
+                            <div class="deduction-row font-bold text-green-700"><label>خالص پرداختی۱:</label><input
+                                    type="text" id="c1_net1" class="calc-result bg-green-100 font-bold" readonly></div>
+                            <div class="deduction-row"><label>مالیات ارزش افزوده:</label><input type="text" id="c1_vat"
+                                    oninput="calcContractor()"></div>
+                            <div class="deduction-row font-bold text-blue-700"><label>خالص پرداختی۲:</label><input
+                                    type="text" id="c1_net2" class="calc-result bg-blue-100 font-bold" readonly></div>
+                        </div>
+                        <!-- Right: Table -->
+                        <div class="text-xs">
+                            <table class="w-full border text-center">
+                                <thead class="bg-gray-200">
+                                    <tr>
+                                        <th class="border p-1">کسورات</th>
+                                        <th class="border p-1">ناخالص این دوره</th>
+                                        <th class="border p-1">جمع ناخالص قبل</th>
+                                        <th class="border p-1">جمع ناخالص تاکنون</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td class="border p-1">پیش پرداخت</td>
+                                        <td class="border p-1"><input class="w-full text-center" type="text"></td>
+                                        <td class="border p-1"><input class="w-full text-center" type="text"></td>
+                                        <td class="border p-1"><input class="w-full text-center" type="text"></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="border p-1">علی الحساب</td>
+                                        <td class="border p-1"><input class="w-full text-center" type="text"></td>
+                                        <td class="border p-1"><input class="w-full text-center" type="text"></td>
+                                        <td class="border p-1"><input class="w-full text-center" type="text"></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="border p-1">متفرقه</td>
+                                        <td class="border p-1"><input class="w-full text-center" type="text"></td>
+                                        <td class="border p-1"><input class="w-full text-center" type="text"></td>
+                                        <td class="border p-1"><input class="w-full text-center" type="text"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Footer -->
+            <div class="bg-gray-300 p-2 flex gap-2">
+                <button class="px-4 py-1 bg-gray-400 rounded">مرکز هزینه</button>
+                <button class="px-4 py-1 bg-gray-400 rounded">نمایش شرح کدها</button>
+                <button onclick="saveContract()" class="px-4 py-1 bg-blue-500 text-white rounded">ذخیره</button>
+                <button onclick="closeAllModals()" class="px-4 py-1 bg-gray-400 rounded">صرفنظر</button>
+                <button onclick="closeAllModals()" class="px-4 py-1 bg-red-500 text-white rounded">خروج</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 2: هزینه های جاری -->
+    <div id="expenseModal"
+        class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-gray-200 rounded-lg shadow-2xl w-full max-w-3xl max-h-[95vh] overflow-y-auto">
+            <div class="bg-gray-300 p-2 flex justify-between items-center border-b">
+                <span class="font-bold text-sm">ایجاد درخواست - هزینه‌های جاری</span>
+                <button onclick="closeAllModals()" class="text-red-600 font-bold">✕</button>
+            </div>
+            <div class="p-4 bg-gray-100">
+                <div class="flex gap-4 mb-4 bg-white p-2 rounded">
+                    <div class="modal-form-field"><label>شماره درخواست:</label><input type="text" value="8712" readonly
+                            class="calc-result"></div>
+                    <div class="modal-form-field"><label>تاریخ درخواست:</label><input type="text" value="1404/09/16">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div class="modal-form-field"><label>نام پیمانکار:</label><input type="text" id="c2_contractorName">
+                    </div>
+                    <div class="modal-form-field"><label>دریافت کننده وجه:</label><input type="text"><button
+                            class="search-btn">🔍</button></div>
+                    <div class="modal-form-field"><label>شماره موضوع:</label><input type="text"><button
+                            class="search-btn">🔍</button></div>
+                    <div class="modal-form-field"><label>امور حسابداری:</label><select>
+                            <option>هزینه‌های جاری</option>
+                        </select></div>
+                    <div class="modal-form-field"><label>مرکز هزینه:</label><input type="text"><button
+                            class="search-btn">🔍</button></div>
+                </div>
+                <div class="modal-form-field mb-4"><label>مبلغ قابل پرداخت:</label><input type="text"
+                        class="bg-blue-100"></div>
+                <div class="modal-form-field mb-4"><label>شماره لیست:</label><input type="text"><button
+                        class="search-btn">🔍</button></div>
+                <div class="modal-form-field mb-4"><label>واحد سازمانی:</label><input type="text"></div>
+                <div class="modal-form-field mb-4"><label>توضیحات:</label><input type="text"></div>
+
+                <!-- Deductions -->
+                <div class="bg-white rounded p-4 mt-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <div class="deduction-row"><label>مبلغ ناخالص اولیه:</label><input type="text"></div>
+                            <div class="deduction-row"><label>کسورات سهم کارفرما:</label><input type="text"></div>
+                            <div class="deduction-row"><label>مبلغ ناخالص:</label><input type="text"></div>
+                            <div class="deduction-row"><label>مالیات:</label><input type="text"></div>
+                            <div class="deduction-row"><label>بیمه تامین اجتماعی:</label><input type="text"></div>
+                            <div class="deduction-row"><label>حسن انجام کار:</label><input type="text"></div>
+                        </div>
+                        <div>
+                            <div class="deduction-row"><label>علی الحساب:</label><input type="text"></div>
+                            <div class="deduction-row"><label>پیش پرداخت اولیه:</label><input type="text"></div>
+                            <div class="deduction-row"><label>متفرقه ۱:</label><input type="text"></div>
+                            <div class="deduction-row"><label>متفرقه ۲:</label><input type="text"></div>
+                            <div class="deduction-row font-bold"><label>جمع کسورات:</label><input type="text"
+                                    class="calc-result" readonly></div>
+                            <div class="deduction-row font-bold text-green-700"><label>خالص پرداختی۱:</label><input
+                                    type="text" class="calc-result bg-green-100" readonly></div>
+                            <div class="deduction-row"><label>ارزش افزوده:</label><input type="text"></div>
+                            <div class="deduction-row font-bold text-blue-700"><label>خالص پرداختی۲:</label><input
+                                    type="text" class="calc-result bg-blue-100" readonly></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-300 p-2 flex gap-2">
+                <button onclick="saveContract()" class="px-4 py-1 bg-blue-500 text-white rounded">ذخیره</button>
+                <button onclick="closeAllModals()" class="px-4 py-1 bg-gray-400 rounded">صرفنظر</button>
+                <button onclick="closeAllModals()" class="px-4 py-1 bg-red-500 text-white rounded">خروج</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 3: استرداد سپرده -->
+    <div id="refundModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-gray-200 rounded-lg shadow-2xl w-full max-w-3xl max-h-[95vh] overflow-y-auto">
+            <div class="bg-gray-300 p-2 flex justify-between items-center border-b">
+                <span class="font-bold text-sm">ایجاد درخواست - استرداد سپرده حسن انجام کار - بدون پرداخت</span>
+                <button onclick="closeAllModals()" class="text-red-600 font-bold">✕</button>
+            </div>
+            <div class="p-4 bg-gray-100">
+                <div class="flex gap-4 mb-4 bg-white p-2 rounded">
+                    <div class="modal-form-field"><label>شماره درخواست:</label><input type="text" value="8712" readonly
+                            class="calc-result"></div>
+                    <div class="modal-form-field"><label>امور حسابداری:</label><select>
+                            <option>پروژه‌های عمرانی</option>
+                        </select></div>
+                    <div class="modal-form-field"><label>تاریخ درخواست:</label><input type="text" value="1404/09/16">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div class="modal-form-field"><label>شماره پیمانکار:</label><input type="text"
+                            id="c3_contractorNo"><button class="search-btn">🔍</button></div>
+                    <div class="modal-form-field"><label>نام پیمانکار:</label><input type="text" id="c3_contractorName">
+                    </div>
+                    <div class="modal-form-field"><label>ردیف قرارداد:</label><input type="text"><button
+                            class="search-btn">🔍</button></div>
+                    <div class="modal-form-field"><label>شماره قرارداد:</label><input type="text"></div>
+                    <div class="modal-form-field"><label>مبلغ قرارداد:</label><input type="text"></div>
+                    <div class="modal-form-field"><label>نام پروژه:</label><input type="text"></div>
+                    <div class="modal-form-field"><label>نوع قرارداد:</label><input type="text"><button
+                            class="search-btn">🔍</button></div>
+                    <div class="modal-form-field"><label>دریافت کننده وجه:</label><input type="text"><button
+                            class="search-btn">🔍</button></div>
+                    <div class="modal-form-field"><label>شماره موضوع:</label><input type="text"><button
+                            class="search-btn">🔍</button></div>
+                    <div class="modal-form-field"><label>مرکز هزینه:</label><input type="text"><button
+                            class="search-btn">🔍</button></div>
+                </div>
+                <div class="modal-form-field mb-4"><label>مبلغ قابل پرداخت:</label><input type="text"
+                        class="bg-blue-100"></div>
+                <div class="modal-form-field mb-4"><label>مبلغ به حروف:</label><input type="text" class="calc-result"
+                        readonly></div>
+                <div class="modal-form-field mb-4"><label>توضیحات:</label><input type="text"></div>
+
+                <!-- Tabs for Refund -->
+                <div class="bg-white rounded mt-4 p-4">
+                    <h4 class="font-bold mb-3">صورتجلسه</h4>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-sm font-bold mb-2">سپرده حسن انجام کار</p>
+                            <div class="deduction-row"><label>کسر شده:</label><input type="text"></div>
+                            <div class="deduction-row"><label>پرداخت شده:</label><input type="text"></div>
+                            <div class="deduction-row"><label>مانده:</label><input type="text" class="calc-result"
+                                    readonly></div>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold mb-2">صورتجلسه تحویل موقت</p>
+                            <div class="deduction-row"><label>شماره:</label><input type="text"></div>
+                            <div class="deduction-row"><label>تاریخ:</label><input type="text" value="14  /  /"></div>
+                            <p class="text-sm font-bold mb-2 mt-4">صورتجلسه تحویل قطعی</p>
+                            <div class="deduction-row"><label>شماره:</label><input type="text"></div>
+                            <div class="deduction-row"><label>تاریخ:</label><input type="text" value="14  /  /"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-300 p-2 flex gap-2">
+                <button onclick="saveContract()" class="px-4 py-1 bg-blue-500 text-white rounded">ذخیره</button>
+                <button onclick="closeAllModals()" class="px-4 py-1 bg-gray-400 rounded">صرفنظر</button>
+                <button onclick="closeAllModals()" class="px-4 py-1 bg-red-500 text-white rounded">خروج</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 4: جابجایی حساب -->
+    <div id="transferModal"
+        class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-gray-200 rounded-lg shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-y-auto">
+            <div class="bg-gray-300 p-2 flex justify-between items-center border-b">
+                <span class="font-bold text-sm">ایجاد درخواست - جابجایی حساب مناطق و سازمان‌ها</span>
+                <button onclick="closeAllModals()" class="text-red-600 font-bold">✕</button>
+            </div>
+            <div class="p-4 bg-gray-100">
+                <div class="flex gap-4 mb-4 flex-wrap bg-white p-2 rounded">
+                    <div class="modal-form-field"><label>شماره درخواست:</label><input type="text" value="8712" readonly
+                            class="calc-result"></div>
+                    <div class="modal-form-field"><label>شماره تنخواه خزانه‌داری:</label><input type="text"><button
+                            class="search-btn">🔍</button></div>
+                    <div class="modal-form-field"><label><input type="checkbox"> بدون تنخواه</label></div>
+                    <div class="modal-form-field"><label>تاریخ درخواست:</label><input type="text" value="1404/09/16">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div class="modal-form-field"><label>نام پیمانکار:</label><input type="text" id="c4_contractorName">
+                    </div>
+                    <div class="modal-form-field"><label>شماره موضوع:</label><input type="text"><button
+                            class="search-btn">🔍</button></div>
+                    <div class="modal-form-field"><label>نوع تخصیص:</label><select>
+                            <option>اعتبارات هزینه‌ای و سرمایه‌ای</option>
+                        </select></div>
+                </div>
+                <div class="modal-form-field mb-4"><label>توضیحات:</label><input type="text"></div>
+
+                <!-- Sections -->
+                <div class="bg-white rounded p-4 mb-4">
+                    <div class="grid grid-cols-3 gap-4 text-sm">
+                        <div class="border p-2 rounded">
+                            <p class="font-bold mb-2">بخش اول</p>
+                            <label class="block"><input type="checkbox" checked> سهم منطقه</label>
+                            <label class="block"><input type="checkbox"> سهم مرکزی۱</label>
+                            <label class="block"><input type="checkbox"> سهم مرکزی۲</label>
+                        </div>
+                        <div class="border p-2 rounded">
+                            <p class="font-bold mb-2">بخش دوم</p>
+                            <label class="block"><input type="checkbox"> وام صندوق</label>
+                        </div>
+                        <div class="border p-2 rounded">
+                            <p class="font-bold mb-2">بخش سوم</p>
+                            <label class="block"><input type="checkbox"> سایر۱</label>
+                            <label class="block"><input type="checkbox"> سایر۲</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transfer Table -->
+                <div class="bg-white rounded p-4">
+                    <h4 class="font-bold mb-2">واریز به حساب</h4>
+                    <table class="w-full border text-xs">
+                        <thead class="bg-gray-200">
+                            <tr>
+                                <th class="border p-1">حساب پرداخت</th>
+                                <th class="border p-1">صاحب حساب</th>
+                                <th class="border p-1">بانک</th>
+                                <th class="border p-1">شعبه</th>
+                                <th class="border p-1">حساب دریافت</th>
+                                <th class="border p-1">صاحب حساب</th>
+                                <th class="border p-1">بانک</th>
+                                <th class="border p-1">شعبه</th>
+                                <th class="border p-1">مبلغ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transferTableBody">
+                            <tr>
+                                <td class="border p-1"><input type="text" class="w-full"></td>
+                                <td class="border p-1"><input type="text" class="w-full"></td>
+                                <td class="border p-1"><input type="text" class="w-full"></td>
+                                <td class="border p-1"><input type="text" class="w-full"></td>
+                                <td class="border p-1"><input type="text" class="w-full"></td>
+                                <td class="border p-1"><input type="text" class="w-full"></td>
+                                <td class="border p-1"><input type="text" class="w-full"></td>
+                                <td class="border p-1"><input type="text" class="w-full"></td>
+                                <td class="border p-1"><input type="text" class="w-full"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="mt-2 flex gap-2">
+                        <button onclick="addTransferRow()"
+                            class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">ایجاد ردیف (بخش اول)</button>
+                    </div>
+                    <div class="mt-2 text-left"><strong>سر جمع مبالغ:</strong> <input type="text"
+                            class="calc-result w-32" readonly></div>
+                </div>
+            </div>
+            <div class="bg-gray-300 p-2 flex gap-2">
+                <button onclick="saveContract()" class="px-4 py-1 bg-blue-500 text-white rounded">ذخیره</button>
+                <button onclick="closeAllModals()" class="px-4 py-1 bg-gray-400 rounded">صرفنظر</button>
+                <button onclick="closeAllModals()" class="px-4 py-1 bg-red-500 text-white rounded">خروج</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Default Modal -->
+    <div id="defaultModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <h3 class="text-xl font-bold text-gray-800 mb-6">جزئیات قرارداد</h3>
+            <div class="space-y-4">
+                <div><label class="block text-sm font-medium text-gray-700 mb-1">مبلغ قرارداد (ریال)</label><input
+                        type="text" id="contractAmount" class="w-full p-3 border border-gray-300 rounded-xl"
+                        placeholder="0"></div>
+                <div><label class="block text-sm font-medium text-gray-700 mb-1">تاریخ قرارداد</label><input type="text"
+                        id="dateInput" class="w-full p-3 border border-gray-300 rounded-xl" value="1403/09/17"></div>
+            </div>
+            <div class="mt-8 flex gap-3">
+                <button onclick="saveContract()"
+                    class="flex-1 bg-blue-600 text-white py-3 rounded-xl font-bold">ثبت</button>
+                <button onclick="closeAllModals()"
+                    class="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-bold">انصراف</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ACCOUNT CODE DETAILS MODAL - Modern Minimal Design -->
+    <div id="codeDetailModal"
+        class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden">
+            <!-- Header - Clean minimal -->
+            <div class="bg-slate-800 px-5 py-4 flex justify-between items-center">
+                <div>
+                    <h3 class="text-sm font-medium text-slate-300">جزئیات تراکنش</h3>
+                    <p id="codeDetailTitle" class="text-white font-mono text-sm mt-1" dir="ltr">---</p>
+                </div>
+                <button onclick="closeCodeDetailModal()" class="text-slate-400 hover:text-white transition p-1">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                        </path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Content -->
+            <div class="p-5">
+                <!-- Loading State -->
+                <div id="codeDetailLoading" class="text-center py-8">
+                    <div
+                        class="animate-spin w-8 h-8 border-2 border-slate-200 border-t-slate-600 rounded-full mx-auto mb-3">
+                    </div>
+                    <p class="text-slate-400 text-sm">در حال بارگذاری...</p>
+                </div>
+
+                <!-- Details Content -->
+                <div id="codeDetailContent" class="hidden">
+                    <!-- Stats Row -->
+                    <div class="flex gap-3 mb-5">
+                        <div class="flex-1 bg-slate-50 rounded-lg p-3 text-center">
+                            <div class="text-lg font-semibold text-slate-700" id="detailTempCount">0</div>
+                            <div class="text-[10px] text-slate-500 uppercase tracking-wide">موقت</div>
+                        </div>
+                        <div class="flex-1 bg-slate-50 rounded-lg p-3 text-center">
+                            <div class="text-lg font-semibold text-slate-700" id="detailPermCount">0</div>
+                            <div class="text-[10px] text-slate-500 uppercase tracking-wide">دائمی</div>
+                        </div>
+                        <div class="flex-1 bg-slate-50 rounded-lg p-3 text-center">
+                            <div class="text-lg font-semibold text-slate-700" id="detailBankCount">0</div>
+                            <div class="text-[10px] text-slate-500 uppercase tracking-wide">بانکی</div>
+                        </div>
+                    </div>
+
+                    <!-- Info Table -->
+                    <div class="border border-slate-200 rounded-lg divide-y divide-slate-100 text-sm">
+                        <div class="flex justify-between px-4 py-2.5">
+                            <span class="text-slate-500">درخواست</span>
+                            <span class="font-medium text-slate-800" id="detailRequestId">-</span>
+                        </div>
+                        <div class="flex justify-between px-4 py-2.5">
+                            <span class="text-slate-500">دسته‌بندی</span>
+                            <span class="font-medium text-slate-800" id="detailCategory">-</span>
+                        </div>
+                        <div class="flex justify-between px-4 py-2.5">
+                            <span class="text-slate-500">کد بودجه</span>
+                            <span class="font-mono text-slate-800" id="detailBudgetCode">-</span>
+                        </div>
+                        <div class="flex justify-between px-4 py-2.5">
+                            <span class="text-slate-500">منطقه</span>
+                            <span class="font-medium text-slate-800" id="detailZoneCode">-</span>
+                        </div>
+                        <div class="flex justify-between px-4 py-2.5">
+                            <span class="text-slate-500">نوع</span>
+                            <span class="text-slate-800 text-xs" id="detailTransType">-</span>
+                        </div>
+                        <div class="flex justify-between px-4 py-2.5">
+                            <span class="text-slate-500">وضعیت</span>
+                            <span id="detailBalanced">-</span>
+                        </div>
+                    </div>
+
+                    <!-- Amount -->
+                    <div class="mt-4 bg-slate-800 rounded-lg px-4 py-3 flex justify-between items-center">
+                        <span class="text-slate-400 text-sm">مبلغ کل</span>
+                        <span class="text-white font-semibold" id="detailTotalAmount">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="bg-slate-50 px-5 py-3 flex gap-2 border-t border-slate-200">
+                <button onclick="selectThisCode()"
+                    class="flex-1 bg-slate-800 text-white px-4 py-2.5 rounded-lg hover:bg-slate-700 transition text-sm font-medium">
+                    انتخاب این کد
+                </button>
+                <button onclick="copyDetailCode()"
+                    class="px-4 py-2.5 border border-slate-300 text-slate-600 rounded-lg hover:bg-slate-100 transition text-sm">
+                    کپی
+                </button>
+                <button onclick="closeCodeDetailModal()"
+                    class="px-4 py-2.5 text-slate-500 hover:text-slate-700 transition text-sm">
+                    بستن
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var codes = { zone: '00', dept: '00', section: '000', budg: '0000', cost: '000', cont: '00', evt: '000' };
+        var contractData = { isSaved: false, amount: 0 };
+        var mode = 'wizard';
+        var sheetsData = [], selectedSheetIndex = -1, selectedRequest = null, currentTransactions = [];
+        var currentUser = null;
+
+        // Check authentication on page load
+        async function checkAuth() {
+            try {
+                const res = await fetch('/auth/me');
+                const data = await res.json();
+                if (!data.authenticated) {
+                    window.location.href = '/login';
+                    return false;
+                }
+                currentUser = data.user;
+                document.getElementById('userName').textContent = currentUser.full_name;
+                document.getElementById('userRole').textContent = currentUser.role === 'admin' ? 'ادمین' : 'کاربر';
+
+                // Show user's organization info in header
+                let orgParts = [];
+                if (currentUser.default_zone) orgParts.push(currentUser.default_zone.title);
+                if (currentUser.default_dept) orgParts.push(currentUser.default_dept.title);
+                if (orgParts.length > 0) {
+                    document.getElementById('userOrgInfo').textContent = orgParts.join(' - ');
+                }
+
+                return true;
+            } catch (e) {
+                window.location.href = '/login';
+                return false;
+            }
+        }
+
+        // Auto-fill user's default zone/dept/section after data loads
+        async function autoFillUserDefaults() {
+            if (!currentUser) return;
+
+            // Wait for zones to load
+            await new Promise(r => setTimeout(r, 300));
+
+            // Auto-select default zone
+            if (currentUser.default_zone) {
+                const zoneSelect = document.getElementById('zoneSelect');
+                console.log('AutoFill: Looking for zone ID:', currentUser.default_zone.id);
+                for (let opt of zoneSelect.options) {
+                    console.log('Checking option:', opt.dataset.id, opt.value, opt.text);
+                    if (opt.dataset.id == currentUser.default_zone.id) {
+                        console.log('MATCH! Setting zone to:', opt.value);
+                        zoneSelect.value = opt.value;
+                        zoneSelect.dispatchEvent(new Event('change'));
+                        break;
+                    }
+                }
+
+                // Wait for departments/sections to load
+                await new Promise(r => setTimeout(r, 600));
+
+                // Auto-select default department (if available)
+                if (currentUser.default_dept) {
+                    const deptSelect = document.getElementById('deptSelect');
+                    if (!deptSelect.disabled) {
+                        for (let opt of deptSelect.options) {
+                            if (opt.dataset.id == currentUser.default_dept.id) {
+                                deptSelect.value = opt.value;
+                                deptSelect.dispatchEvent(new Event('change'));
+                                break;
+                            }
+                        }
+
+                        // Wait for sections to load
+                        await new Promise(r => setTimeout(r, 500));
+                    }
+                }
+
+                // Auto-select default section
+                if (currentUser.default_section) {
+                    const sectionSelect = document.getElementById('sectionSelect');
+                    for (let opt of sectionSelect.options) {
+                        if (opt.dataset.id == currentUser.default_section.id) {
+                            sectionSelect.value = opt.value;
+                            sectionSelect.dispatchEvent(new Event('change'));
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        async function logout() {
+            await fetch('/auth/logout', { method: 'POST' });
+            window.location.href = '/login';
+        }
+
+
+
+        function formatNumber(input) { var v = input.value.replace(/,/g, '').replace(/\D/g, ''); if (v) input.value = parseInt(v).toLocaleString('en'); }
+        function parseNum(s) { return parseInt((s || '').replace(/,/g, '')) || 0; }
+
+        function truncateText(text, maxLen) {
+            if (!text) return '';
+            return text.length > maxLen ? text.substring(0, maxLen) + '...' : text;
+        }
+
+        function calcContractor() {
+            var gross = parseNum(document.getElementById('c1_gross')?.value);
+            if (!gross) return;
+            var tax3 = Math.round(gross * 0.03), ins5 = Math.round(gross * 0.05), perf10 = Math.round(gross * 0.10), train = Math.round(gross * 0.002);
+            var advance = parseNum(document.getElementById('c1_advance')?.value), prepay = parseNum(document.getElementById('c1_prepay')?.value), misc = parseNum(document.getElementById('c1_misc')?.value), vat = parseNum(document.getElementById('c1_vat')?.value);
+            var totalDed = tax3 + ins5 + perf10 + train + advance + prepay + misc, net1 = gross - totalDed, net2 = net1 + vat;
+            document.getElementById('c1_tax3').value = tax3.toLocaleString('en');
+            document.getElementById('c1_ins5').value = ins5.toLocaleString('en');
+            document.getElementById('c1_perf10').value = perf10.toLocaleString('en');
+            document.getElementById('c1_train').value = train.toLocaleString('en');
+            document.getElementById('c1_totalDed').value = totalDed.toLocaleString('en');
+            document.getElementById('c1_net1').value = net1.toLocaleString('en');
+            document.getElementById('c1_net2').value = net2.toLocaleString('en');
+        }
+
+        function addTransferRow() {
+            var tbody = document.getElementById('transferTableBody');
+            var row = tbody.rows[0].cloneNode(true);
+            row.querySelectorAll('input').forEach(i => i.value = '');
+            tbody.appendChild(row);
+        }
+
+        function toggleMode(newMode) {
+            mode = newMode;
+            document.getElementById('wizardModeContainer').classList.toggle('hidden', mode !== 'wizard');
+            document.getElementById('wizardActions').classList.toggle('hidden', mode !== 'wizard');
+            document.getElementById('testModeContainer').classList.toggle('hidden', mode !== 'test');
+            document.getElementById('btnModeWizard').classList.toggle('bg-white', mode === 'wizard');
+            document.getElementById('btnModeWizard').classList.toggle('border-b-2', mode === 'wizard');
+            document.getElementById('btnModeWizard').classList.toggle('border-blue-500', mode === 'wizard');
+            document.getElementById('btnModeTest').classList.toggle('bg-white', mode === 'test');
+            document.getElementById('btnModeTest').classList.toggle('border-b-2', mode === 'test');
+            document.getElementById('btnModeTest').classList.toggle('border-blue-500', mode === 'test');
+            if (mode === 'test') loadSheets();
+        }
+
+        function normalizeText(t) { return (t || '').replace(/\u200c/g, '').replace(/\s+/g, ' ').trim(); }
+
+        function openContractForm() {
+            var eventText = normalizeText(document.getElementById('eventSelect').selectedOptions[0]?.text || '');
+            console.log('Event:', eventText);
+            closeAllModals();
+            if (eventText.includes('پیمانکار') || eventText.includes('صورت') || eventText.includes('وضعیت')) {
+                document.getElementById('contractorModal').classList.remove('hidden');
+            } else if (eventText.includes('هزینه') || eventText.includes('جاری')) {
+                document.getElementById('expenseModal').classList.remove('hidden');
+            } else if (eventText.includes('استرداد') || eventText.includes('سپرده') || eventText.includes('حسن انجام')) {
+                document.getElementById('refundModal').classList.remove('hidden');
+            } else if (eventText.includes('جابجایی') || eventText.includes('خزانه') || eventText.includes('منطقه')) {
+                document.getElementById('transferModal').classList.remove('hidden');
+            } else {
+                document.getElementById('defaultModal').classList.remove('hidden');
+            }
+        }
+
+        function closeAllModals() {
+            ['contractorModal', 'expenseModal', 'refundModal', 'transferModal', 'defaultModal'].forEach(id => document.getElementById(id).classList.add('hidden'));
+        }
+
+        function saveContract() { contractData.isSaved = true; document.getElementById('contractStatusBadge').classList.remove('hidden'); closeAllModals(); }
+
+        async function loadData() {
+            try {
+                var res = await fetch('/portal/org/roots'), zones = await res.json(), sel = document.getElementById('zoneSelect');
+                sel.innerHTML = '<option value="00">انتخاب کنید...</option>'; zones.forEach(z => sel.innerHTML += '<option value="' + z.code + '" data-id="' + z.id + '">' + z.title + '</option>');
+                res = await fetch('/portal/cost-centers'); var cc = await res.json(); sel = document.getElementById('costCenterSelect');
+                sel.innerHTML = '<option value="000">انتخاب کنید...</option>'; cc.forEach(c => sel.innerHTML += '<option value="' + c.code + '">' + c.title + '</option>');
+                res = await fetch('/portal/financial-events'); var ev = await res.json(); sel = document.getElementById('eventSelect');
+                sel.innerHTML = '<option value="000">انتخاب کنید...</option>'; ev.forEach(e => sel.innerHTML += '<option value="' + e.code + '" title="' + e.title + '">' + e.code + ' - ' + truncateText(e.title, 40) + '</option>');
+                res = await fetch('/portal/continuous-actions'); var ca = await res.json(); sel = document.getElementById('contActivitySelect');
+                sel.innerHTML = '<option value="00">انتخاب کنید...</option>'; ca.forEach(a => sel.innerHTML += '<option value="' + a.code + '">' + a.code + ' - ' + a.title + '</option>');
+            } catch (e) { console.error(e); }
+        }
+
+        document.getElementById('zoneSelect').addEventListener('change', async function (e) {
+            codes.zone = e.target.value;
+            var zid = e.target.selectedOptions[0].dataset.id;
+            var zoneTitle = e.target.selectedOptions[0].text;
+            if (codes.zone === '00') return;
+
+            // Fetch children of selected zone/معاونت
+            var res = await fetch('/portal/org/children/' + zid);
+            var children = await res.json();
+
+            var dSel = document.getElementById('deptSelect');
+            var sSel = document.getElementById('sectionSelect');
+
+            // Check if this is a "منطقه" (has department children) or "معاونت" (children go directly to section)
+            // معاونت‌ها مستقیماً قسمت دارند، نه اداره
+            var isZone = zoneTitle.includes('منطقه');
+
+            if (isZone && children.length > 0) {
+                // Normal zone: enable department dropdown
+                dSel.disabled = false;
+                dSel.innerHTML = '<option value="00">انتخاب کنید...</option>';
+                children.forEach(d => dSel.innerHTML += '<option value="' + (d.code || d.id) + '" data-id="' + d.id + '">' + d.title + '</option>');
+
+                // Reset section
+                sSel.disabled = true;
+                sSel.innerHTML = '<option value="000">ابتدا اداره را انتخاب کنید</option>';
+                codes.dept = '00';
+                codes.section = '000';
+            } else {
+                // معاونت: skip department, go directly to section
+                dSel.disabled = true;
+                dSel.innerHTML = '<option value="00">— معاونت (بدون اداره) —</option>';
+                codes.dept = '00';
+
+                // Fill section dropdown with children
+                sSel.disabled = false;
+                sSel.innerHTML = '<option value="000">انتخاب کنید...</option>';
+                children.forEach(s => sSel.innerHTML += '<option value="' + (s.code || s.id) + '" data-id="' + s.id + '">' + s.title + '</option>');
+            }
+
+            // Load budgets
+            var bSel = document.getElementById('budgetSelect'); bSel.disabled = false; bSel.innerHTML = '<option>بارگذاری...</option>';
+            res = await fetch('/portal/budgets/by-zone/' + codes.zone); var budgets = await res.json();
+            bSel.innerHTML = '<option value="0000">انتخاب کنید...</option>'; budgets.forEach(b => bSel.innerHTML += '<option value="' + b.budget_code + '">' + b.budget_code + ' - ' + b.title + '</option>');
+        });
+
+        document.getElementById('deptSelect').addEventListener('change', async function (e) {
+            codes.dept = e.target.value; var did = e.target.selectedOptions[0].dataset.id; if (!did) return;
+            var sSel = document.getElementById('sectionSelect'); sSel.disabled = false; sSel.innerHTML = '<option>بارگذاری...</option>';
+            var res = await fetch('/portal/org/children/' + did), secs = await res.json();
+            sSel.innerHTML = '<option value="000">انتخاب کنید...</option>'; secs.forEach(s => sSel.innerHTML += '<option value="' + (s.code || s.id) + '">' + s.title + '</option>');
+        });
+
+        document.getElementById('sectionSelect').addEventListener('change', e => codes.section = e.target.value);
+        document.getElementById('budgetSelect').addEventListener('change', e => codes.budg = e.target.value);
+        document.getElementById('costCenterSelect').addEventListener('change', e => codes.cost = e.target.value);
+        document.getElementById('contActivitySelect').addEventListener('change', e => codes.cont = e.target.value);
+        document.getElementById('eventSelect').addEventListener('change', e => codes.evt = e.target.value);
+
+        async function generateFinalCode() {
+            if (!contractData.isSaved) { alert('لطفاً ابتدا جزئیات قرارداد را ثبت کنید.'); openContractForm(); return; }
+
+            // Get zone and dept IDs from selected options
+            var zoneSelect = document.getElementById('zoneSelect');
+            var deptSelect = document.getElementById('deptSelect');
+            var sectionSelect = document.getElementById('sectionSelect');
+
+            var zoneId = zoneSelect.selectedOptions[0]?.dataset?.id;
+            var deptId = deptSelect.selectedOptions[0]?.dataset?.id;
+            var sectionId = sectionSelect.selectedOptions[0]?.dataset?.id;
+
+            if (!zoneId) { alert('لطفاً حوزه را انتخاب کنید'); return; }
+
+            var payload = {
+                zone_id: parseInt(zoneId),
+                department_id: deptId ? parseInt(deptId) : null,
+                section_id: sectionId ? parseInt(sectionId) : null,
+                budget_code: codes.budg,
+                cost_center_code: codes.cost,
+                continuous_activity_code: codes.cont,
+                special_activity: document.getElementById('specialActivityInput').value,
+                financial_event_code: codes.evt,
+                beneficiary_name: document.getElementById('benName').value || 'نامشخص',
+                contract_number: document.getElementById('contractNum').value || '0000',
+                amount: contractData.amount || 1000000, // Default amount
+                description: document.getElementById('specialActivityInput').value,
+                form_data: contractData
+            };
+
+            try {
+                var res = await fetch('/portal/transactions/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                var data = await res.json();
+
+                if (!res.ok) {
+                    alert(data.detail || 'خطا در ایجاد تراکنش');
+                    return;
+                }
+
+                document.getElementById('resultBox').classList.remove('hidden');
+                document.getElementById('finalCode').textContent = data.unique_code;
+                document.getElementById('finalCode').onclick = () => {
+                    navigator.clipboard.writeText(data.unique_code);
+                    alert('کپی شد!');
+                };
+
+                // Show success message
+                alert('تراکنش با موفقیت ثبت شد و در انتظار تایید ادمین است.');
+            } catch (e) {
+                console.error(e);
+                alert('خطا در برقراری ارتباط با سرور');
+            }
+        }
+
+        // TEST MODE
+        async function loadSheets() {
+            var container = document.getElementById('sheetList'); container.innerHTML = '<div class="text-gray-400 p-2">بارگذاری...</div>';
+            try {
+                var res = await fetch('/portal/test/sheets'), data = await res.json(); sheetsData = data.sheets || [];
+                var html = ''; sheetsData.forEach((s, i) => html += '<div class="p-2 bg-white rounded border hover:border-blue-500 cursor-pointer sheet-item" onclick="selectSheetByIndex(' + i + ')">' + (s.display_name || s.name) + '</div>');
+                container.innerHTML = html || '<div class="text-gray-400 p-2">شیتی یافت نشد</div>';
+            } catch (e) { container.innerHTML = '<div class="text-red-500 p-2">خطا</div>'; }
+        }
+
+        async function selectSheetByIndex(idx) {
+            selectedSheetIndex = idx; var sheetName = sheetsData[idx].name;
+            document.querySelectorAll('.sheet-item').forEach((el, i) => { el.classList.toggle('border-blue-500', i === idx); el.classList.toggle('bg-blue-50', i === idx); });
+            var container = document.getElementById('requestList'); container.innerHTML = '<div class="text-gray-400 p-2">بارگذاری...</div>';
+            try {
+                var res = await fetch('/portal/test/requests/' + encodeURIComponent(sheetName)), data = await res.json();
+                if (data.message) { container.innerHTML = '<div class="text-yellow-600 p-2">' + data.message + '</div>'; return; }
+                var html = ''; (data.requests || []).forEach(r => {
+                    var icon = r.is_balanced ? '✓' : '✗', cls = r.is_balanced ? 'text-green-600' : 'text-red-600';
+                    html += '<div class="p-2 bg-white rounded border hover:border-blue-500 cursor-pointer request-item" onclick="selectRequest(\'' + r.request_id + '\')"><div class="flex justify-between"><span>' + r.request_id + '</span><span class="' + cls + '">' + icon + '</span></div><div class="text-xs text-gray-500">' + r.transaction_count + ' تراکنش</div></div>';
+                });
+                container.innerHTML = html || '<div class="text-gray-400 p-2">درخواستی یافت نشد</div>';
+            } catch (e) { container.innerHTML = '<div class="text-red-500 p-2">خطا</div>'; }
+            document.getElementById('balanceSummary').innerHTML = '<div class="text-gray-400">درخواست انتخاب کنید</div>';
+            document.getElementById('transactionsContainer').classList.add('hidden');
+        }
+
+        async function selectRequest(reqId) {
+            selectedRequest = reqId; var sheetName = sheetsData[selectedSheetIndex].name;
+            var summaryDiv = document.getElementById('balanceSummary'); summaryDiv.innerHTML = '<div class="text-gray-400">بارگذاری...</div>';
+            try {
+                var res = await fetch('/portal/test/transactions/' + encodeURIComponent(sheetName) + '/' + encodeURIComponent(reqId)), data = await res.json();
+                currentTransactions = data.transactions || [];
+                var balCls = data.is_balanced ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800', balTxt = data.is_balanced ? '✓ موازنه' : '✗ عدم موازنه';
+                summaryDiv.innerHTML = '<div class="font-bold text-lg">' + reqId + '</div><div>تعداد: ' + data.transaction_count + '</div><div>بدهکار: ' + (data.total_debit || 0).toLocaleString() + '</div><div>بستانکار: ' + (data.total_credit || 0).toLocaleString() + '</div><div class="mt-2 p-2 rounded ' + balCls + ' font-bold">' + balTxt + '</div>';
+                var tbody = document.getElementById('transactionsTable'), html = '';
+                currentTransactions.forEach((t, i) => html += '<tr class="border-b"><td class="p-2">' + (i + 1) + '</td><td class="p-2">' + t.doc_no + '</td><td class="p-2">' + t.titk_no + ' - ' + (t.titk_name || '') + '</td><td class="p-2">' + t.titm_no + ' - ' + (t.titm_name || '') + '</td><td class="p-2 text-green-700">' + (t.debit || 0).toLocaleString() + '</td><td class="p-2 text-red-700">' + (t.credit || 0).toLocaleString() + '</td><td class="p-2"><button onclick="generateCodeFor(' + i + ')" class="text-blue-600 text-xs">کد</button></td></tr>');
+                tbody.innerHTML = html;
+                document.getElementById('transactionsContainer').classList.remove('hidden');
+            } catch (e) { summaryDiv.innerHTML = '<div class="text-red-500">خطا</div>'; }
+        }
+
+        async function generateCodeFor(idx) {
+            var t = currentTransactions[idx];
+            var payload = { zone: '20', dept_code: '00', section_code: '000', budget_code: t.budget_no || '0000', cost_center: t.radm_no || '000', continuous_activity: '00', special_activity: t.type_desc || '', contractor_name: t.radj_name || 'Unknown', contract_number: String(t.doc_no), financial_event: t.opr_cod || '000', date: '1403' };
+            var res = await fetch('/portal/submit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }), data = await res.json();
+            alert('کد: ' + data.generated_code); navigator.clipboard.writeText(data.generated_code);
+        }
+        // === LIVE CODE PREVIEW FUNCTIONS ===
+
+        // Update code part with animation
+        function updateCodePart(partId, value, defaultVal) {
+            const el = document.getElementById('codePart_' + partId);
+            if (!el) return;
+
+            const newVal = value || defaultVal;
+            if (el.textContent !== newVal) {
+                el.textContent = newVal;
+                el.classList.add('filled');
+                setTimeout(() => el.classList.remove('filled'), 500);
+            }
+        }
+
+        // Update all code parts based on current selections
+        function updateLiveCodePreview() {
+            const zoneSelect = document.getElementById('zoneSelect');
+            const deptSelect = document.getElementById('deptSelect');
+            const sectionSelect = document.getElementById('sectionSelect');
+            const budgetSelect = document.getElementById('budgetSelect');
+            const costCenterSelect = document.getElementById('costCenterSelect');
+            const contActivitySelect = document.getElementById('contActivitySelect');
+            const specialActivityInput = document.getElementById('specialActivityInput');
+            const eventSelect = document.getElementById('eventSelect');
+            const benNameInput = document.getElementById('benName');
+
+            // Extract values
+            const zone = (zoneSelect?.value || '00').padStart(2, '0');
+            const dept = (deptSelect?.value || '00').padStart(2, '0');
+            const section = (sectionSelect?.value || '000').padStart(3, '0');
+
+            // Get budget code from selected option
+            let budget = '0000';
+            if (budgetSelect && budgetSelect.selectedIndex > 0) {
+                const budgetOpt = budgetSelect.options[budgetSelect.selectedIndex];
+                budget = (budgetOpt?.dataset?.code || budgetSelect.value || '0000').padStart(8, '0');
+            }
+
+            const cost = (costCenterSelect?.value || '000').padStart(3, '0');
+            const cont = (contActivitySelect?.value || '00').padStart(2, '0');
+
+            // Hash for special activity
+            let special = '000';
+            if (specialActivityInput?.value) {
+                special = simpleHash(specialActivityInput.value, 3);
+            }
+
+            // Hash for beneficiary
+            let ben = '000000';
+            if (benNameInput?.value) {
+                ben = simpleHash(benNameInput.value, 6);
+            }
+
+            const event = (eventSelect?.value || '000').padStart(3, '0');
+
+            // Update UI
+            updateCodePart('zone', zone, '00');
+            updateCodePart('dept', dept, '00');
+            updateCodePart('section', section, '000');
+            updateCodePart('budget', budget.slice(-8), '00000000');
+            updateCodePart('cost', cost, '000');
+            updateCodePart('cont', cont, '00');
+            updateCodePart('special', special, '000');
+            updateCodePart('ben', ben, '000000');
+            updateCodePart('event', event, '000');
+            updateCodePart('date', '1403', '1403');
+            updateCodePart('seq', '001', '001');
+
+            // Fetch similar codes
+            fetchSimilarCodes(zone, budget);
+        }
+
+        // Simple hash function for display
+        function simpleHash(str, len) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            const hex = Math.abs(hash).toString(16).toUpperCase();
+            return hex.slice(0, len).padStart(len, '0');
+        }
+
+        // Debounce helper
+        let similarCodesTimeout = null;
+
+        // Fetch similar codes from database
+        async function fetchSimilarCodes(zone, budgetCode) {
+            // Debounce
+            if (similarCodesTimeout) clearTimeout(similarCodesTimeout);
+
+            similarCodesTimeout = setTimeout(async () => {
+                const container = document.getElementById('similarCodesList');
+                const countEl = document.getElementById('similarCodesCount');
+
+                // Check if we have valid zone
+                const validZone = zone && zone !== '00';
+                const validBudget = budgetCode && budgetCode !== '00000000';
+
+                if (!validZone) {
+                    container.innerHTML = `
+                        <div class="text-center text-gray-400 py-4 text-sm">
+                            <svg class="w-8 h-8 mx-auto mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                            </svg>
+                            با انتخاب منطقه، کدهای مشابه نمایش داده می‌شوند
+                        </div>
+                    `;
+                    countEl.textContent = '0 مورد';
+                    return;
+                }
+
+                try {
+                    container.innerHTML = '<div class="text-center text-gray-400 py-2 text-sm">در حال جستجو...</div>';
+
+                    // Build API URL with proper filters
+                    let apiUrl = `/api/account-codes?zone_code=${zone}&limit=10`;
+                    if (validBudget) {
+                        // Remove leading zeros and .0 suffix from budget code
+                        const cleanBudget = budgetCode.replace(/^0+/, '').replace(/\.0$/, '');
+                        apiUrl += `&search=${encodeURIComponent(cleanBudget)}`;
+                    }
+
+                    const res = await fetch(apiUrl);
+                    const data = await res.json();
+
+                    if (!data.account_codes || data.account_codes.length === 0) {
+                        container.innerHTML = `
+                            <div class="text-center text-gray-400 py-4 text-sm">
+                                کد مشابهی یافت نشد
+                            </div>
+                        `;
+                        countEl.textContent = '0 مورد';
+                        return;
+                    }
+
+                    // Category labels
+                    const catLabels = {
+                        'EXP': 'هزینه جاری',
+                        'CAP': 'سرمایه‌ای',
+                        'CON': 'پیمانکاران',
+                        'SAL': 'حقوق',
+                        'REV': 'تنخواه',
+                        'WDR': 'برداشت',
+                        'REC': 'دریافت',
+                        'ADJ': 'اصلاحی',
+                        'OTH': 'سایر'
+                    };
+
+                    let html = '';
+                    data.account_codes.forEach(code => {
+                        const catLabel = catLabels[code.category] || code.category;
+                        const amount = code.total_amount ? (code.total_amount / 1e9).toFixed(1) + 'B' : '-';
+
+                        html += `
+                            <div class="similar-code-item" onclick="showCodeDetails(${code.id})">
+                                <div class="flex justify-between items-center">
+                                    <span class="code-text">${code.unique_code}</span>
+                                    <span class="text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded">${catLabel}</span>
+                                </div>
+                                <div class="flex justify-between text-[10px] text-gray-500 mt-1">
+                                    <span>درخواست: ${code.request_id || '-'}</span>
+                                    <span>${amount}</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    container.innerHTML = html;
+                    countEl.textContent = data.total + ' مورد';
+
+                } catch (e) {
+                    console.error('Error fetching similar codes:', e);
+                    container.innerHTML = '<div class="text-center text-red-400 py-2 text-sm">خطا در دریافت کدها</div>';
+                }
+            }, 300);
+        }
+
+        // Current code being viewed
+        let currentDetailCode = null;
+        let currentDetailData = null;
+
+        // Show code details modal
+        async function showCodeDetails(codeId) {
+            const modal = document.getElementById('codeDetailModal');
+            const loading = document.getElementById('codeDetailLoading');
+            const content = document.getElementById('codeDetailContent');
+
+            // Show modal with loading state
+            modal.classList.remove('hidden');
+            loading.classList.remove('hidden');
+            content.classList.add('hidden');
+
+            try {
+                const res = await fetch(`/api/account-codes/${codeId}`);
+                const data = await res.json();
+
+                if (res.status === 404) {
+                    alert('کد یافت نشد');
+                    closeCodeDetailModal();
+                    return;
+                }
+
+                currentDetailCode = data.unique_code;
+                currentDetailData = data;
+
+                // Category labels
+                const catLabels = {
+                    'EXP': 'هزینه جاری',
+                    'CAP': 'سرمایه‌ای',
+                    'CON': 'پیمانکاران',
+                    'SAL': 'حقوق',
+                    'REV': 'تنخواه',
+                    'WDR': 'برداشت',
+                    'REC': 'دریافت',
+                    'ADJ': 'اصلاحی',
+                    'OTH': 'سایر'
+                };
+
+                // Update modal content
+                document.getElementById('codeDetailTitle').textContent = data.unique_code;
+                document.getElementById('detailTempCount').textContent = data.temp_account_count || 0;
+                document.getElementById('detailPermCount').textContent = data.perm_account_count || 0;
+                document.getElementById('detailBankCount').textContent = data.bank_account_count || 0;
+                document.getElementById('detailRequestId').textContent = data.request_id || '-';
+                document.getElementById('detailCategory').textContent = catLabels[data.category] || data.category;
+                document.getElementById('detailBudgetCode').textContent = data.budget_code || '-';
+                document.getElementById('detailZoneCode').textContent = data.zone_code || '-';
+                document.getElementById('detailTransType').textContent = data.transaction_type || '-';
+                document.getElementById('detailBalanced').innerHTML = data.is_balanced
+                    ? '<span class="text-green-600">✓ تراز است</span>'
+                    : '<span class="text-red-600">✗ عدم تراز</span>';
+                document.getElementById('detailTotalAmount').textContent =
+                    data.total_amount ? Number(data.total_amount).toLocaleString() + ' ریال' : '-';
+
+                // Show content
+                loading.classList.add('hidden');
+                content.classList.remove('hidden');
+
+            } catch (e) {
+                console.error('Error loading code details:', e);
+                alert('خطا در بارگذاری جزئیات');
+                closeCodeDetailModal();
+            }
+        }
+
+        // Close code detail modal
+        function closeCodeDetailModal() {
+            document.getElementById('codeDetailModal').classList.add('hidden');
+            currentDetailCode = null;
+        }
+
+        // Copy code from detail modal
+        function copyDetailCode() {
+            if (currentDetailCode) {
+                navigator.clipboard.writeText(currentDetailCode);
+                // Show subtle feedback
+                const btn = event.target.closest('button');
+                const originalText = btn.textContent;
+                btn.textContent = 'کپی شد ✓';
+                setTimeout(() => btn.textContent = originalText, 1500);
+            }
+        }
+
+        // Select this code for reuse
+        function selectThisCode() {
+            if (!currentDetailCode || !currentDetailData) {
+                alert('خطا در انتخاب کد');
+                return;
+            }
+
+            // Set the final code to the selected code (with incremented sequence)
+            const code = currentDetailCode;
+            const parts = code.split('-');
+
+            // Increment sequence number for new occurrence
+            if (parts.length > 1) {
+                const lastPart = parts[parts.length - 1];
+                const seq = parseInt(lastPart) || 0;
+                parts[parts.length - 1] = String(seq + 1).padStart(lastPart.length, '0');
+            }
+
+            const newCode = parts.join('-');
+
+            // Show in result box
+            document.getElementById('finalCode').textContent = newCode;
+            document.getElementById('resultBox').classList.remove('hidden');
+
+            // Close modal
+            closeCodeDetailModal();
+
+            // Scroll to result
+            document.getElementById('resultBox').scrollIntoView({ behavior: 'smooth' });
+
+            // Copy to clipboard
+            navigator.clipboard.writeText(newCode);
+        }
+
+        // Add event listeners for live update
+        function setupLiveCodeListeners() {
+            const fields = [
+                'zoneSelect', 'deptSelect', 'sectionSelect', 'budgetSelect',
+                'costCenterSelect', 'contActivitySelect', 'eventSelect'
+            ];
+
+            fields.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.addEventListener('change', updateLiveCodePreview);
+                }
+            });
+
+            // Text inputs with debounce
+            const textFields = ['specialActivityInput', 'benName'];
+            textFields.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    let timeout;
+                    el.addEventListener('input', () => {
+                        if (timeout) clearTimeout(timeout);
+                        timeout = setTimeout(updateLiveCodePreview, 300);
+                    });
+                }
+            });
+        }
+
+        // Initialize
+        async function init() {
+            const authed = await checkAuth();
+            if (authed) {
+                await loadData();
+                toggleMode('wizard');
+                // Auto-fill user's default org units
+                await autoFillUserDefaults();
+                // Setup live code preview
+                setupLiveCodeListeners();
+                updateLiveCodePreview();
+            }
+        }
+        init();
+    </script>
+</body>
+
+</html>

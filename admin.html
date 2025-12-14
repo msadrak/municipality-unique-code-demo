@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>داشبورد ادمین | سامانه شهرداری</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.2);
+        }
+
+        .table-row {
+            transition: background 0.2s ease;
+        }
+
+        .table-row:hover {
+            background: #f8fafc;
+        }
+
+        .status-badge {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-draft {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+
+        .status-pending {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .status-approved {
+            background: #d1fae5;
+            color: #059669;
+        }
+
+        .status-rejected {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .status-paid {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+
+        .btn-approve {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        }
+
+        .btn-approve:hover {
+            box-shadow: 0 4px 15px rgba(5, 150, 105, 0.4);
+        }
+
+        .btn-reject {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+        }
+
+        .btn-reject:hover {
+            box-shadow: 0 4px 15px rgba(220, 38, 38, 0.4);
+        }
+
+        .modal-overlay {
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+        }
+
+        /* Slide-in Panel */
+        .slide-panel {
+            transform: translateX(-100%);
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .slide-panel.active {
+            transform: translateX(0);
+        }
+
+        .btn-review {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 13px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-review:hover {
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .detail-label {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+
+        .detail-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-4">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/Isfahan_Municipality_Logo.svg/1200px-Isfahan_Municipality_Logo.svg.png"
+                    alt="Logo" class="h-12 w-12 object-contain">
+                <div>
+                    <h1 class="text-xl font-bold text-gray-800">داشبورد ادمین</h1>
+                    <p class="text-sm text-gray-500">مدیریت تراکنش‌ها و بودجه</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <span id="userInfo" class="text-gray-600"></span>
+                <button onclick="logout()"
+                    class="bg-red-50 text-red-600 px-4 py-2 rounded-lg hover:bg-red-100 transition">
+                    خروج
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="stat-card p-6 shadow-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm">در انتظار تایید</p>
+                        <p class="text-3xl font-bold text-yellow-600" id="statPending">0</p>
+                    </div>
+                    <div class="text-4xl">⏳</div>
+                </div>
+            </div>
+            <div class="stat-card p-6 shadow-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm">تایید شده</p>
+                        <p class="text-3xl font-bold text-green-600" id="statApproved">0</p>
+                    </div>
+                    <div class="text-4xl">✅</div>
+                </div>
+            </div>
+            <div class="stat-card p-6 shadow-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm">رد شده</p>
+                        <p class="text-3xl font-bold text-red-600" id="statRejected">0</p>
+                    </div>
+                    <div class="text-4xl">❌</div>
+                </div>
+            </div>
+            <div class="stat-card p-6 shadow-lg">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm">مجموع تراکنش‌ها</p>
+                        <p class="text-3xl font-bold text-blue-600" id="statTotal">0</p>
+                    </div>
+                    <div class="text-4xl">📊</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+            <h2 class="text-lg font-bold text-gray-800 mb-4">فیلتر تراکنش‌ها</h2>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">وضعیت</label>
+                    <select id="filterStatus" onchange="loadTransactions()"
+                        class="w-full p-3 border border-gray-300 rounded-xl bg-white">
+                        <option value="">همه</option>
+                        <option value="pending">در انتظار تایید</option>
+                        <option value="approved">تایید شده</option>
+                        <option value="rejected">رد شده</option>
+                        <option value="draft">پیش‌نویس</option>
+                        <option value="paid">پرداخت شده</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">جستجو (کد یکتا / ذینفع)</label>
+                    <input type="text" id="filterSearch" onkeyup="debounceSearch()" placeholder="جستجو..."
+                        class="w-full p-3 border border-gray-300 rounded-xl">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">از تاریخ</label>
+                    <input type="text" id="filterDateFrom" placeholder="1403/01/01"
+                        class="w-full p-3 border border-gray-300 rounded-xl">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">تا تاریخ</label>
+                    <input type="text" id="filterDateTo" placeholder="1403/12/29"
+                        class="w-full p-3 border border-gray-300 rounded-xl">
+                </div>
+            </div>
+        </div>
+
+        <!-- Transactions Table -->
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+                <h2 class="text-lg font-bold text-gray-800">لیست تراکنش‌ها</h2>
+                <button onclick="loadTransactions()" class="text-blue-600 hover:text-blue-800">
+                    🔄 بروزرسانی
+                </button>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50 text-gray-700 text-sm">
+                        <tr>
+                            <th class="p-4 text-right">#</th>
+                            <th class="p-4 text-right">کد یکتا</th>
+                            <th class="p-4 text-right">ذینفع</th>
+                            <th class="p-4 text-right">مبلغ (ریال)</th>
+                            <th class="p-4 text-right">منطقه</th>
+                            <th class="p-4 text-right">وضعیت</th>
+                            <th class="p-4 text-right">تاریخ ایجاد</th>
+                            <th class="p-4 text-right">اقدامات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactionsTable">
+                        <tr>
+                            <td colspan="8" class="p-8 text-center text-gray-500">
+                                در حال بارگذاری...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="p-4 border-t border-gray-200 flex justify-between items-center">
+                <div class="text-gray-600 text-sm" id="paginationInfo">نمایش 0 از 0</div>
+                <div class="flex gap-2">
+                    <button id="btnPrevPage" onclick="prevPage()" disabled
+                        class="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg disabled:opacity-50">
+                        قبلی
+                    </button>
+                    <button id="btnNextPage" onclick="nextPage()" disabled
+                        class="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg disabled:opacity-50">
+                        بعدی
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Transaction Review Slide Panel -->
+    <div id="detailModal" class="fixed inset-0 hidden z-50">
+        <div class="modal-overlay absolute inset-0" onclick="closeModal()"></div>
+        <div id="slidePanel"
+            class="slide-panel fixed top-0 right-0 h-full w-full max-w-lg bg-white shadow-2xl z-10 flex flex-col">
+            <!-- Panel Header -->
+            <div class="p-6 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
+                <div>
+                    <h3 class="text-xl font-bold text-gray-800">بررسی تراکنش</h3>
+                    <p class="text-sm text-gray-500 mt-1">مشاهده جزئیات و اقدام</p>
+                </div>
+                <button onclick="closeModal()"
+                    class="text-gray-400 hover:text-red-500 transition-colors p-2 rounded-full hover:bg-red-50">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Panel Content - Scrollable -->
+            <div id="modalContent" class="flex-1 overflow-y-auto p-6">
+                <!-- Filled dynamically -->
+            </div>
+
+            <!-- Panel Actions - Fixed at Bottom -->
+            <div id="modalActions" class="p-6 border-t border-gray-200 bg-gray-50 flex flex-col gap-3">
+                <!-- Action buttons -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Reject Reason Modal -->
+    <div id="rejectModal" class="fixed inset-0 hidden z-50">
+        <div class="modal-overlay absolute inset-0" onclick="closeRejectModal()"></div>
+        <div class="relative z-10 flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+                <div class="p-6 border-b border-gray-200">
+                    <h3 class="text-xl font-bold text-gray-800">دلیل رد تراکنش</h3>
+                </div>
+                <div class="p-6">
+                    <textarea id="rejectReason" rows="4" placeholder="دلیل رد را وارد کنید..."
+                        class="w-full p-3 border border-gray-300 rounded-xl resize-none"></textarea>
+                </div>
+                <div class="p-6 border-t border-gray-200 flex gap-3">
+                    <button onclick="confirmReject()" class="btn-reject flex-1 text-white py-3 rounded-xl font-bold">
+                        رد کردن
+                    </button>
+                    <button onclick="closeRejectModal()"
+                        class="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-bold">
+                        انصراف
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let transactions = [];
+        let currentPage = 1;
+        let pageSize = 10;
+        let selectedTransaction = null;
+        let searchTimeout = null;
+
+        // Check auth
+        async function checkAuth() {
+            try {
+                const res = await fetch('/auth/me');
+                const data = await res.json();
+                if (!data.authenticated) {
+                    window.location.href = '/login';
+                    return;
+                }
+                if (data.user.role !== 'admin') {
+                    alert('فقط ادمین به این صفحه دسترسی دارد');
+                    window.location.href = '/portal';
+                    return;
+                }
+                currentUser = data.user;
+                document.getElementById('userInfo').textContent = `👤 ${currentUser.full_name}`;
+                loadTransactions();
+            } catch (e) {
+                window.location.href = '/login';
+            }
+        }
+
+        async function logout() {
+            await fetch('/auth/logout', { method: 'POST' });
+            window.location.href = '/login';
+        }
+
+        async function loadTransactions() {
+            const status = document.getElementById('filterStatus').value;
+            const search = document.getElementById('filterSearch').value;
+
+            try {
+                let url = `/admin/transactions?page=${currentPage}&limit=${pageSize}`;
+                if (status) url += `&status=${status}`;
+                if (search) url += `&search=${encodeURIComponent(search)}`;
+
+                const res = await fetch(url);
+                const data = await res.json();
+
+                transactions = data.transactions || [];
+                renderTransactions();
+                updateStats(data.stats || {});
+                updatePagination(data.total || 0);
+            } catch (e) {
+                console.error(e);
+                // For demo, show empty state
+                showEmptyState();
+            }
+        }
+
+        function renderTransactions() {
+            const tbody = document.getElementById('transactionsTable');
+
+            if (transactions.length === 0) {
+                showEmptyState();
+                return;
+            }
+
+            let html = '';
+            transactions.forEach((t, idx) => {
+                const statusClass = `status-${t.status}`;
+                const statusText = getStatusText(t.status);
+                html += `
+                    <tr class="table-row border-b border-gray-100">
+                        <td class="p-4">${(currentPage - 1) * pageSize + idx + 1}</td>
+                        <td class="p-4 font-mono text-sm text-blue-600">${t.unique_code || '-'}</td>
+                        <td class="p-4">${t.beneficiary_name || '-'}</td>
+                        <td class="p-4 font-medium">${formatNumber(t.amount)}</td>
+                        <td class="p-4">${t.zone_title || '-'}</td>
+                        <td class="p-4"><span class="status-badge ${statusClass}">${statusText}</span></td>
+                        <td class="p-4 text-gray-500">${t.created_at || '-'}</td>
+                        <td class="p-4">
+                            <button onclick="viewDetail(${t.id})" class="btn-review">
+                                بررسی
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        function showEmptyState() {
+            document.getElementById('transactionsTable').innerHTML = `
+                <tr>
+                    <td colspan="8" class="p-12 text-center">
+                        <div class="text-6xl mb-4">📭</div>
+                        <p class="text-gray-500 text-lg">تراکنشی یافت نشد</p>
+                        <p class="text-gray-400 text-sm mt-2">تراکنش‌های جدید در اینجا نمایش داده می‌شوند</p>
+                    </td>
+                </tr>
+            `;
+        }
+
+        function getStatusText(status) {
+            const map = {
+                'draft': 'پیش‌نویس',
+                'pending': 'در انتظار تایید',
+                'approved': 'تایید شده',
+                'rejected': 'رد شده',
+                'paid': 'پرداخت شده'
+            };
+            return map[status] || status;
+        }
+
+        function formatNumber(num) {
+            if (!num) return '0';
+            return Number(num).toLocaleString('fa-IR');
+        }
+
+        function updateStats(stats) {
+            document.getElementById('statPending').textContent = stats.pending || 0;
+            document.getElementById('statApproved').textContent = stats.approved || 0;
+            document.getElementById('statRejected').textContent = stats.rejected || 0;
+            document.getElementById('statTotal').textContent = stats.total || 0;
+        }
+
+        function updatePagination(total) {
+            const start = (currentPage - 1) * pageSize + 1;
+            const end = Math.min(currentPage * pageSize, total);
+            document.getElementById('paginationInfo').textContent = `نمایش ${start} تا ${end} از ${total}`;
+
+            document.getElementById('btnPrevPage').disabled = currentPage <= 1;
+            document.getElementById('btnNextPage').disabled = end >= total;
+        }
+
+        function prevPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                loadTransactions();
+            }
+        }
+
+        function nextPage() {
+            currentPage++;
+            loadTransactions();
+        }
+
+        function debounceSearch() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                currentPage = 1;
+                loadTransactions();
+            }, 300);
+        }
+
+        async function viewDetail(id) {
+            try {
+                const res = await fetch(`/admin/transactions/${id}`);
+                const t = await res.json();
+                selectedTransaction = t;
+
+                document.getElementById('modalContent').innerHTML = `
+                    <div class="space-y-4">
+                        <div class="bg-gray-50 p-4 rounded-xl">
+                            <p class="text-sm text-gray-500 mb-1">کد یکتا</p>
+                            <p class="font-mono text-lg font-bold text-blue-600">${t.unique_code || '-'}</p>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-sm text-gray-500">ذینفع</p>
+                                <p class="font-medium">${t.beneficiary_name || '-'}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">مبلغ</p>
+                                <p class="font-medium">${formatNumber(t.amount)} ریال</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">منطقه</p>
+                                <p class="font-medium">${t.zone_title || '-'}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">اداره</p>
+                                <p class="font-medium">${t.dept_title || '-'}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">قسمت</p>
+                                <p class="font-medium">${t.section_title || '-'}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">کد بودجه</p>
+                                <p class="font-medium">${t.budget_code || '-'}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">رویداد مالی</p>
+                                <p class="font-medium">${t.financial_event_title || '-'}</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-500">شماره قرارداد</p>
+                                <p class="font-medium">${t.contract_number || '-'}</p>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">توضیحات</p>
+                            <p class="font-medium">${t.description || '-'}</p>
+                        </div>
+                        <div class="border-t pt-4">
+                            <p class="text-sm text-gray-500">ایجادکننده: ${t.created_by_name || '-'}</p>
+                            <p class="text-sm text-gray-500">تاریخ ایجاد: ${t.created_at || '-'}</p>
+                            ${t.reviewed_by_name ? `<p class="text-sm text-gray-500">بررسی کننده: ${t.reviewed_by_name}</p>` : ''}
+                            ${t.rejection_reason ? `<p class="text-sm text-red-600">دلیل رد: ${t.rejection_reason}</p>` : ''}
+                        </div>
+                    </div>
+                `;
+
+                let actionsHtml = '';
+                if (t.status === 'pending') {
+                    actionsHtml = `
+                        <button onclick="approveTransaction(${t.id})" class="btn-approve flex-1 text-white py-3 rounded-xl font-bold">
+                            ✓ تایید
+                        </button>
+                        <button onclick="showRejectModal(${t.id})" class="btn-reject flex-1 text-white py-3 rounded-xl font-bold">
+                            ✗ رد
+                        </button>
+                    `;
+                }
+                actionsHtml += `
+                    <button onclick="closeModal()" class="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-bold">
+                        بستن
+                    </button>
+                `;
+                document.getElementById('modalActions').innerHTML = actionsHtml;
+
+                document.getElementById('detailModal').classList.remove('hidden');
+                // Trigger slide animation
+                setTimeout(() => {
+                    document.getElementById('slidePanel').classList.add('active');
+                }, 10);
+            } catch (e) {
+                alert('خطا در بارگذاری جزئیات');
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('slidePanel').classList.remove('active');
+            setTimeout(() => {
+                document.getElementById('detailModal').classList.add('hidden');
+            }, 300);
+        }
+
+        async function approveTransaction(id) {
+            if (!confirm('آیا از تایید این تراکنش اطمینان دارید؟')) return;
+
+            try {
+                const res = await fetch(`/admin/transactions/${id}/approve`, { method: 'POST' });
+                if (res.ok) {
+                    alert('تراکنش تایید شد');
+                    closeModal();
+                    loadTransactions();
+                } else {
+                    const data = await res.json();
+                    alert(data.detail || 'خطا در تایید');
+                }
+            } catch (e) {
+                alert('خطا در برقراری ارتباط');
+            }
+        }
+
+        function showRejectModal(id) {
+            selectedTransaction = { id };
+            document.getElementById('rejectReason').value = '';
+            document.getElementById('rejectModal').classList.remove('hidden');
+        }
+
+        function closeRejectModal() {
+            document.getElementById('rejectModal').classList.add('hidden');
+        }
+
+        async function confirmReject() {
+            const reason = document.getElementById('rejectReason').value.trim();
+            if (!reason) {
+                alert('لطفاً دلیل رد را وارد کنید');
+                return;
+            }
+
+            try {
+                const res = await fetch(`/admin/transactions/${selectedTransaction.id}/reject`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reason })
+                });
+                if (res.ok) {
+                    alert('تراکنش رد شد');
+                    closeRejectModal();
+                    closeModal();
+                    loadTransactions();
+                } else {
+                    const data = await res.json();
+                    alert(data.detail || 'خطا در رد تراکنش');
+                }
+            } catch (e) {
+                alert('خطا در برقراری ارتباط');
+            }
+        }
+
+        // Initialize
+        checkAuth();
+    </script>
+</body>
+
+</html>

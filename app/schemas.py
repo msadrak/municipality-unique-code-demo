@@ -1,55 +1,56 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
+from typing import Optional, Dict, Any, List
 from datetime import date, datetime
-from typing import Optional
 
+# --------------------------------------------------------
+# Hint Models
+# --------------------------------------------------------
 
-class OrgUnitBase(BaseModel):
+class OrgHint(BaseModel):
+    zone_title: Optional[str] = None
+    department_title: Optional[str] = None
+    section_title: Optional[str] = None
+    zone_code: Optional[str] = None 
+
+class ActionHint(BaseModel):
+    continuous_action_title: Optional[str] = None
+    action_type_title: Optional[str] = None
+
+# --------------------------------------------------------
+# Input Payload
+# --------------------------------------------------------
+
+class ExternalSpecialActionPayload(BaseModel):
+    org_unit_full_code: Optional[str] = None
+    continuous_action_code: Optional[str] = None
+    action_type_code: Optional[str] = None
+    
+    org_hint: Optional[OrgHint] = None
+    action_hint: Optional[ActionHint] = None
+    
+    financial_event_title: str
+    amount: float
+    local_record_id: str
+    description: Optional[str] = None
+    action_date: Optional[date] = None
+    
+    details: Optional[Dict[str, Any]] = None 
+    details: Optional[Dict[str, Any]] = None
+# --------------------------------------------------------
+# Output Schemas (Response)
+# --------------------------------------------------------
+
+class SpecialActionResponse(BaseModel):
     id: int
-    area_code: str
-    domain_code: str
-    dept_code: str
-    section_code: str
-    full_code: str
-    title: str
+    unique_code: Optional[str] = None
+    financial_event_title: Optional[str] = None
+    amount: float
+    status: str = "Created"
+    
+    created_at: Optional[datetime] = None
+    org_unit_id: Optional[int] = None
+    
+    details: Optional[Dict[str, Any]] = None
 
-    class Config:
-        orm_mode = True
-
-
-class ActionTypeBase(BaseModel):
-    id: int
-    code: str
-    title: str
-
-    class Config:
-        orm_mode = True
-
-
-class ContinuousActionBase(BaseModel):
-    id: int
-    code: str
-    title: str
-
-    class Config:
-        orm_mode = True
-
-
-class SpecialActionCreate(BaseModel):
-    org_unit_id: int
-    continuous_action_id: int
-    action_type_id: int
-    description: str
-    action_date: Optional[date] = None   # تاریخ اقدام (اختیاری)
-
-
-class SpecialActionOut(BaseModel):
-    id: int
-    unique_code: str
-    org_unit: OrgUnitBase
-    continuous_action: ContinuousActionBase
-    action_type: ActionTypeBase
-    description: str
-    created_at: datetime
-
-    class Config:
-        orm_mode = True
+    # 👇 THIS IS THE FIX (Works for Pydantic V2)
+    model_config = ConfigDict(from_attributes=True)

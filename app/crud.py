@@ -1,128 +1,131 @@
-# app/crud.py
-from datetime import date
-from typing import Optional, List
-
-from sqlalchemy import func
 from sqlalchemy.orm import Session
+from sqlalchemy import func
+from app import models, schemas
+import uuid
 
-from . import models, schemas
+# --------------------------------------------------------
+# Resolver Logic (هوش مصنوعی سیستم)
+# --------------------------------------------------------
 
+def resolve_org_unit(db: Session, hint: schemas.OrgHint) -> models.OrgUnit:
+    if not hint.zone_title and not hint.zone_code:
+        return None
 
-# ---------- لوکاپ‌ها ----------
+    query = db.query(models.OrgUnit).filter(models.OrgUnit.parent_id == None)
+    
+    if hint.zone_code:
+        query = query.filter(models.OrgUnit.code == hint.zone_code)
+    elif hint.zone_title:
+        query = query.filter(models.OrgUnit.title.ilike(f"%{hint.zone_title}%"))
+    
+    root_unit = query.first()
+    
+    if not root_unit:
+        return None
 
-def get_org_units(db: Session):
-    return db.query(models.OrgUnit).order_by(models.OrgUnit.id).all()
+    current_unit = root_unit
 
+    if hint.department_title:
+        dept = db.query(models.OrgUnit).filter(
+            models.OrgUnit.parent_id == current_unit.id,
+            models.OrgUnit.title.ilike(f"%{hint.department_title}%")
+        ).first()
+        
+        if dept:
+            current_unit = dept
 
-def get_continuous_actions(db: Session):
-    return db.query(models.ContinuousAction).order_by(models.ContinuousAction.id).all()
+    if hint.section_title:
+        section = db.query(models.OrgUnit).filter(
+            models.OrgUnit.parent_id == current_unit.id,
+            models.OrgUnit.title.ilike(f"%{hint.section_title}%")
+        ).first()
+        
+        if section:
+            current_unit = section
 
+    return current_unit
 
-def get_action_types(db: Session):
-    return db.query(models.ActionType).order_by(models.ActionType.id).all()
-
-
-# ---------- لیست اقدامات ویژه ----------
-
-def list_special_actions(
-    db: Session,
-    org_unit_id: Optional[int] = None,
-    continuous_action_id: Optional[int] = None,
-    action_type_id: Optional[int] = None,
-) -> List[models.SpecialAction]:
-    q = db.query(models.SpecialAction)
-    if org_unit_id:
-        q = q.filter(models.SpecialAction.org_unit_id == org_unit_id)
-    if continuous_action_id:
-        q = q.filter(models.SpecialAction.continuous_action_id == continuous_action_id)
-    if action_type_id:
-        q = q.filter(models.SpecialAction.action_type_id == action_type_id)
-
-    return q.order_by(models.SpecialAction.id.desc()).all()
-
-
-# ---------- تولید کد یونیک ----------
-
-def generate_unique_code(
-    db: Session,
-    org_unit: models.OrgUnit,
-    cont: models.ContinuousAction,
-    act: models.ActionType,
-    action_date: Optional[date],
-):
-    """
-    ساختن پیشوند کد و پیدا کردن شماره‌ی ترتیبی
-    فرمت نهایی:
-    FULLCODE-CAxxx-ACTyyy-YYYY-SEQ
-    مثل: 12-01-03-02-CA002-ACT021-2025-0001
-    """
-    if action_date is None:
-        year = date.today().year
-    else:
-        year = action_date.year
-
-    prefix = f"{org_unit.full_code}-{cont.code}-{act.code}-{year}"
-
-    # پیدا کردن بزرگ‌ترین seq_no برای همین prefix
-    max_seq = (
-        db.query(func.max(models.SpecialAction.seq_no))
-        .filter(models.SpecialAction.unique_code.like(f"{prefix}-%"))
-        .scalar()
-    )
-
-    next_seq = 1 if max_seq is None else int(max_seq) + 1
-    seq_str = f"{next_seq:04d}"
-
-    unique_code = f"{prefix}-{seq_str}"
-    return unique_code, next_seq
-
-
-# ---------- ساخت اقدام ویژه ----------
-
-def create_special_action(db: Session, data: schemas.SpecialActionCreate) -> models.SpecialAction:
-    """
-    این تابع فقط دو آرگومان می‌گیرد: db و data
-    بقیه چیزها (کد یونیک، seq_no، ...) اینجا محاسبه می‌شود.
-    """
-
-    org = (
-        db.query(models.OrgUnit)
-        .filter(models.OrgUnit.id == data.org_unit_id)
-        .first()
-    )
-    cont = (
-        db.query(models.ContinuousAction)
-        .filter(models.ContinuousAction.id == data.continuous_action_id)
-        .first()
-    )
-    act = (
-        db.query(models.ActionType)
-        .filter(models.ActionType.id == data.action_type_id)
-        .first()
-    )
-
-    if not org or not cont or not act:
-        # اگر دیتای ورودی خراب باشد، بهتر است صریح خطا بدهیم
-        raise ValueError("OrgUnit / ContinuousAction / ActionType not found for given IDs")
-
-    unique_code, seq_no = generate_unique_code(
-        db=db,
-        org_unit=org,
-        cont=cont,
-        act=act,
-        action_date=data.action_date,
-    )
-
-    obj = models.SpecialAction(
-        unique_code=unique_code,
-        seq_no=seq_no,
-        org_unit_id=data.org_unit_id,
-        continuous_action_id=data.continuous_action_id,
-        action_type_id=data.action_type_id,
-        description=data.description,
-        action_date=data.action_date,
-    )
-    db.add(obj)
-    db.commit()
-    db.refresh(obj)
+def get_or_create_financial_type(db: Session, title: str):
+    if not title: title = "نامشخص"
+    obj = db.query(models.FinancialEventType).filter_by(title=title).first()
+    if not obj:
+        obj = models.FinancialEventType(title=title)
+        db.add(obj)
+        db.commit()
+        db.refresh(obj)
     return obj
+
+# --------------------------------------------------------
+# Main CRUD Operation
+# --------------------------------------------------------
+
+def create_special_action(db: Session, payload: schemas.ExternalSpecialActionPayload):
+    # 1. پیدا کردن واحد سازمانی
+    org_unit = None
+    
+    if payload.org_unit_full_code:
+        org_unit = db.query(models.OrgUnit).filter_by(full_code=payload.org_unit_full_code).first()
+    elif payload.org_hint:
+        org_unit = resolve_org_unit(db, payload.org_hint)
+    
+    # اگر پیدا نشد، یک واحد پیش‌فرض (اولین واحد موجود) را بگذاریم
+    if not org_unit:
+        org_unit = db.query(models.OrgUnit).first()
+        
+    if not org_unit:
+        # اگر دیتابیس خالی است و هیچ واحدی نیست
+        raise ValueError("واحد سازمانی یافت نشد و دیتابیس خالی است. ابتدا seed.py را اجرا کنید.")
+
+    # 2. مدیریت Continuous Action
+    cont_action_id = None
+    if payload.continuous_action_code:
+        ca = db.query(models.ContinuousAction).filter_by(code=payload.continuous_action_code).first()
+        if ca: cont_action_id = ca.id
+
+    # 3. مدیریت Action Type
+    act_type_id = None
+    if payload.action_type_code:
+        at = db.query(models.ActionType).filter_by(code=payload.action_type_code).first()
+        if at: act_type_id = at.id
+
+    # 4. مدیریت Financial Type
+    fin_type = get_or_create_financial_type(db, payload.financial_event_title)
+
+    # 5. تولید کد یکتا
+    # اگر کد یونیک از سمت آداپتر آمده بود (local_record_id) همان را استفاده می‌کنیم
+    # اگر نه، یک چیزی می‌سازیم. اینجا فرض می‌کنیم local_record_id همان کد نهایی است.
+    base_code = org_unit.code if org_unit.code else str(org_unit.id)
+    # اگر local_record_id خودش فرمت کامل دارد، همان را استفاده کن، وگرنه ترکیب کن
+    generated_unique_code = payload.local_record_id 
+
+    # 6. ذخیره در دیتابیس
+    db_obj = models.SpecialAction(
+        org_unit_id=org_unit.id,
+        continuous_action_id=cont_action_id,
+        action_type_id=act_type_id,
+        financial_event_type_id=fin_type.id,
+        
+        unique_code=generated_unique_code,
+        amount=payload.amount,
+        local_record_id=payload.local_record_id,
+        description=payload.description,
+        action_date=payload.action_date,  # <--- اینجا ویرگول گذاشتم
+        
+        details=payload.details 
+    )
+    
+    # Upsert (اگر تکراری بود، خطا نده)
+    try:
+        db.add(db_obj)
+        db.commit()
+        db.refresh(db_obj)
+    except Exception:
+        db.rollback()
+        # اگر تکراری بود، رکورد قبلی را برگردان (یا می‌توانیم آپدیت کنیم)
+        existing = db.query(models.SpecialAction).filter_by(unique_code=generated_unique_code).first()
+        if existing:
+            return existing
+        else:
+            raise
+
+    return db_obj
