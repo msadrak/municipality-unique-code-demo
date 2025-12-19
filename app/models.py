@@ -114,17 +114,103 @@ class BudgetItem(Base):
     trustee_section = relationship("OrgUnit", foreign_keys=[trustee_section_id])
 
 
+class OrgBudgetMap(Base):
+    """
+    Mapping table: links org context (zone_code) to allowed budgets, cost centers, continuous actions.
+    Source: Hesabdary Information.xlsx
+    """
+    __tablename__ = "org_budget_map"
+    id = Column(Integer, primary_key=True, index=True)
+    zone_code = Column(String, index=True, nullable=False)
+    budget_code = Column(String, index=True, nullable=True)
+    cost_center_desc = Column(String, nullable=True)  # شرح مرکزهزینه
+    continuous_action_desc = Column(String, nullable=True)  # شرح سرفصل حساب جزء
+
+
+# --- سامانه‌های ۱۴ گانه ---
+
+class Subsystem(Base):
+    """
+    سامانه‌های زیرمجموعه حسابداری (۱۴ سامانه)
+    هر قسمت ممکن است ۱ تا چند سامانه را در اختیار داشته باشد
+    """
+    __tablename__ = "subsystems"
+    id = Column(Integer, primary_key=True, index=True)
+    code = Column(String, unique=True, index=True)  # PAYROLL, CONTRACTS, ...
+    title = Column(String)  # حقوق و دستمزد، قراردادها، ...
+    icon = Column(String, nullable=True)  # آیکون برای UI
+    attachment_type = Column(String, default="upload")  # upload, api, both
+    is_active = Column(Boolean, default=True)
+    order = Column(Integer, default=0)  # ترتیب نمایش
+    
+    # Relationships
+    activities = relationship("SubsystemActivity", back_populates="subsystem")
+
+
+class SubsystemActivity(Base):
+    """
+    فعالیت‌های ویژه هر سامانه
+    مثلاً: پرداخت حقوق، صدور چک، ثبت قرارداد، ...
+    """
+    __tablename__ = "subsystem_activities"
+    id = Column(Integer, primary_key=True, index=True)
+    subsystem_id = Column(Integer, ForeignKey("subsystems.id"))
+    code = Column(String, index=True)  # SALARY_PAYMENT, CONTRACT_REGISTER, ...
+    title = Column(String)  # پرداخت حقوق، ثبت قرارداد، ...
+    form_type = Column(String, nullable=True)  # نوع فرم مخصوص (nullable = فرم عمومی)
+    is_active = Column(Boolean, default=True)
+    order = Column(Integer, default=0)
+    
+    # Relationships
+    subsystem = relationship("Subsystem", back_populates="activities")
+
+
+# --- ارتباط قسمت با سامانه‌ها ---
+
+class SectionSubsystemAccess(Base):
+    """
+    ارتباط قسمت‌های سازمانی با سامانه‌ها
+    هر قسمت می‌تواند به یک یا چند سامانه دسترسی داشته باشد
+    """
+    __tablename__ = "section_subsystem_access"
+    id = Column(Integer, primary_key=True, index=True)
+    section_id = Column(Integer, ForeignKey("org_units.id"))
+    subsystem_id = Column(Integer, ForeignKey("subsystems.id"))
+    
+    # Relationships
+    section = relationship("OrgUnit")
+    subsystem = relationship("Subsystem")
+
+
+
 
 # --- جداول کاربری و احراز هویت ---
 
 class User(Base):
-    """کاربران سیستم (کاربر عادی یا ادمین)"""
+    """کاربران سیستم با نقش‌های چند سطحی
+    
+    نقش‌ها:
+    - USER: کاربر عادی (ایجاد درخواست)
+    - ADMIN_L1: متولی قسمت (تایید سطح ۱)
+    - ADMIN_L2: ادمین اداره (تایید سطح ۲)
+    - ADMIN_L3: ادمین حوزه (تایید سطح ۳)
+    - ADMIN_L4: ذی‌حساب (تایید نهایی)
+    - ACCOUNTANT: حسابدار (ثبت سند)
+    """
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
     password_hash = Column(String)
     full_name = Column(String)
-    role = Column(String, default="user")  # "user" or "admin"
+    role = Column(String, default="USER")  # USER, ADMIN_L1, ADMIN_L2, ADMIN_L3, ADMIN_L4, ACCOUNTANT
+    
+    # سطح ادمین (فقط برای نقش‌های ADMIN_L*)
+    # 1=قسمت, 2=اداره, 3=حوزه, 4=ذی‌حساب
+    admin_level = Column(Integer, nullable=True)
+    
+    # سامانه‌هایی که این ادمین مسئول آن‌هاست (فقط برای ADMIN_L1)
+    # مثال: [1, 3, 5] یعنی حقوق، تنخواه، ضمانت‌نامه
+    managed_subsystem_ids = Column(JSON, nullable=True)
     
     # اطلاعات پیش‌فرض کاربر
     default_zone_id = Column(Integer, ForeignKey("org_units.id"), nullable=True)
@@ -138,6 +224,7 @@ class User(Base):
     default_zone = relationship("OrgUnit", foreign_keys=[default_zone_id])
     default_dept = relationship("OrgUnit", foreign_keys=[default_dept_id])
     default_section = relationship("OrgUnit", foreign_keys=[default_section_id])
+
 
 
 class UserBudgetAccess(Base):
@@ -154,20 +241,28 @@ class UserBudgetAccess(Base):
 # --- تراکنش‌های مالی با workflow ---
 
 class Transaction(Base):
-    """تراکنش‌های مالی با workflow تایید"""
+    """تراکنش‌های مالی با workflow تایید چهار سطحی
+    
+    گردش کار:
+    DRAFT → PENDING_L1 → PENDING_L2 → PENDING_L3 → PENDING_L4 → APPROVED → BOOKED
+    در هر مرحله ممکن است به REJECTED تغییر کند
+    """
     __tablename__ = "transactions"
     id = Column(Integer, primary_key=True, index=True)
     unique_code = Column(String, unique=True, index=True)
     
-    # وضعیت: draft -> pending -> approved/rejected -> paid
-    status = Column(String, default="draft", index=True)
+    # وضعیت: DRAFT, PENDING_L1, PENDING_L2, PENDING_L3, PENDING_L4, APPROVED, REJECTED, BOOKED
+    status = Column(String, default="DRAFT", index=True)
+    
+    # سطح تایید فعلی (1=قسمت، 2=اداره، 3=حوزه، 4=ذی‌حساب)
+    current_approval_level = Column(Integer, default=0)
     
     # ایجادکننده
     created_by_id = Column(Integer, ForeignKey("users.id"))
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # تایید/رد
+    # تایید/رد (آخرین بررسی‌کننده)
     reviewed_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     reviewed_at = Column(DateTime, nullable=True)
     rejection_reason = Column(String, nullable=True)
@@ -176,6 +271,10 @@ class Transaction(Base):
     zone_id = Column(Integer, ForeignKey("org_units.id"))
     department_id = Column(Integer, ForeignKey("org_units.id"), nullable=True)
     section_id = Column(Integer, ForeignKey("org_units.id"), nullable=True)
+    
+    # سامانه و فعالیت ویژه
+    subsystem_id = Column(Integer, ForeignKey("subsystems.id"), nullable=True)
+    subsystem_activity_id = Column(Integer, ForeignKey("subsystem_activities.id"), nullable=True)
     
     # اطلاعات بودجه و مالی
     budget_item_id = Column(Integer, ForeignKey("budget_items.id"))
@@ -189,6 +288,9 @@ class Transaction(Base):
     contract_number = Column(String, nullable=True)
     special_activity = Column(String, nullable=True)
     description = Column(String, nullable=True)
+    
+    # مستندات پیوست (لیست فایل‌ها یا لینک‌های API)
+    attachments = Column(JSON, nullable=True)
     
     # جزئیات اضافی (JSON برای فرم‌های پیچیده)
     form_data = Column(JSON, nullable=True)
@@ -206,6 +308,31 @@ class Transaction(Base):
     cost_center = relationship("CostCenterRef")
     continuous_action = relationship("ContinuousAction")
     financial_event = relationship("FinancialEventRef")
+    subsystem = relationship("Subsystem")
+    subsystem_activity = relationship("SubsystemActivity")
+
+
+# --- تاریخچه گردش کار ---
+
+class WorkflowLog(Base):
+    """تاریخچه گردش کار - هر اقدام ادمین ثبت می‌شود
+    
+    این جدول تمام تاییدها، رد‌ها و برگشت‌ها را ذخیره می‌کند
+    """
+    __tablename__ = "workflow_logs"
+    id = Column(Integer, primary_key=True, index=True)
+    transaction_id = Column(Integer, ForeignKey("transactions.id"), nullable=False)
+    admin_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    admin_level = Column(Integer, nullable=False)  # 1, 2, 3, 4
+    action = Column(String, nullable=False)  # APPROVE, REJECT, RETURN
+    comment = Column(String, nullable=True)  # دلیل رد یا توضیح
+    previous_status = Column(String, nullable=False)
+    new_status = Column(String, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    transaction = relationship("Transaction", backref="workflow_logs")
+    admin = relationship("User")
 
 
 # --- کدهای یکتا حسابداری (کدیکتا) ---

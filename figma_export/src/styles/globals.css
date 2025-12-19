@@ -8,7 +8,7 @@
   --card-foreground: #1a1a1a;
   --popover: #ffffff;
   --popover-foreground: #1a1a1a;
-  
+
   /* Government color palette - neutral and professional */
   --primary: #1e3a8a;
   --primary-foreground: #ffffff;
@@ -20,14 +20,14 @@
   --accent-foreground: #1e3a8a;
   --destructive: #dc2626;
   --destructive-foreground: #ffffff;
-  
+
   /* Status colors for transactions */
   --status-draft: #9ca3af;
   --status-pending: #d97706;
   --status-approved: #16a34a;
   --status-rejected: #dc2626;
   --status-paid: #2563eb;
-  
+
   --border: #cbd5e1;
   --input: #e2e8f0;
   --input-background: #ffffff;
@@ -219,4 +219,39 @@ html {
 
 .status-paid {
   background-color: var(--status-paid);
+}
+
+/* Custom Scrollbar Styles for Budget List */
+.budget-list-scrollable {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.3s ease;
+}
+
+.budget-list-scrollable:hover {
+  scrollbar-color: #94a3b8 transparent;
+}
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+.budget-list-scrollable::-webkit-scrollbar {
+  width: 6px;
+}
+
+.budget-list-scrollable::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 3px;
+}
+
+.budget-list-scrollable::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 3px;
+  transition: background 0.3s ease;
+}
+
+.budget-list-scrollable:hover::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+}
+
+.budget-list-scrollable:hover::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
 }

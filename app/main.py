@@ -1,34 +1,50 @@
 from fastapi import FastAPI, Depends, HTTPException, Request, Response
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from typing import Optional, List
 from sqlalchemy.orm import Session
-from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, FileResponse
 from pydantic import BaseModel
 import hashlib
 import pandas as pd
 import secrets
+import os
 from datetime import datetime, timedelta
 
 # Import internal modules
 from app import models, schemas, crud
 from app.database import SessionLocal, engine
+from app.auth_utils import hash_password, verify_password, upgrade_hash_if_needed
 from sqlalchemy import or_
 
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Municipality Action Portal")
 
+# --- CORS Configuration ---
+# In production, set ALLOWED_ORIGINS environment variable
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8000").split(",")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["*"],
+)
+
+# --- Mount React Build Static Files ---
+# Serve React app assets from figma_export/build
+REACT_BUILD_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "figma_export", "build")
+if os.path.exists(REACT_BUILD_PATH):
+    app.mount("/react-assets", StaticFiles(directory=os.path.join(REACT_BUILD_PATH, "assets")), name="react-assets")
+
 # --- Session Management (Simple in-memory for development) ---
 # In production, use Redis or database-backed sessions
 active_sessions = {}
 
-def hash_password(password: str) -> str:
-    """Hash password using SHA-256"""
-    return hashlib.sha256(password.encode()).hexdigest()
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify password against hash"""
-    return hash_password(plain_password) == hashed_password
+# Password hashing functions are now imported from app.auth_utils
+# They use Argon2 with gradual migration from SHA-256
 
 def create_session(user_id: int) -> str:
     """Create a new session token"""
@@ -130,11 +146,22 @@ def login(data: LoginRequest, response: Response, db: Session = Depends(get_db))
     if not user.is_active:
         raise HTTPException(status_code=401, detail="حساب کاربری غیرفعال است")
     
+    # Upgrade legacy SHA-256 hash to Argon2 on successful login
+    new_hash = upgrade_hash_if_needed(data.password, user.password_hash)
+    if new_hash:
+        user.password_hash = new_hash
+        db.commit()
+    
     token = create_session(user.id)
+    
+    # Secure cookie settings
+    # In production (HTTPS), set secure=True via PRODUCTION env var
+    is_production = os.getenv("PRODUCTION", "false").lower() == "true"
     response.set_cookie(
         key="session_token",
         value=token,
         httponly=True,
+        secure=is_production,
         max_age=8 * 60 * 60,  # 8 hours
         samesite="lax"
     )
@@ -370,68 +397,175 @@ def admin_get_transaction_detail(transaction_id: int, request: Request, db: Sess
 
 @app.post("/admin/transactions/{transaction_id}/approve")
 def admin_approve_transaction(transaction_id: int, request: Request, db: Session = Depends(get_db)):
-    """Approve a pending transaction (admin only)"""
+    """
+    تایید تراکنش با گردش کار ۴ سطحی
+    
+    هر ادمین فقط می‌تواند تراکنش‌های سطح خود را تایید کند:
+    - ADMIN_L1 می‌تواند PENDING_L1 را به PENDING_L2 ببرد
+    - ADMIN_L2 می‌تواند PENDING_L2 را به PENDING_L3 ببرد
+    - ADMIN_L3 می‌تواند PENDING_L3 را به PENDING_L4 ببرد
+    - ADMIN_L4 می‌تواند PENDING_L4 را به APPROVED ببرد
+    """
     current_user = get_current_user(request, db)
-    if not current_user or current_user.role != "admin":
+    if not current_user:
+        raise HTTPException(status_code=401, detail="احراز هویت الزامی است")
+    
+    # بررسی اینکه کاربر ادمین است
+    if not current_user.role.startswith("ADMIN_L") and current_user.role != "admin":
         raise HTTPException(status_code=403, detail="فقط ادمین دسترسی دارد")
     
     t = db.query(models.Transaction).filter(models.Transaction.id == transaction_id).first()
     if not t:
         raise HTTPException(status_code=404, detail="تراکنش یافت نشد")
     
-    if t.status != "pending":
-        raise HTTPException(status_code=400, detail="فقط تراکنش‌های در انتظار قابل تایید هستند")
+    # نقشه گردش کار
+    workflow_map = {
+        "PENDING_L1": {"next_status": "PENDING_L2", "required_role": "ADMIN_L1", "required_level": 1},
+        "PENDING_L2": {"next_status": "PENDING_L3", "required_role": "ADMIN_L2", "required_level": 2},
+        "PENDING_L3": {"next_status": "PENDING_L4", "required_role": "ADMIN_L3", "required_level": 3},
+        "PENDING_L4": {"next_status": "APPROVED", "required_role": "ADMIN_L4", "required_level": 4},
+        # سازگاری با وضعیت قدیمی
+        "pending": {"next_status": "APPROVED", "required_role": "admin", "required_level": 1},
+    }
     
-    # Update budget (reduce remaining)
-    if t.budget_item_id:
+    current_status = t.status
+    if current_status not in workflow_map:
+        raise HTTPException(status_code=400, detail=f"تراکنش در وضعیت {current_status} قابل تایید نیست")
+    
+    workflow = workflow_map[current_status]
+    
+    # بررسی سطح دسترسی (برای سازگاری، admin قدیمی همه کارها را می‌تواند انجام دهد)
+    if current_user.role != "admin":
+        if current_user.role != workflow["required_role"]:
+            raise HTTPException(
+                status_code=403, 
+                detail=f"شما سطح {current_user.role} هستید ولی این تراکنش نیاز به {workflow['required_role']} دارد"
+            )
+    
+    previous_status = t.status
+    new_status = workflow["next_status"]
+    admin_level = workflow["required_level"]
+    
+    # فقط در تایید نهایی بودجه را کم کنیم
+    if new_status == "APPROVED" and t.budget_item_id:
         budget = db.query(models.BudgetItem).filter(models.BudgetItem.id == t.budget_item_id).first()
         if budget:
             if budget.remaining_budget is None:
                 budget.remaining_budget = (budget.allocated_1403 or 0) - (t.amount or 0)
             else:
                 budget.remaining_budget -= (t.amount or 0)
-            # Move from reserved to spent
             budget.reserved_amount = (budget.reserved_amount or 0) - (t.amount or 0)
             budget.spent_1403 = (budget.spent_1403 or 0) + (t.amount or 0)
     
-    # Update transaction
-    t.status = "approved"
+    # بروزرسانی تراکنش
+    t.status = new_status
+    t.current_approval_level = admin_level
     t.reviewed_by_id = current_user.id
     t.reviewed_at = datetime.utcnow()
     
+    # ثبت در تاریخچه گردش کار
+    workflow_log = models.WorkflowLog(
+        transaction_id=t.id,
+        admin_id=current_user.id,
+        admin_level=admin_level,
+        action="APPROVE",
+        comment=None,
+        previous_status=previous_status,
+        new_status=new_status
+    )
+    db.add(workflow_log)
     db.commit()
     
-    return {"status": "success", "message": "تراکنش تایید شد"}
+    return {
+        "status": "success", 
+        "message": f"تراکنش تایید شد و به وضعیت {new_status} رفت",
+        "new_status": new_status,
+        "approved_by_level": admin_level
+    }
+
+
+class RejectWithReasonRequest(BaseModel):
+    reason: str
+    return_to_user: bool = False  # اگر True باشد، به کاربر برمی‌گردد برای اصلاح
+
 
 @app.post("/admin/transactions/{transaction_id}/reject")
-def admin_reject_transaction(transaction_id: int, data: RejectRequest, request: Request, db: Session = Depends(get_db)):
-    """Reject a pending transaction (admin only)"""
+def admin_reject_transaction(
+    transaction_id: int, 
+    data: RejectWithReasonRequest, 
+    request: Request, 
+    db: Session = Depends(get_db)
+):
+    """
+    رد تراکنش با ثبت دلیل
+    
+    اگر return_to_user=True باشد، تراکنش به DRAFT برمی‌گردد
+    در غیر این صورت به REJECTED می‌رود (رد نهایی)
+    """
     current_user = get_current_user(request, db)
-    if not current_user or current_user.role != "admin":
+    if not current_user:
+        raise HTTPException(status_code=401, detail="احراز هویت الزامی است")
+    
+    if not current_user.role.startswith("ADMIN_L") and current_user.role != "admin":
         raise HTTPException(status_code=403, detail="فقط ادمین دسترسی دارد")
     
     t = db.query(models.Transaction).filter(models.Transaction.id == transaction_id).first()
     if not t:
         raise HTTPException(status_code=404, detail="تراکنش یافت نشد")
     
-    if t.status != "pending":
-        raise HTTPException(status_code=400, detail="فقط تراکنش‌های در انتظار قابل رد هستند")
+    # وضعیت‌های قابل رد
+    rejectable_statuses = ["PENDING_L1", "PENDING_L2", "PENDING_L3", "PENDING_L4", "pending"]
+    if t.status not in rejectable_statuses:
+        raise HTTPException(status_code=400, detail=f"تراکنش در وضعیت {t.status} قابل رد نیست")
     
-    # Release reserved budget
+    previous_status = t.status
+    
+    # تعیین سطح ادمین
+    admin_level = current_user.admin_level or 1
+    if current_user.role == "admin":
+        admin_level = 4  # ادمین قدیمی = سطح ۴
+    
+    # آزادسازی بودجه رزرو شده
     if t.budget_item_id:
         budget = db.query(models.BudgetItem).filter(models.BudgetItem.id == t.budget_item_id).first()
         if budget:
             budget.reserved_amount = (budget.reserved_amount or 0) - (t.amount or 0)
     
-    # Update transaction
-    t.status = "rejected"
+    # تعیین وضعیت جدید
+    if data.return_to_user:
+        new_status = "DRAFT"  # برگشت به کاربر برای اصلاح
+        action = "RETURN"
+        message = "تراکنش به کاربر برگشت داده شد"
+    else:
+        new_status = "REJECTED"  # رد نهایی
+        action = "REJECT"
+        message = "تراکنش رد شد"
+    
+    # بروزرسانی تراکنش
+    t.status = new_status
     t.reviewed_by_id = current_user.id
     t.reviewed_at = datetime.utcnow()
     t.rejection_reason = data.reason
     
+    # ثبت در تاریخچه گردش کار
+    workflow_log = models.WorkflowLog(
+        transaction_id=t.id,
+        admin_id=current_user.id,
+        admin_level=admin_level,
+        action=action,
+        comment=data.reason,
+        previous_status=previous_status,
+        new_status=new_status
+    )
+    db.add(workflow_log)
     db.commit()
     
-    return {"status": "success", "message": "تراکنش رد شد"}
+    return {
+        "status": "success", 
+        "message": message,
+        "new_status": new_status,
+        "rejected_by_level": admin_level
+    }
 
 
 # --- USER TRANSACTION ENDPOINTS ---
@@ -503,7 +637,8 @@ def create_transaction(data: CreateTransactionRequest, request: Request, db: Ses
     # Create transaction
     transaction = models.Transaction(
         unique_code=unique_code,
-        status="pending",  # Go directly to pending for approval
+        status="PENDING_L1",  # شروع گردش کار از سطح ۱
+        current_approval_level=0,
         created_by_id=current_user.id,
         zone_id=data.zone_id,
         department_id=data.department_id,
@@ -569,6 +704,190 @@ def get_my_transactions(request: Request, db: Session = Depends(get_db)):
     return {"transactions": result, "count": len(result)}
 
 
+# --- USER ALLOWED ACTIVITIES API ---
+
+@app.get("/portal/user/allowed-activities")
+def get_user_allowed_activities(request: Request, db: Session = Depends(get_db)):
+    """
+    دریافت فعالیت‌های مجاز کاربر بر اساس قسمت کاربر
+    
+    این API جایگزین انتخاب دستی سامانه می‌شود.
+    بر اساس section_id کاربر، سامانه‌ها و فعالیت‌های مجاز را برمی‌گرداند.
+    """
+    current_user = get_current_user(request, db)
+    if not current_user:
+        raise HTTPException(status_code=401, detail="احراز هویت الزامی است")
+    
+    # دریافت قسمت کاربر
+    section_id = current_user.default_section_id
+    section = None
+    if section_id:
+        section = db.query(models.OrgUnit).filter(models.OrgUnit.id == section_id).first()
+    
+    # دریافت سامانه‌های مجاز قسمت
+    if section_id:
+        # بررسی جدول ارتباط قسمت-سامانه
+        mappings = db.query(models.SectionSubsystemAccess).filter(
+            models.SectionSubsystemAccess.section_id == section_id
+        ).all()
+        
+        if mappings:
+            subsystem_ids = [m.subsystem_id for m in mappings]
+            subsystems = db.query(models.Subsystem).filter(
+                models.Subsystem.id.in_(subsystem_ids),
+                models.Subsystem.is_active == True
+            ).order_by(models.Subsystem.order).all()
+        else:
+            # اگر ارتباطی تعریف نشده، همه سامانه‌ها را برگردان
+            subsystems = db.query(models.Subsystem).filter(
+                models.Subsystem.is_active == True
+            ).order_by(models.Subsystem.order).all()
+    else:
+        # اگر کاربر قسمت ندارد، همه سامانه‌ها را برگردان
+        subsystems = db.query(models.Subsystem).filter(
+            models.Subsystem.is_active == True
+        ).order_by(models.Subsystem.order).all()
+    
+    # ساخت پاسخ با فعالیت‌های هر سامانه
+    result_subsystems = []
+    for s in subsystems:
+        activities = db.query(models.SubsystemActivity).filter(
+            models.SubsystemActivity.subsystem_id == s.id,
+            models.SubsystemActivity.is_active == True
+        ).order_by(models.SubsystemActivity.order).all()
+        
+        result_subsystems.append({
+            "id": s.id,
+            "code": s.code,
+            "title": s.title,
+            "icon": s.icon,
+            "attachment_type": s.attachment_type,
+            "activities": [
+                {
+                    "id": a.id,
+                    "code": a.code,
+                    "title": a.title,
+                    "form_type": a.form_type
+                }
+                for a in activities
+            ]
+        })
+    
+    return {
+        "user": {
+            "id": current_user.id,
+            "full_name": current_user.full_name,
+            "role": current_user.role
+        },
+        "user_section": {
+            "id": section.id if section else None,
+            "title": section.title if section else None,
+            "code": section.code if section else None
+        },
+        "allowed_subsystems": result_subsystems,
+        "subsystem_count": len(result_subsystems)
+    }
+
+
+# --- SUBSYSTEMS API ENDPOINTS ---
+
+@app.get("/portal/subsystems")
+def get_subsystems(db: Session = Depends(get_db)):
+    """Get all active subsystems (14 سامانه)"""
+    subsystems = db.query(models.Subsystem).filter(
+        models.Subsystem.is_active == True
+    ).order_by(models.Subsystem.order).all()
+    
+    return {
+        "count": len(subsystems),
+        "subsystems": [
+            {
+                "id": s.id,
+                "code": s.code,
+                "title": s.title,
+                "icon": s.icon,
+                "attachment_type": s.attachment_type,
+                "order": s.order
+            }
+            for s in subsystems
+        ]
+    }
+
+
+@app.get("/portal/subsystems/{subsystem_id}/activities")
+def get_subsystem_activities(subsystem_id: int, db: Session = Depends(get_db)):
+    """Get activities (فعالیت‌های ویژه) for a specific subsystem"""
+    subsystem = db.query(models.Subsystem).filter(
+        models.Subsystem.id == subsystem_id
+    ).first()
+    
+    if not subsystem:
+        raise HTTPException(status_code=404, detail="سامانه یافت نشد")
+    
+    activities = db.query(models.SubsystemActivity).filter(
+        models.SubsystemActivity.subsystem_id == subsystem_id,
+        models.SubsystemActivity.is_active == True
+    ).order_by(models.SubsystemActivity.order).all()
+    
+    return {
+        "subsystem": {
+            "id": subsystem.id,
+            "code": subsystem.code,
+            "title": subsystem.title
+        },
+        "count": len(activities),
+        "activities": [
+            {
+                "id": a.id,
+                "code": a.code,
+                "title": a.title,
+                "form_type": a.form_type
+            }
+            for a in activities
+        ]
+    }
+
+
+@app.get("/portal/subsystems/for-section/{section_id}")
+def get_subsystems_for_section(section_id: int, db: Session = Depends(get_db)):
+    """
+    Get subsystems accessible by a specific section (قسمت).
+    If no mapping exists, returns all active subsystems.
+    """
+    # Check if section has specific subsystem mappings
+    mappings = db.query(models.SectionSubsystemAccess).filter(
+        models.SectionSubsystemAccess.section_id == section_id
+    ).all()
+    
+    if mappings:
+        # Return only mapped subsystems
+        subsystem_ids = [m.subsystem_id for m in mappings]
+        subsystems = db.query(models.Subsystem).filter(
+            models.Subsystem.id.in_(subsystem_ids),
+            models.Subsystem.is_active == True
+        ).order_by(models.Subsystem.order).all()
+    else:
+        # No specific mapping - return all active subsystems
+        subsystems = db.query(models.Subsystem).filter(
+            models.Subsystem.is_active == True
+        ).order_by(models.Subsystem.order).all()
+    
+    return {
+        "section_id": section_id,
+        "count": len(subsystems),
+        "subsystems": [
+            {
+                "id": s.id,
+                "code": s.code,
+                "title": s.title,
+                "icon": s.icon,
+                "attachment_type": s.attachment_type
+            }
+            for s in subsystems
+        ]
+    }
+
+
 @app.get("/portal/org/roots")
 
 
@@ -581,9 +900,193 @@ def get_org_children(parent_id: int, db: Session = Depends(get_db)):
     """Get children of a specific unit"""
     return db.query(models.OrgUnit).filter(models.OrgUnit.parent_id == parent_id).all()
 
+
+# --- NEW: ORG-CONTEXT FILTERED ENDPOINTS ---
+# These endpoints derive data from Hesabdary Information.xlsx via OrgBudgetMap table
+# No manual trustee selection required
+
+@app.get("/portal/budgets/for-org")
+def get_budgets_for_org(
+    zone_id: int,
+    department_id: Optional[int] = None,
+    section_id: Optional[int] = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Get budgets for the selected org context.
+    Source: OrgBudgetMap (from Hesabdary Information.xlsx) joined with BudgetItem table.
+    No trustee parameter needed - it's inferred from org context.
+    """
+    # Get zone code from zone_id
+    zone = db.query(models.OrgUnit).filter(models.OrgUnit.id == zone_id).first()
+    if not zone:
+        return []
+    
+    zone_code = zone.code
+    print(f"[DEBUG] Fetching budgets for org: zone_id={zone_id}, zone_code={zone_code}")
+    
+    # Get distinct budget codes from OrgBudgetMap for this zone
+    budget_codes_query = db.query(models.OrgBudgetMap.budget_code).filter(
+        models.OrgBudgetMap.zone_code == zone_code,
+        models.OrgBudgetMap.budget_code != None,
+        models.OrgBudgetMap.budget_code != ""
+    ).distinct()
+    
+    budget_codes = [bc[0] for bc in budget_codes_query.all()]
+    print(f"[DEBUG] Found {len(budget_codes)} distinct budget codes in OrgBudgetMap")
+    
+    if not budget_codes:
+        return []
+    
+    # Get budget items that match these codes
+    items = db.query(models.BudgetItem).filter(
+        models.BudgetItem.budget_code.in_(budget_codes)
+    ).order_by(models.BudgetItem.budget_code).limit(500).all()
+    
+    print(f"[DEBUG] Returning {len(items)} budget items")
+    
+    return [
+        {
+            "id": item.id,
+            "budget_code": item.budget_code,
+            "title": item.description,
+            "description": item.description,
+            "allocated_1403": item.allocated_1403 or 0,
+            "remaining_budget": item.remaining_budget or 0,
+            "budget_type": item.budget_type,
+            "row_type": item.row_type,
+            "zone_code": item.zone_code,
+            "trustee": item.trustee,
+        }
+        for item in items
+    ]
+
+
+@app.get("/portal/cost-centers/for-org")
+def get_cost_centers_for_org(
+    zone_id: int,
+    department_id: Optional[int] = None,
+    section_id: Optional[int] = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Get cost centers for the selected org context.
+    Source: OrgBudgetMap.cost_center_desc column (from Hesabdary Information.xlsx).
+    """
+    # Get zone code from zone_id
+    zone = db.query(models.OrgUnit).filter(models.OrgUnit.id == zone_id).first()
+    if not zone:
+        return []
+    
+    zone_code = zone.code
+    print(f"[DEBUG] Fetching cost centers for org: zone_id={zone_id}, zone_code={zone_code}")
+    
+    # Get distinct cost center descriptions from OrgBudgetMap
+    cost_centers_query = db.query(models.OrgBudgetMap.cost_center_desc).filter(
+        models.OrgBudgetMap.zone_code == zone_code,
+        models.OrgBudgetMap.cost_center_desc != None,
+        models.OrgBudgetMap.cost_center_desc != ""
+    ).distinct()
+    
+    cost_center_descs = [cc[0] for cc in cost_centers_query.all()]
+    print(f"[DEBUG] Found {len(cost_center_descs)} distinct cost centers")
+    
+    # Return as list with auto-generated IDs
+    return [
+        {
+            "id": idx + 1,
+            "code": f"CC-{str(idx + 1).zfill(4)}",
+            "title": desc,
+            "name": desc,
+        }
+        for idx, desc in enumerate(cost_center_descs)
+    ]
+
+
+@app.get("/portal/continuous-actions/for-org")
+def get_continuous_actions_for_org(
+    zone_id: int,
+    department_id: Optional[int] = None,
+    section_id: Optional[int] = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Get continuous actions for the selected org context.
+    Source: OrgBudgetMap.continuous_action_desc column (شرح سرفصل حساب جزء from Hesabdary Information.xlsx).
+    """
+    # Get zone code from zone_id
+    zone = db.query(models.OrgUnit).filter(models.OrgUnit.id == zone_id).first()
+    if not zone:
+        return []
+    
+    zone_code = zone.code
+    print(f"[DEBUG] Fetching continuous actions for org: zone_id={zone_id}, zone_code={zone_code}")
+    
+    # Get distinct continuous action descriptions from OrgBudgetMap
+    actions_query = db.query(models.OrgBudgetMap.continuous_action_desc).filter(
+        models.OrgBudgetMap.zone_code == zone_code,
+        models.OrgBudgetMap.continuous_action_desc != None,
+        models.OrgBudgetMap.continuous_action_desc != ""
+    ).distinct().limit(200)
+    
+    action_descs = [a[0] for a in actions_query.all()]
+    print(f"[DEBUG] Found {len(action_descs)} distinct continuous actions")
+    
+    # Return as list with auto-generated IDs
+    return [
+        {
+            "id": idx + 1,
+            "code": f"CA-{str(idx + 1).zfill(3)}",
+            "title": desc,
+            "name": desc,
+        }
+        for idx, desc in enumerate(action_descs)
+    ]
+
+
+@app.get("/portal/budgets/trustees/{zone_code}")
+def get_trustees_for_zone(zone_code: str, db: Session = Depends(get_db)):
+    """Get distinct trustees for budget items in a zone"""
+    
+    # Find the zone by code
+    selected_zone = db.query(models.OrgUnit).filter(
+        models.OrgUnit.code == zone_code,
+        models.OrgUnit.parent_id == None  # Root level
+    ).first()
+    
+    if not selected_zone:
+        return {"trustees": []}
+    
+    # Get all org unit IDs in selected zone's hierarchy
+    zone_ids = [selected_zone.id]
+    children = db.query(models.OrgUnit.id).filter(
+        models.OrgUnit.parent_id == selected_zone.id
+    ).all()
+    zone_ids.extend([c[0] for c in children])
+    
+    for child_id in [c[0] for c in children]:
+        grandchildren = db.query(models.OrgUnit.id).filter(
+            models.OrgUnit.parent_id == child_id
+        ).all()
+        zone_ids.extend([g[0] for g in grandchildren])
+    
+    # Get distinct trustees for budgets in this zone
+    trustees = db.query(models.BudgetItem.trustee).filter(
+        models.BudgetItem.trustee_section_id.in_(zone_ids),
+        models.BudgetItem.trustee != None,
+        models.BudgetItem.trustee != ""
+    ).distinct().all()
+    
+    return {
+        "zone_code": zone_code,
+        "zone_title": selected_zone.title,
+        "trustees": [t[0] for t in trustees if t[0]]
+    }
+
+
 @app.get("/portal/budgets/by-zone/{zone_code}")
-def get_budgets_by_zone_code(zone_code: str, request: Request, db: Session = Depends(get_db)):
-    """Get budgets filtered by SELECTED zone (from dropdown)"""
+def get_budgets_by_zone_code(zone_code: str, trustee: str = "", request: Request = None, db: Session = Depends(get_db)):
+    """Get budgets filtered by SELECTED zone and optionally by trustee"""
     
     query = db.query(models.BudgetItem)
     
@@ -621,6 +1124,11 @@ def get_budgets_by_zone_code(zone_code: str, request: Request, db: Session = Dep
     else:
         print(f"[DEBUG] Zone code '{zone_code}' not found, showing all budgets")
     
+    # Filter by trustee if provided
+    if trustee:
+        query = query.filter(models.BudgetItem.trustee == trustee)
+        print(f"[DEBUG] Filtering by trustee: {trustee}")
+    
     items = query.order_by(models.BudgetItem.budget_code).limit(500).all()
     print(f"[DEBUG] Returning {len(items)} budget items")
 
@@ -629,10 +1137,13 @@ def get_budgets_by_zone_code(zone_code: str, request: Request, db: Session = Dep
             "id": item.id,
             "budget_code": item.budget_code,
             "title": item.description,
+            "description": item.description,
             "allocated_1403": item.allocated_1403 or 0,
             "remaining_budget": item.remaining_budget or 0,
             "budget_type": item.budget_type,
+            "row_type": item.row_type,
             "zone_code": item.zone_code,
+            "trustee": item.trustee,
             "trustee_section_id": item.trustee_section_id
         }
         for item in items
@@ -733,11 +1244,22 @@ def read_login():
 
 @app.get("/portal", response_class=HTMLResponse)
 def read_portal():
+    """Serve React app (Figma-based UI) for portal"""
+    react_index = os.path.join(REACT_BUILD_PATH, "index.html")
+    if os.path.exists(react_index):
+        with open(react_index, "r", encoding="utf-8") as f:
+            html = f.read()
+            # Update asset paths to use /react-assets
+            html = html.replace('="/assets/', '="/react-assets/')
+            html = html.replace("='/assets/", "='/react-assets/")
+            return html
+    # Fallback to old portal.html if React build not found
     try:
         with open("portal.html", "r", encoding="utf-8") as f:
             return f.read()
     except FileNotFoundError:
-        return "<h1>Error: portal.html not found!</h1>"
+        return "<h1>Error: portal not found!</h1>"
+
 
 @app.get("/admin", response_class=HTMLResponse)
 def read_admin():

@@ -15,7 +15,9 @@ export interface FigmaBudgetItem {
     name: string;
     allocated: number;
     remaining: number;
-    type?: string;
+    type?: string;  // 'expense' or 'capital'
+    rowType?: string;  // 'مستمر' or 'غیرمستمر'
+    trustee?: string;  // متولی
 }
 
 export interface FigmaFinancialEvent {
@@ -73,6 +75,8 @@ export function adaptBudgetItem(backend: any): FigmaBudgetItem {
         allocated: backend.allocated_1403 || backend.allocated || 0,
         remaining: backend.remaining_budget || backend.remaining || 0,
         type: backend.budget_type,
+        rowType: backend.row_type,
+        trustee: backend.trustee,
     };
 }
 
@@ -153,14 +157,32 @@ export async function fetchOrgChildren(parentId: number): Promise<FigmaOrgUnit[]
 }
 
 /**
- * Fetch budgets by zone and adapt to Figma format
+ * Fetch trustees for a zone (for trustee dropdown)
  */
-export async function fetchBudgets(zoneCode: string): Promise<FigmaBudgetItem[]> {
-    const response = await fetch(`/portal/budgets/by-zone/${zoneCode}`, { credentials: 'include' });
+export async function fetchTrustees(zoneCode: string): Promise<{ trustees: string[]; zoneTitle: string }> {
+    const response = await fetch(`/portal/budgets/trustees/${zoneCode}`, { credentials: 'include' });
+    if (!response.ok) throw new Error('Failed to fetch trustees');
+    const data = await response.json();
+    return {
+        trustees: data.trustees || [],
+        zoneTitle: data.zone_title || ''
+    };
+}
+
+/**
+ * Fetch budgets by zone and optionally by trustee, adapt to Figma format
+ */
+export async function fetchBudgets(zoneCode: string, trustee?: string): Promise<FigmaBudgetItem[]> {
+    let url = `/portal/budgets/by-zone/${zoneCode}`;
+    if (trustee) {
+        url += `?trustee=${encodeURIComponent(trustee)}`;
+    }
+    const response = await fetch(url, { credentials: 'include' });
     if (!response.ok) throw new Error('Failed to fetch budgets');
     const data = await response.json();
     return adaptBudgetItems(data);
 }
+
 
 /**
  * Fetch financial events and adapt to Figma format
@@ -210,6 +232,70 @@ export function adaptContinuousActions(backendArray: any[]): FigmaContinuousActi
 export async function fetchContinuousActions(): Promise<FigmaContinuousAction[]> {
     const response = await fetch('/portal/continuous-actions', { credentials: 'include' });
     if (!response.ok) throw new Error('Failed to fetch continuous actions');
+    const data = await response.json();
+    return adaptContinuousActions(data);
+}
+
+// ==================== ORG-CONTEXT FILTERED API FETCHERS ====================
+// These use the new /for-org endpoints that derive data from Hesabdary Information.xlsx
+// No trustee selection required - data is filtered by org context only
+
+/**
+ * Fetch budgets filtered by org context (zone/department/section).
+ * This replaces the trustee-based budget fetching.
+ */
+export async function fetchBudgetsForOrg(
+    zoneId: number,
+    departmentId?: number,
+    sectionId?: number
+): Promise<FigmaBudgetItem[]> {
+    const params = new URLSearchParams();
+    params.append('zone_id', zoneId.toString());
+    if (departmentId) params.append('department_id', departmentId.toString());
+    if (sectionId) params.append('section_id', sectionId.toString());
+
+    const response = await fetch(`/portal/budgets/for-org?${params}`, { credentials: 'include' });
+    if (!response.ok) throw new Error('Failed to fetch budgets for org');
+    const data = await response.json();
+    return adaptBudgetItems(data);
+}
+
+/**
+ * Fetch cost centers filtered by org context.
+ * Source: OrgBudgetMap.cost_center_desc from Hesabdary Information.xlsx
+ */
+export async function fetchCostCentersForOrg(
+    zoneId: number,
+    departmentId?: number,
+    sectionId?: number
+): Promise<FigmaCostCenter[]> {
+    const params = new URLSearchParams();
+    params.append('zone_id', zoneId.toString());
+    if (departmentId) params.append('department_id', departmentId.toString());
+    if (sectionId) params.append('section_id', sectionId.toString());
+
+    const response = await fetch(`/portal/cost-centers/for-org?${params}`, { credentials: 'include' });
+    if (!response.ok) throw new Error('Failed to fetch cost centers for org');
+    const data = await response.json();
+    return adaptCostCenters(data);
+}
+
+/**
+ * Fetch continuous actions filtered by org context.
+ * Source: OrgBudgetMap.continuous_action_desc (سرفصل جزء) from Hesabdary Information.xlsx
+ */
+export async function fetchContinuousActionsForOrg(
+    zoneId: number,
+    departmentId?: number,
+    sectionId?: number
+): Promise<FigmaContinuousAction[]> {
+    const params = new URLSearchParams();
+    params.append('zone_id', zoneId.toString());
+    if (departmentId) params.append('department_id', departmentId.toString());
+    if (sectionId) params.append('section_id', sectionId.toString());
+
+    const response = await fetch(`/portal/continuous-actions/for-org?${params}`, { credentials: 'include' });
+    if (!response.ok) throw new Error('Failed to fetch continuous actions for org');
     const data = await response.json();
     return adaptContinuousActions(data);
 }
@@ -293,9 +379,12 @@ export default {
     fetchZones,
     fetchOrgChildren,
     fetchBudgets,
+    fetchBudgetsForOrg,
     fetchFinancialEvents,
     fetchCostCenters,
+    fetchCostCentersForOrg,
     fetchContinuousActions,
+    fetchContinuousActionsForOrg,
     fetchMyTransactions,
     fetchAdminTransactions,
     createTransaction,

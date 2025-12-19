@@ -5,8 +5,8 @@ import { TransactionFormData } from '../TransactionWizard';
 import { FileText, Target, Activity, Loader2 } from 'lucide-react';
 import {
   fetchFinancialEvents,
-  fetchCostCenters,
-  fetchContinuousActions,
+  fetchCostCentersForOrg,
+  fetchContinuousActionsForOrg,
   FigmaFinancialEvent,
   FigmaCostCenter,
   FigmaContinuousAction
@@ -24,21 +24,35 @@ export function WizardStep4_FinancialEvent({ formData, updateFormData }: Props) 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Load data on mount
+  // Load data on mount and when org context changes
+  // Cost centers and continuous actions use org-filtered APIs from Hesabdary Information.xlsx
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
       setError(null);
 
       try {
-        const [events, centers, actions] = await Promise.all([
-          fetchFinancialEvents(),
-          fetchCostCenters(),
-          fetchContinuousActions()
-        ]);
-        setFinancialEvents(events);
-        setCostCenters(centers);
-        setContinuousActions(actions);
+        // Financial events remain global (not org-specific)
+        const eventsPromise = fetchFinancialEvents();
+
+        // Cost centers and continuous actions use org-filtered endpoints
+        // Only fetch if zoneId is set
+        if (formData.zoneId) {
+          const [events, centers, actions] = await Promise.all([
+            eventsPromise,
+            fetchCostCentersForOrg(formData.zoneId, formData.departmentId, formData.sectionId),
+            fetchContinuousActionsForOrg(formData.zoneId, formData.departmentId, formData.sectionId)
+          ]);
+          setFinancialEvents(events);
+          setCostCenters(centers);
+          setContinuousActions(actions);
+        } else {
+          // If no zone selected, just load financial events
+          const events = await eventsPromise;
+          setFinancialEvents(events);
+          setCostCenters([]);
+          setContinuousActions([]);
+        }
       } catch (err) {
         console.error('Failed to load data:', err);
         setError('خطا در بارگیری اطلاعات');
@@ -48,7 +62,7 @@ export function WizardStep4_FinancialEvent({ formData, updateFormData }: Props) 
     };
 
     loadData();
-  }, []);
+  }, [formData.zoneId, formData.departmentId, formData.sectionId]);
 
   const handleFinancialEventChange = (eventId: string) => {
     const event = financialEvents.find(e => e.id === parseInt(eventId));
@@ -137,7 +151,7 @@ export function WizardStep4_FinancialEvent({ formData, updateFormData }: Props) 
         </p>
       </div>
 
-      {/* Cost Center - Required */}
+      {/* Cost Center - Required (from Hesabdary Information.xlsx) */}
       <div className="space-y-3">
         <Label htmlFor="costCenter">
           مرکز هزینه <span className="text-destructive">*</span>
@@ -149,26 +163,30 @@ export function WizardStep4_FinancialEvent({ formData, updateFormData }: Props) 
             onValueChange={handleCostCenterChange}
           >
             <SelectTrigger id="costCenter" className="pr-10">
-              <SelectValue placeholder="انتخاب مرکز هزینه" />
+              <SelectValue placeholder={
+                costCenters.length === 0
+                  ? "مرکز هزینه‌ای برای این واحد یافت نشد"
+                  : "انتخاب مرکز هزینه"
+              } />
             </SelectTrigger>
             <SelectContent>
               {costCenters.map(center => (
                 <SelectItem key={center.id} value={center.id.toString()}>
-                  {center.name} (کد: {center.code})
+                  {center.name}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
         <p className="text-xs text-muted-foreground">
-          مرکز مسئول تحقق این هزینه
+          مرکز مسئول تحقق این هزینه (از فایل اطلاعات حسابداری)
         </p>
       </div>
 
-      {/* Continuous Action - Optional */}
+      {/* Continuous Action - Optional (from Hesabdary Information.xlsx - سرفصل جزء) */}
       <div className="space-y-3">
         <Label htmlFor="continuousAction">
-          اقدام مستمر <span className="text-muted-foreground">(اختیاری)</span>
+          اقدام مستمر (سرفصل جزء) <span className="text-muted-foreground">(اختیاری)</span>
         </Label>
         <div className="relative">
           <Activity className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
@@ -177,19 +195,23 @@ export function WizardStep4_FinancialEvent({ formData, updateFormData }: Props) 
             onValueChange={handleContinuousActionChange}
           >
             <SelectTrigger id="continuousAction" className="pr-10">
-              <SelectValue placeholder="انتخاب اقدام مستمر" />
+              <SelectValue placeholder={
+                continuousActions.length === 0
+                  ? "سرفصل جزء‌ای برای این واحد یافت نشد"
+                  : "انتخاب اقدام مستمر"
+              } />
             </SelectTrigger>
             <SelectContent>
               {continuousActions.map(action => (
                 <SelectItem key={action.id} value={action.id.toString()}>
-                  {action.name} (کد: {action.code})
+                  {action.name}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
         <p className="text-xs text-muted-foreground">
-          در صورت مربوط بودن به فعالیت مستمر، انتخاب کنید
+          سرفصل جزء از فایل اطلاعات حسابداری
         </p>
       </div>
 
@@ -204,12 +226,12 @@ export function WizardStep4_FinancialEvent({ formData, updateFormData }: Props) 
             </p>
             <p>
               <span className="text-muted-foreground">مرکز هزینه:</span>{' '}
-              {formData.costCenterName} ({formData.costCenterCode})
+              {formData.costCenterName}
             </p>
             {formData.continuousActionName && (
               <p>
                 <span className="text-muted-foreground">اقدام مستمر:</span>{' '}
-                {formData.continuousActionName} ({formData.continuousActionCode})
+                {formData.continuousActionName}
               </p>
             )}
           </div>

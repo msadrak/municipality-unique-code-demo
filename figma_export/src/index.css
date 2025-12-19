@@ -2838,3 +2838,39 @@ html {
     height: 0;
   }
 }
+
+/* Custom Scrollbar Styles for Budget List */
+.budget-list-scrollable {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.3s ease;
+}
+
+.budget-list-scrollable:hover {
+  scrollbar-color: #94a3b8 transparent;
+}
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+.budget-list-scrollable::-webkit-scrollbar {
+  width: 6px;
+}
+
+.budget-list-scrollable::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 3px;
+}
+
+.budget-list-scrollable::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 3px;
+  transition: background 0.3s ease;
+}
+
+.budget-list-scrollable:hover::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+}
+
+.budget-list-scrollable:hover::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+

@@ -3,6 +3,7 @@ import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { Progress } from './ui/progress';
 import { ChevronRight, ChevronLeft, CheckCircle2, Loader2 } from 'lucide-react';
+import { WizardStep1_AllowedActivities } from './wizard-steps/WizardStep1_AllowedActivities';
 import { WizardStep1_TransactionType } from './wizard-steps/WizardStep1_TransactionType';
 import { WizardStep2_Organization } from './wizard-steps/WizardStep2_Organization';
 import { WizardStep3_Budget } from './wizard-steps/WizardStep3_Budget';
@@ -13,11 +14,23 @@ import { WizardStep7_Submit } from './wizard-steps/WizardStep7_Submit';
 import { createTransaction, TransactionCreateData } from '../services/adapters';
 
 export type TransactionFormData = {
-  // Step 1
+  // Step 0 - Subsystem Selection (NEW)
+  subsystemId?: number;
+  subsystemCode?: string;
+  subsystemTitle?: string;
+  attachmentType?: string;  // 'upload', 'api', 'both'
+
+  // Step 1 - Special Activity (NEW)
+  subsystemActivityId?: number;
+  subsystemActivityCode?: string;
+  subsystemActivityTitle?: string;
+  formType?: string;  // Form type for attachments
+
+  // Step 2 - Transaction Type & Fiscal Year
   transactionType?: 'expense' | 'capital';
   fiscalYear?: string;
 
-  // Step 2
+  // Step 3 - Organization
   zoneId?: number;
   zoneName?: string;
   zoneCode?: string;
@@ -28,14 +41,15 @@ export type TransactionFormData = {
   sectionName?: string;
   sectionCode?: string;
 
-  // Step 3
+  // Step 4 - Budget
   budgetItemId?: number;
   budgetCode?: string;
   budgetDescription?: string;
-  budgetType?: string;
+  budgetType?: string;  // 'expense' or 'capital'
+  budgetRowType?: string;  // 'مستمر' or 'غیرمستمر' - for form selection in Step 5
   availableBudget?: number;
 
-  // Step 4
+  // Step 5 - Financial Event & Cost Center
   financialEventId?: number;
   financialEventCode?: string;
   financialEventName?: string;
@@ -46,21 +60,26 @@ export type TransactionFormData = {
   continuousActionCode?: string;
   continuousActionName?: string;
 
-  // Step 5
+  // Step 6 - Beneficiary & Contract
   beneficiaryName?: string;
   contractNumber?: string;
   amount?: number;
   description?: string;
+  formData?: Record<string, unknown>;  // Holds form-specific data from image-based forms
 
-  // Step 6
+  // Step 7 - Preview
   uniqueCode?: string;
 };
+
 
 type TransactionWizardProps = {
   userId: number;
 };
 
+// مراحل جدید: Step 0 (انتخاب سامانه) حذف شد
+// کاربر مستقیماً فعالیت‌های مجاز خود را می‌بیند
 const STEPS = [
+  { number: 0, title: 'انتخاب فعالیت' },
   { number: 1, title: 'نوع تراکنش و سال مالی' },
   { number: 2, title: 'انتخاب واحد سازمانی' },
   { number: 3, title: 'انتخاب ردیف بودجه' },
@@ -71,7 +90,7 @@ const STEPS = [
 ];
 
 export function TransactionWizard({ userId }: TransactionWizardProps) {
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(0);  // Start from step 0
   const [formData, setFormData] = useState<TransactionFormData>({});
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -82,13 +101,13 @@ export function TransactionWizard({ userId }: TransactionWizardProps) {
   };
 
   const nextStep = () => {
-    if (currentStep < 7) {
+    if (currentStep < 7) {  // Max step is 7 (8 total steps: 0-7)
       setCurrentStep(currentStep + 1);
     }
   };
 
   const prevStep = () => {
-    if (currentStep > 1) {
+    if (currentStep > 0) {  // Min step is 0
       setCurrentStep(currentStep - 1);
     }
   };
@@ -116,6 +135,7 @@ export function TransactionWizard({ userId }: TransactionWizardProps) {
         contract_number: formData.contractNumber,
         amount: formData.amount,
         description: formData.description,
+        form_data: formData.formData,  // Include Step 5 form data
       };
 
       const result = await createTransaction(payload);
@@ -132,13 +152,13 @@ export function TransactionWizard({ userId }: TransactionWizardProps) {
   };
 
   const resetWizard = () => {
-    setCurrentStep(1);
+    setCurrentStep(0);  // Reset to step 0
     setFormData({});
     setIsSubmitted(false);
     setSubmitError(null);
   };
 
-  const progress = (currentStep / 7) * 100;
+  const progress = ((currentStep + 1) / 8) * 100;  // 8 total steps (0-7)
 
   if (isSubmitted) {
     return (
@@ -173,8 +193,8 @@ export function TransactionWizard({ userId }: TransactionWizardProps) {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2>مرحله {currentStep} از ۷</h2>
-              <p className="text-sm text-muted-foreground">{STEPS[currentStep - 1].title}</p>
+              <h2>مرحله {currentStep + 1} از ۸</h2>
+              <p className="text-sm text-muted-foreground">{STEPS[currentStep].title}</p>
             </div>
             <div className="text-left text-sm text-muted-foreground">
               {Math.round(progress)}% تکمیل شده
@@ -212,8 +232,11 @@ export function TransactionWizard({ userId }: TransactionWizardProps) {
         ))}
       </div>
 
-      {/* Current Step Content - ONE DECISION AT A TIME */}
+      {/* Current Step Content - مراحل بازنویسی شده */}
       <Card className="p-6">
+        {currentStep === 0 && (
+          <WizardStep1_AllowedActivities formData={formData} updateFormData={updateFormData} />
+        )}
         {currentStep === 1 && (
           <WizardStep1_TransactionType formData={formData} updateFormData={updateFormData} />
         )}
@@ -248,7 +271,7 @@ export function TransactionWizard({ userId }: TransactionWizardProps) {
           <Button
             variant="outline"
             onClick={prevStep}
-            disabled={currentStep === 1 || isSubmitting}
+            disabled={currentStep === 0 || isSubmitting}
           >
             <ChevronRight className="h-4 w-4 ml-2" />
             مرحله قبل

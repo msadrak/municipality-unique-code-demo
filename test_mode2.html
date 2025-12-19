@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>حالت تست ۲ - بررسی بودجه و تراکنش‌ها</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+        }
+
+        .balance-ok {
+            background: #dcfce7;
+            border-color: #22c55e;
+        }
+
+        .balance-error {
+            background: #fee2e2;
+            border-color: #ef4444;
+        }
+    </style>
+</head>
+
+<body class="bg-gradient-to-br from-slate-100 to-slate-200 min-h-screen p-6">
+    <!-- Header -->
+    <div class="max-w-6xl mx-auto">
+        <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800">🧪 حالت تست ۲ - بررسی بودجه و تراکنش‌ها</h1>
+                    <p class="text-sm text-gray-500 mt-1">منبع: اعتبارات هزینه‌ای + تملک دارایی سرمایه‌ای</p>
+                </div>
+                <a href="/portal" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200">← بازگشت به
+                    پورتال</a>
+            </div>
+        </div>
+
+        <!-- Search & Filters -->
+        <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
+            <h2 class="font-bold text-gray-800 mb-4">🔍 جستجو و فیلتر</h2>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm text-gray-600 mb-1">کد یا شرح بودجه</label>
+                    <input type="text" id="searchInput" placeholder="جستجو..."
+                        class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-600 mb-1">متولی</label>
+                    <select id="trusteeFilter" class="w-full p-3 border rounded-xl bg-white">
+                        <option value="">همه</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-600 mb-1">موضوع</label>
+                    <select id="subjectFilter" class="w-full p-3 border rounded-xl bg-white">
+                        <option value="">همه</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-600 mb-1">نوع ردیف</label>
+                    <select id="rowTypeFilter" class="w-full p-3 border rounded-xl bg-white">
+                        <option value="">همه</option>
+                        <option value="مستمر">مستمر</option>
+                        <option value="غیر مستمر">غیر مستمر</option>
+                    </select>
+                </div>
+            </div>
+            <div class="mt-4 flex gap-3">
+                <button onclick="searchBudgets()"
+                    class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">جستجو</button>
+                <button onclick="clearFilters()"
+                    class="bg-gray-100 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-200">پاک کردن</button>
+            </div>
+        </div>
+
+        <!-- Results Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Budget Items List -->
+            <div class="bg-white rounded-2xl shadow-lg p-6">
+                <h2 class="font-bold text-gray-800 mb-4">📋 آیتم‌های بودجه <span id="budgetCount"
+                        class="text-sm text-gray-500">(0)</span></h2>
+                <div id="budgetList" class="space-y-2 max-h-96 overflow-y-auto">
+                    <div class="text-gray-400 text-center py-8">جستجو کنید...</div>
+                </div>
+            </div>
+
+            <!-- Budget Details & Events -->
+            <div class="bg-white rounded-2xl shadow-lg p-6">
+                <h2 class="font-bold text-gray-800 mb-4">📊 جزئیات و رویدادها</h2>
+                <div id="budgetDetails" class="mb-4">
+                    <div class="text-gray-400 text-center py-8">آیتمی انتخاب کنید...</div>
+                </div>
+                <div id="eventsList" class="space-y-2 max-h-48 overflow-y-auto hidden"></div>
+            </div>
+
+            <!-- Requests & Balance -->
+            <div class="bg-white rounded-2xl shadow-lg p-6">
+                <h2 class="font-bold text-gray-800 mb-4">💰 کدهای درخواست و موازنه</h2>
+                <div id="requestsList" class="space-y-2 max-h-64 overflow-y-auto">
+                    <div class="text-gray-400 text-center py-8">رویداد انتخاب کنید...</div>
+                </div>
+                <div id="balanceSummary" class="mt-4 p-4 rounded-xl border-2 hidden">
+                    <!-- Balance summary will be shown here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Transactions Table -->
+        <div id="transactionsSection" class="bg-white rounded-2xl shadow-lg p-6 mt-6 hidden">
+            <h2 class="font-bold text-gray-800 mb-4">📝 جزئیات تراکنش‌ها <span class="text-sm text-gray-500">(روی هر
+                    ردیف کلیک کنید)</span></h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="p-3 text-right">#</th>
+                            <th class="p-3 text-right">شماره سند</th>
+                            <th class="p-3 text-right">سرفصل جزء</th>
+                            <th class="p-3 text-right">ردیف جزء</th>
+                            <th class="p-3 text-right">کد عملیات</th>
+                            <th class="p-3 text-left">بدهکار</th>
+                            <th class="p-3 text-left">بستانکار</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactionsTable"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Transaction Detail Box -->
+        <div id="transactionDetailBox"
+            class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-lg p-6 mt-6 hidden border-2 border-blue-200">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="font-bold text-gray-800">🔍 جزئیات کامل سند</h2>
+                <button onclick="closeTransactionDetail()" class="text-gray-500 hover:text-red-500 text-xl">✕</button>
+            </div>
+            <div id="transactionDetailContent" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Detail content will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentBudgetCode = null;
+        let currentEventType = null;
+
+        // Format number with commas
+        function formatNumber(num) {
+            if (num == null || isNaN(num)) return '0';
+            return Math.round(num).toLocaleString('fa-IR');
+        }
+
+        // Load filter options
+        async function loadFilters() {
+            try {
+                const res = await fetch('/portal/test2/filters');
+                const data = await res.json();
+
+                const trusteeSelect = document.getElementById('trusteeFilter');
+                data.trustees.forEach(t => {
+                    if (t) trusteeSelect.innerHTML += `<option value="${t}">${t}</option>`;
+                });
+
+                const subjectSelect = document.getElementById('subjectFilter');
+                data.subjects.forEach(s => {
+                    if (s) subjectSelect.innerHTML += `<option value="${s}">${s}</option>`;
+                });
+            } catch (e) {
+                console.error('Error loading filters:', e);
+            }
+        }
+
+        // Search budget items
+        async function searchBudgets() {
+            const search = document.getElementById('searchInput').value;
+            const trustee = document.getElementById('trusteeFilter').value;
+            const subject = document.getElementById('subjectFilter').value;
+            const rowType = document.getElementById('rowTypeFilter').value;
+
+            const params = new URLSearchParams();
+            if (search) params.append('search', search);
+            if (trustee) params.append('trustee', trustee);
+            if (subject) params.append('subject', subject);
+            if (rowType) params.append('row_type', rowType);
+
+            const container = document.getElementById('budgetList');
+            container.innerHTML = '<div class="text-gray-400 text-center py-4">در حال بارگذاری...</div>';
+
+            try {
+                const res = await fetch('/portal/test2/budget-items?' + params.toString());
+                const data = await res.json();
+
+                document.getElementById('budgetCount').textContent = `(${data.count})`;
+
+                if (data.items.length === 0) {
+                    container.innerHTML = '<div class="text-gray-400 text-center py-8">نتیجه‌ای یافت نشد</div>';
+                    return;
+                }
+
+                let html = '';
+                data.items.forEach(item => {
+                    const typeColor = item.budget_type === 'hazine' ? 'bg-orange-100 text-orange-700' : 'bg-purple-100 text-purple-700';
+                    const typeText = item.budget_type === 'hazine' ? 'هزینه‌ای' : 'سرمایه‌ای';
+                    html += `
+                        <div class="p-3 border rounded-lg hover:border-blue-500 cursor-pointer budget-item" 
+                             onclick="selectBudget('${item.budget_code}')">
+                            <div class="flex justify-between items-start">
+                                <div class="font-mono text-blue-600 font-bold">${item.budget_code}</div>
+                                <span class="text-xs px-2 py-1 rounded ${typeColor}">${typeText}</span>
+                            </div>
+                            <div class="text-sm text-gray-600 mt-1 line-clamp-2">${item.description || '-'}</div>
+                            <div class="text-xs text-gray-400 mt-1">${item.trustee || '-'} | ${item.row_type || '-'}</div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } catch (e) {
+                container.innerHTML = '<div class="text-red-500 text-center py-4">خطا در بارگذاری</div>';
+            }
+        }
+
+        // Select a budget item
+        async function selectBudget(budgetCode) {
+            currentBudgetCode = budgetCode;
+            currentEventType = null;
+
+            // Highlight selected
+            document.querySelectorAll('.budget-item').forEach(el => {
+                el.classList.toggle('border-blue-500', el.onclick.toString().includes(budgetCode));
+                el.classList.toggle('bg-blue-50', el.onclick.toString().includes(budgetCode));
+            });
+
+            const detailsContainer = document.getElementById('budgetDetails');
+            const eventsContainer = document.getElementById('eventsList');
+
+            detailsContainer.innerHTML = '<div class="text-gray-400 text-center py-4">در حال بارگذاری...</div>';
+
+            try {
+                const res = await fetch('/portal/test2/budget-items/' + encodeURIComponent(budgetCode));
+                const data = await res.json();
+
+                if (data.error) {
+                    detailsContainer.innerHTML = `<div class="text-red-500">${data.error}</div>`;
+                    return;
+                }
+
+                const item = data.budget_item;
+                const summary = data.transaction_summary;
+
+                detailsContainer.innerHTML = `
+                    <div class="bg-gray-50 p-4 rounded-xl">
+                        <div class="font-mono text-lg text-blue-600 font-bold mb-2">${item.budget_code}</div>
+                        <div class="text-sm text-gray-700 mb-3">${item.description || '-'}</div>
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <div><span class="text-gray-500">متولی:</span> ${item.trustee || '-'}</div>
+                            <div><span class="text-gray-500">موضوع:</span> ${item.subject || '-'}</div>
+                            <div><span class="text-gray-500">نوع:</span> ${item.row_type || '-'}</div>
+                            <div><span class="text-gray-500">منطقه:</span> ${item.zone || '-'}</div>
+                        </div>
+                        ${summary.has_transactions ? `
+                            <div class="mt-3 pt-3 border-t">
+                                <div class="text-sm font-bold text-gray-700 mb-2">📊 خلاصه تراکنش‌ها:</div>
+                                <div class="grid grid-cols-2 gap-2 text-xs">
+                                    <div>تعداد: <span class="font-bold">${summary.count}</span></div>
+                                    <div>موازنه: <span class="${summary.balance < 1 ? 'text-green-600' : 'text-red-600'}">${formatNumber(summary.balance)}</span></div>
+                                    <div>بدهکار: ${formatNumber(summary.total_debit)}</div>
+                                    <div>بستانکار: ${formatNumber(summary.total_credit)}</div>
+                                </div>
+                            </div>
+                        ` : '<div class="mt-3 text-yellow-600 text-sm">تراکنشی یافت نشد</div>'}
+                    </div>
+                `;
+
+                // Load events
+                if (summary.has_transactions) {
+                    await loadEvents(budgetCode);
+                } else {
+                    eventsContainer.classList.add('hidden');
+                }
+            } catch (e) {
+                detailsContainer.innerHTML = '<div class="text-red-500">خطا در بارگذاری</div>';
+            }
+
+            // Clear requests
+            document.getElementById('requestsList').innerHTML = '<div class="text-gray-400 text-center py-8">رویداد انتخاب کنید...</div>';
+            document.getElementById('balanceSummary').classList.add('hidden');
+            document.getElementById('transactionsSection').classList.add('hidden');
+        }
+
+        // Load events for budget
+        async function loadEvents(budgetCode) {
+            const container = document.getElementById('eventsList');
+            container.classList.remove('hidden');
+            container.innerHTML = '<div class="text-gray-400 text-center py-2">در حال بارگذاری...</div>';
+
+            try {
+                const res = await fetch('/portal/test2/events/' + encodeURIComponent(budgetCode));
+                const data = await res.json();
+
+                if (data.events.length === 0) {
+                    container.innerHTML = '<div class="text-gray-400 text-center py-2">رویدادی یافت نشد</div>';
+                    return;
+                }
+
+                let html = '<div class="text-sm font-bold text-gray-700 mb-2">رویدادهای مالی:</div>';
+                data.events.forEach(evt => {
+                    html += `
+                        <div class="p-2 bg-gray-50 rounded border hover:border-blue-500 cursor-pointer event-item text-sm"
+                             onclick="selectEvent('${budgetCode}', '${evt.event_type.replace(/'/g, "\\'")}')">
+                            <div class="font-bold text-gray-700">${evt.event_type}</div>
+                            <div class="text-xs text-gray-500">${evt.transaction_count} تراکنش</div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } catch (e) {
+                container.innerHTML = '<div class="text-red-500 text-center py-2">خطا</div>';
+            }
+        }
+
+        // Select an event
+        async function selectEvent(budgetCode, eventType) {
+            currentEventType = eventType;
+
+            // Highlight selected event
+            document.querySelectorAll('.event-item').forEach(el => {
+                const isSelected = el.onclick.toString().includes(eventType);
+                el.classList.toggle('border-blue-500', isSelected);
+                el.classList.toggle('bg-blue-50', isSelected);
+            });
+
+            const container = document.getElementById('requestsList');
+            container.innerHTML = '<div class="text-gray-400 text-center py-4">در حال بارگذاری...</div>';
+
+            try {
+                const res = await fetch('/portal/test2/requests/' + encodeURIComponent(budgetCode) + '/' + encodeURIComponent(eventType));
+                const data = await res.json();
+
+                if (data.requests.length === 0) {
+                    container.innerHTML = '<div class="text-gray-400 text-center py-8">کد درخواستی یافت نشد</div>';
+                    return;
+                }
+
+                let html = '';
+                data.requests.forEach(req => {
+                    const balanceClass = req.is_balanced ? 'text-green-600' : 'text-red-600';
+                    const balanceIcon = req.is_balanced ? '✓' : '✗';
+                    html += `
+                        <div class="p-3 border rounded-lg hover:border-blue-500 cursor-pointer request-item"
+                             onclick="selectRequest('${budgetCode}', '${eventType.replace(/'/g, "\\'")}', '${req.request_id}')">
+                            <div class="flex justify-between items-center">
+                                <span class="font-mono font-bold">کد درخواست: ${req.request_id}</span>
+                                <span class="${balanceClass} font-bold">${balanceIcon}</span>
+                            </div>
+                            <div class="text-xs text-gray-500 mt-1">${req.transaction_count} تراکنش</div>
+                            <div class="grid grid-cols-2 gap-1 text-xs mt-1">
+                                <div>بدهکار: ${formatNumber(req.total_debit)}</div>
+                                <div>بستانکار: ${formatNumber(req.total_credit)}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            } catch (e) {
+                container.innerHTML = '<div class="text-red-500 text-center py-4">خطا</div>';
+            }
+
+            document.getElementById('balanceSummary').classList.add('hidden');
+            document.getElementById('transactionsSection').classList.add('hidden');
+        }
+
+        // Select a request
+        async function selectRequest(budgetCode, eventType, requestId) {
+            // Highlight selected
+            document.querySelectorAll('.request-item').forEach(el => {
+                const isSelected = el.onclick.toString().includes(requestId);
+                el.classList.toggle('border-blue-500', isSelected);
+                el.classList.toggle('bg-blue-50', isSelected);
+            });
+
+            const summaryContainer = document.getElementById('balanceSummary');
+            const transSection = document.getElementById('transactionsSection');
+            const transTable = document.getElementById('transactionsTable');
+
+            summaryContainer.classList.remove('hidden');
+            summaryContainer.innerHTML = '<div class="text-gray-400 text-center">در حال بارگذاری...</div>';
+
+            try {
+                const res = await fetch('/portal/test2/transactions/' + encodeURIComponent(budgetCode) + '/' + encodeURIComponent(eventType) + '/' + encodeURIComponent(requestId));
+                const data = await res.json();
+
+                const balanceClass = data.is_balanced ? 'balance-ok' : 'balance-error';
+                const balanceIcon = data.is_balanced ? '✅ تراز' : '❌ عدم تراز';
+
+                summaryContainer.className = `mt-4 p-4 rounded-xl border-2 ${balanceClass}`;
+                summaryContainer.innerHTML = `
+                    <div class="text-center font-bold text-lg mb-2">${balanceIcon}</div>
+                    <div class="grid grid-cols-3 gap-2 text-sm text-center">
+                        <div>
+                            <div class="text-gray-600">بدهکار</div>
+                            <div class="font-bold">${formatNumber(data.total_debit)}</div>
+                        </div>
+                        <div>
+                            <div class="text-gray-600">بستانکار</div>
+                            <div class="font-bold">${formatNumber(data.total_credit)}</div>
+                        </div>
+                        <div>
+                            <div class="text-gray-600">اختلاف</div>
+                            <div class="font-bold">${formatNumber(data.balance)}</div>
+                        </div>
+                    </div>
+                `;
+
+                // Show transactions table
+                transSection.classList.remove('hidden');
+                window.currentTransactions = data.transactions;
+                let tableHtml = '';
+                data.transactions.forEach((t, i) => {
+                    tableHtml += `
+                        <tr class="border-b hover:bg-blue-50 cursor-pointer transition-colors" onclick="showTransactionDetail(${i})">
+                            <td class="p-3">${i + 1}</td>
+                            <td class="p-3 font-mono">${t.doc_no}</td>
+                            <td class="p-3">${t.tit_j_name || '-'}</td>
+                            <td class="p-3">${t.rad_j_name || '-'}</td>
+                            <td class="p-3 font-mono">${t.opr_code || '-'}</td>
+                            <td class="p-3 text-left font-mono text-green-700">${t.debit ? formatNumber(t.debit) : '-'}</td>
+                            <td class="p-3 text-left font-mono text-red-700">${t.credit ? formatNumber(t.credit) : '-'}</td>
+                        </tr>
+                    `;
+                });
+                transTable.innerHTML = tableHtml;
+            } catch (e) {
+                summaryContainer.innerHTML = '<div class="text-red-500 text-center">خطا در بارگذاری</div>';
+            }
+        }
+
+        // Clear filters
+        function clearFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('trusteeFilter').value = '';
+            document.getElementById('subjectFilter').value = '';
+            document.getElementById('rowTypeFilter').value = '';
+        }
+
+        // Handle Enter key in search
+        document.getElementById('searchInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') searchBudgets();
+        });
+
+        // Show transaction detail
+        function showTransactionDetail(index) {
+            const t = window.currentTransactions[index];
+            if (!t) return;
+
+            const container = document.getElementById('transactionDetailContent');
+            const box = document.getElementById('transactionDetailBox');
+
+            container.innerHTML = `
+                <!-- Document Info -->
+                <div class="bg-white p-4 rounded-xl shadow-sm">
+                    <div class="text-sm text-gray-500 mb-2 font-bold">📄 اطلاعات سند</div>
+                    <div class="space-y-1 text-sm">
+                        <div><span class="text-gray-500">شماره سند:</span> <span class="font-mono font-bold text-blue-600">${t.doc_no}</span></div>
+                        <div><span class="text-gray-500">سال مالی:</span> ${t.fin_year || '-'}</div>
+                        <div><span class="text-gray-500">کد درخواست:</span> <span class="font-mono">${t.request_id || '-'}</span></div>
+                        <div><span class="text-gray-500">کد بودجه:</span> <span class="font-mono">${t.budget_no || '-'}</span></div>
+                    </div>
+                </div>
+
+                <!-- Area Info -->
+                <div class="bg-white p-4 rounded-xl shadow-sm">
+                    <div class="text-sm text-gray-500 mb-2 font-bold">🏢 منطقه</div>
+                    <div class="space-y-1 text-sm">
+                        <div><span class="text-gray-500">کد منطقه:</span> ${t.area_no || '-'}</div>
+                        <div><span class="text-gray-500">نام منطقه:</span> ${t.area_name || '-'}</div>
+                    </div>
+                </div>
+
+                <!-- Event Info -->
+                <div class="bg-white p-4 rounded-xl shadow-sm">
+                    <div class="text-sm text-gray-500 mb-2 font-bold">📌 رویداد مالی</div>
+                    <div class="space-y-1 text-sm">
+                        <div><span class="text-gray-500">نوع:</span> ${t.event_type || '-'}</div>
+                        <div><span class="text-gray-500">کد عملیات:</span> <span class="font-mono">${t.opr_code || '-'}</span></div>
+                    </div>
+                </div>
+
+                <!-- Title Hierarchy -->
+                <div class="bg-white p-4 rounded-xl shadow-sm col-span-1 md:col-span-2 lg:col-span-3">
+                    <div class="text-sm text-gray-500 mb-2 font-bold">📊 سرفصل‌ها (کل → جزء)</div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                        <div class="bg-gray-50 p-2 rounded">
+                            <div class="text-xs text-gray-400">سرفصل کل</div>
+                            <div class="font-mono text-xs">${t.tit_k_no || '-'}</div>
+                            <div class="text-xs text-gray-600">${t.tit_k_name || '-'}</div>
+                        </div>
+                        <div class="bg-gray-50 p-2 rounded">
+                            <div class="text-xs text-gray-400">سرفصل معین</div>
+                            <div class="font-mono text-xs">${t.tit_m_no || '-'}</div>
+                            <div class="text-xs text-gray-600">${t.tit_m_name || '-'}</div>
+                        </div>
+                        <div class="bg-gray-50 p-2 rounded">
+                            <div class="text-xs text-gray-400">سرفصل تفصیلی</div>
+                            <div class="font-mono text-xs">${t.tit_t_no || '-'}</div>
+                            <div class="text-xs text-gray-600">${t.tit_t_name || '-'}</div>
+                        </div>
+                        <div class="bg-blue-50 p-2 rounded border border-blue-200">
+                            <div class="text-xs text-blue-500">سرفصل جزء</div>
+                            <div class="font-mono text-xs font-bold">${t.tit_j_no || '-'}</div>
+                            <div class="text-xs text-gray-600">${t.tit_j_name || '-'}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Rad Hierarchy -->
+                <div class="bg-white p-4 rounded-xl shadow-sm col-span-1 md:col-span-2 lg:col-span-3">
+                    <div class="text-sm text-gray-500 mb-2 font-bold">📋 ردیف‌ها (کل → جزء)</div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                        <div class="bg-gray-50 p-2 rounded">
+                            <div class="text-xs text-gray-400">ردیف کل</div>
+                            <div class="font-mono text-xs">${t.rad_k_no || '-'}</div>
+                        </div>
+                        <div class="bg-gray-50 p-2 rounded">
+                            <div class="text-xs text-gray-400">ردیف معین</div>
+                            <div class="font-mono text-xs">${t.rad_m_no || '-'}</div>
+                        </div>
+                        <div class="bg-gray-50 p-2 rounded">
+                            <div class="text-xs text-gray-400">ردیف تفصیلی</div>
+                            <div class="font-mono text-xs">${t.rad_t_no || '-'}</div>
+                        </div>
+                        <div class="bg-purple-50 p-2 rounded border border-purple-200">
+                            <div class="text-xs text-purple-500">ردیف جزء</div>
+                            <div class="font-mono text-xs font-bold">${t.rad_j_no || '-'}</div>
+                            <div class="text-xs text-gray-600">${t.rad_j_name || '-'}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Amounts -->
+                <div class="bg-white p-4 rounded-xl shadow-sm col-span-1 md:col-span-2 lg:col-span-3">
+                    <div class="text-sm text-gray-500 mb-2 font-bold">💰 مبالغ</div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-green-50 p-3 rounded-lg text-center">
+                            <div class="text-sm text-green-600">بدهکار</div>
+                            <div class="font-mono text-lg font-bold text-green-700">${t.debit ? formatNumber(t.debit) : '0'}</div>
+                        </div>
+                        <div class="bg-red-50 p-3 rounded-lg text-center">
+                            <div class="text-sm text-red-600">بستانکار</div>
+                            <div class="font-mono text-lg font-bold text-red-700">${t.credit ? formatNumber(t.credit) : '0'}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            box.classList.remove('hidden');
+            box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // Close transaction detail
+        function closeTransactionDetail() {
+            document.getElementById('transactionDetailBox').classList.add('hidden');
+        }
+
+        // Initialize
+        loadFilters();
+    </script>
+</body>
+
+</html>

@@ -94,11 +94,26 @@ export function ContractDetailsForm({ isOpen, onClose, onSave, initialData }: Co
     }, [data.grossAmount, data.advance, data.prepay, data.misc, data.vat]);
 
     const formatNumber = (value: number) => {
+        // Use en-US for input fields to avoid Persian digit parsing issues
+        return new Intl.NumberFormat('en-US').format(value);
+    };
+
+    const formatNumberPersian = (value: number) => {
+        // Use fa-IR for display-only fields
         return new Intl.NumberFormat('fa-IR').format(value);
     };
 
     const parseNumber = (value: string): number => {
-        return parseInt(value.replace(/\D/g, '') || '0');
+        // Convert Persian/Arabic digits to English
+        const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+        const arabicDigits = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+        let normalized = value;
+        for (let i = 0; i < 10; i++) {
+            normalized = normalized.replace(new RegExp(persianDigits[i], 'g'), String(i));
+            normalized = normalized.replace(new RegExp(arabicDigits[i], 'g'), String(i));
+        }
+        // Remove all non-digit characters (commas, spaces, etc.)
+        return parseInt(normalized.replace(/\D/g, '') || '0');
     };
 
     const handleNumberChange = (field: keyof ContractFormData) => (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -208,12 +223,14 @@ export function ContractDetailsForm({ isOpen, onClose, onSave, initialData }: Co
                         <div className="space-y-2">
                             <Label className="flex items-center gap-1">
                                 <DollarSign className="h-3 w-3" />
-                                مبلغ قرارداد
+                                مبلغ قرارداد (ریال)
                             </Label>
                             <Input
-                                value={data.contractAmount ? formatNumber(data.contractAmount) : ''}
-                                onChange={handleNumberChange('contractAmount')}
+                                type="number"
+                                value={data.contractAmount || ''}
+                                onChange={(e) => setData(prev => ({ ...prev, contractAmount: parseFloat(e.target.value) || 0 }))}
                                 className="font-mono"
+                                placeholder="مبلغ را وارد کنید"
                             />
                         </div>
                     </div>
@@ -243,8 +260,9 @@ export function ContractDetailsForm({ isOpen, onClose, onSave, initialData }: Co
                             <span className="font-bold">مبلغ ناخالص (برای محاسبه کسورات)</span>
                         </Label>
                         <Input
-                            value={data.grossAmount ? formatNumber(data.grossAmount) : ''}
-                            onChange={handleNumberChange('grossAmount')}
+                            type="number"
+                            value={data.grossAmount || ''}
+                            onChange={(e) => setData(prev => ({ ...prev, grossAmount: parseFloat(e.target.value) || 0 }))}
                             className="font-mono text-lg"
                             placeholder="مبلغ ناخالص را وارد کنید"
                         />
@@ -288,32 +306,36 @@ export function ContractDetailsForm({ isOpen, onClose, onSave, initialData }: Co
                                     <div className="flex items-center gap-2">
                                         <Label className="min-w-24 text-sm">پیش‌پرداخت:</Label>
                                         <Input
-                                            value={data.advance ? formatNumber(data.advance) : ''}
-                                            onChange={handleNumberChange('advance')}
+                                            type="number"
+                                            value={data.advance || ''}
+                                            onChange={(e) => setData(prev => ({ ...prev, advance: parseFloat(e.target.value) || 0 }))}
                                             className="font-mono text-sm"
                                         />
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <Label className="min-w-24 text-sm">علی‌الحساب:</Label>
                                         <Input
-                                            value={data.prepay ? formatNumber(data.prepay) : ''}
-                                            onChange={handleNumberChange('prepay')}
+                                            type="number"
+                                            value={data.prepay || ''}
+                                            onChange={(e) => setData(prev => ({ ...prev, prepay: parseFloat(e.target.value) || 0 }))}
                                             className="font-mono text-sm"
                                         />
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <Label className="min-w-24 text-sm">سایر کسورات:</Label>
                                         <Input
-                                            value={data.misc ? formatNumber(data.misc) : ''}
-                                            onChange={handleNumberChange('misc')}
+                                            type="number"
+                                            value={data.misc || ''}
+                                            onChange={(e) => setData(prev => ({ ...prev, misc: parseFloat(e.target.value) || 0 }))}
                                             className="font-mono text-sm"
                                         />
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <Label className="min-w-24 text-sm">مالیات ارزش افزوده:</Label>
                                         <Input
-                                            value={data.vat ? formatNumber(data.vat) : ''}
-                                            onChange={handleNumberChange('vat')}
+                                            type="number"
+                                            value={data.vat || ''}
+                                            onChange={(e) => setData(prev => ({ ...prev, vat: parseFloat(e.target.value) || 0 }))}
                                             className="font-mono text-sm"
                                         />
                                     </div>
