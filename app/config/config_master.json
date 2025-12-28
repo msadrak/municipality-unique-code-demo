@@ -1,0 +1,5165 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "version": "6.0.0",
+  "generated_at": "2025-12-20T12:31:19.437194",
+  "description": "Config V6 - Three-layer cleaning with Common Prefix Clustering",
+  "subsystems": [
+    {
+      "code": "URBAN_PLANNING",
+      "title": "سامانه شهرسازی",
+      "icon": "Building2",
+      "attachment_type": "both",
+      "order": 1,
+      "is_active": true,
+      "activities": [
+        {
+          "code": "URBAN_PLANNING_01",
+          "title": "احداث و بازسازی ابنیه",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 1,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "URBAN_PLANNING_02",
+          "title": "تعمیر و نگهداری ساختمان‌ها",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 2,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "URBAN_PLANNING_03",
+          "title": "تملک و آزادسازی اراضی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 3,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "URBAN_PLANNING_04",
+          "title": "خدمات رفاهی و انگیزشی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 4,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "URBAN_PLANNING_05",
+          "title": "خرید ملزومات و تجهیزات",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 5,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "URBAN_PLANNING_06",
+          "title": "سایر خدمات شهرسازی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 6,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "URBAN_PLANNING_07",
+          "title": "لایروبی انهار و مسیل‌ها",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 7,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "URBAN_PLANNING_08",
+          "title": "نگهداری و توسعه فضای سبز",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 8,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "URBAN_PLANNING_09",
+          "title": "وصول درآمد و عوارض",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 9,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "URBAN_PLANNING_10",
+          "title": "پروژه‌های مشارکتی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 10,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "URBAN_PLANNING_11",
+          "title": "پیاده‌روسازی و اصلاح معابر",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 11,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "URBAN_PLANNING_12",
+          "title": "کف سازی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 12,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "PAYROLL",
+      "title": "سامانه حقوق و دستمزد",
+      "icon": "Users",
+      "attachment_type": "api",
+      "order": 3,
+      "is_active": true,
+      "activities": [
+        {
+          "code": "PAYROLL_01",
+          "title": "هزینه واگذاری",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 1,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "PAYROLL_02",
+          "title": "پرداخت حقوق و مزایا",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 2,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "TADAROKAT",
+      "title": "سامانه تدارکات",
+      "icon": "ShoppingCart",
+      "attachment_type": "upload",
+      "order": 4,
+      "is_active": true,
+      "activities": [
+        {
+          "code": "TADAROKAT_01",
+          "title": "تجهیزات و علائم ترافیکی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 1,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "TADAROKAT_02",
+          "title": "خدمات چاپ و انتشارات",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 2,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "TADAROKAT_03",
+          "title": "خرید ملزومات و تجهیزات",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 3,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "TADAROKAT_04",
+          "title": "روشنایی و نورپردازی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 4,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "TADAROKAT_05",
+          "title": "احداث و بازسازی ابنیه",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 5,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "TADAROKAT_06",
+          "title": "روکش و ترمیم آسفالت",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 6,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "TADAROKAT_07",
+          "title": "نظافت شهری و مدیریت پسماند",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 7,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "TADAROKAT_08",
+          "title": "نگهداری و توسعه فضای سبز",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 8,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "BUDGET",
+      "title": "سامانه بودجه",
+      "icon": "BarChart3",
+      "attachment_type": "upload",
+      "order": 5,
+      "is_active": true,
+      "activities": [
+        {
+          "code": "BUDGET_01",
+          "title": "احداث و بازسازی ابنیه",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 1,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "BUDGET_02",
+          "title": "برگزاری نمایشگاه",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 2,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "BUDGET_03",
+          "title": "تجهیزات و علائم ترافیکی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 3,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "BUDGET_04",
+          "title": "حق الزحمه",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 4,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "BUDGET_05",
+          "title": "خدمات رفاهی و انگیزشی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 5,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "BUDGET_06",
+          "title": "سایر خدمات بودجه",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 6,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "BUDGET_07",
+          "title": "مدیریت بودجه و اعتبارات",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 7,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "BUDGET_08",
+          "title": "مناسبت روز",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 8,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "BUDGET_09",
+          "title": "نظافت شهری و مدیریت پسماند",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 9,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "BUDGET_10",
+          "title": "هزینه واگذاری",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 10,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "BUDGET_11",
+          "title": "پرداخت حقوق و مزایا",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 11,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "BUDGET_12",
+          "title": "کمک هزینه",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 12,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "BUDGET_13",
+          "title": "برداشت و",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 13,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "BUDGET_14",
+          "title": "بهسازی مجموعه",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 14,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "BUDGET_15",
+          "title": "تاسیسات و مبلمان شهری",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 15,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "BUDGET_16",
+          "title": "تبدیل و",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 16,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "BUDGET_17",
+          "title": "تدقیق خط",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 17,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "BUDGET_18",
+          "title": "تدوین سند",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 18,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "BUDGET_19",
+          "title": "تعمیر و نگهداری ساختمان‌ها",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 19,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "BUDGET_20",
+          "title": "تملک و آزادسازی اراضی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 20,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "BUDGET_21",
+          "title": "توسعه سامانه",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 21,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "BUDGET_22",
+          "title": "خرید ملزومات و تجهیزات",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 22,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "BUDGET_23",
+          "title": "روکش و ترمیم آسفالت",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 23,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "BUDGET_24",
+          "title": "طراحی تامین",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 24,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "BUDGET_25",
+          "title": "نصب دوربینهای",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 25,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "BUDGET_26",
+          "title": "نقشه برداری",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 26,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "BUDGET_27",
+          "title": "نگهداری و توسعه فضای سبز",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 27,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "BUDGET_28",
+          "title": "وصول درآمد و عوارض",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 28,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "BUDGET_29",
+          "title": "پل و تقاطع غیرهمسطح",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 29,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "BUDGET_30",
+          "title": "پیاده‌روسازی و اصلاح معابر",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 30,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "BUDGET_31",
+          "title": "‏اسکن و",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 31,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "TREASURY",
+      "title": "سامانه خزانه‌داری",
+      "icon": "Vault",
+      "attachment_type": "upload",
+      "order": 6,
+      "is_active": true,
+      "activities": [
+        {
+          "code": "TREASURY_01",
+          "title": "اصفهان کارت",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 1,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "TREASURY_02",
+          "title": "تعمیر و نگهداری ساختمان‌ها",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 2,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "TREASURY_03",
+          "title": "حق الزحمه",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 3,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "TREASURY_04",
+          "title": "خدمات رفاهی و انگیزشی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 4,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "TREASURY_05",
+          "title": "خدمات چاپ و انتشارات",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 5,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "TREASURY_06",
+          "title": "خرید ملزومات و تجهیزات",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 6,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "TREASURY_07",
+          "title": "روشنایی و نورپردازی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 7,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "TREASURY_08",
+          "title": "سایر خدمات خزانه‌داری",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 8,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "TREASURY_09",
+          "title": "مدیریت بودجه و اعتبارات",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 9,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "TREASURY_10",
+          "title": "نظافت شهری و مدیریت پسماند",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 10,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "TREASURY_11",
+          "title": "نگهداری و توسعه فضای سبز",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 11,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "TREASURY_12",
+          "title": "هزینه واگذاری",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 12,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "TREASURY_13",
+          "title": "وصول درآمد و عوارض",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 13,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "TREASURY_14",
+          "title": "پرداخت حقوق و مزایا",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 14,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "TREASURY_15",
+          "title": "پرداخت دیون و تعهدات",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 15,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "TREASURY_16",
+          "title": "کمک به",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 16,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "TREASURY_17",
+          "title": "احداث و بازسازی ابنیه",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 17,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "TREASURY_18",
+          "title": "افزایش سرمایه",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 18,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "TREASURY_19",
+          "title": "تامین معوض",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 19,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "TREASURY_20",
+          "title": "تعریض گذر",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 20,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "TREASURY_21",
+          "title": "تملک و آزادسازی اراضی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 21,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "TREASURY_22",
+          "title": "پروژه‌های مشارکتی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 22,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "TREASURY_23",
+          "title": "پل و تقاطع غیرهمسطح",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 23,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "TREASURY_24",
+          "title": "پیاده‌روسازی و اصلاح معابر",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 24,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "CONTRACTORS",
+      "title": "سامانه امور پیمانکاران",
+      "icon": "HardHat",
+      "attachment_type": "both",
+      "order": 7,
+      "is_active": true,
+      "activities": [
+        {
+          "code": "CONTRACTORS_01",
+          "title": "آبرسانی و تاسیسات آبی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 1,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_02",
+          "title": "تاسیسات و مبلمان شهری",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 2,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_03",
+          "title": "تعمیر و نگهداری ساختمان‌ها",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 3,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_04",
+          "title": "تملک و آزادسازی اراضی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 4,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_05",
+          "title": "خدمات رفاهی و انگیزشی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 5,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_06",
+          "title": "سایر خدمات پیمانکاران",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 6,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_07",
+          "title": "لایروبی انهار و مسیل‌ها",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 7,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_08",
+          "title": "نظافت شهری و مدیریت پسماند",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 8,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_09",
+          "title": "نگهداری و توسعه فضای سبز",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 9,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_10",
+          "title": "هزینه خدمات",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 10,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_11",
+          "title": "هزینه واگذاری",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 11,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_12",
+          "title": "کمک به",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 12,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_13",
+          "title": "اجرای طرح",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 13,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_14",
+          "title": "اجرای نقش",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 14,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_15",
+          "title": "احداث و بازسازی ابنیه",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 15,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_16",
+          "title": "احیای دولتخانه",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 16,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_17",
+          "title": "احیای محور",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 17,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_18",
+          "title": "ارایه خدمات",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 18,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_19",
+          "title": "ارتقاء لوکس",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 19,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_20",
+          "title": "ارتقاء کیفی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 20,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_21",
+          "title": "اسباب بازی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 21,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_22",
+          "title": "اصلاح شبکه",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 22,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_23",
+          "title": "اصلاح لوکس",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 23,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_24",
+          "title": "اصلاح هندسی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 24,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_25",
+          "title": "افزایش سرمایه",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 25,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_26",
+          "title": "ال ئی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 26,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_27",
+          "title": "المان نوری",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 27,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_28",
+          "title": "ایستگاه صبحگاهی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 28,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_29",
+          "title": "ایمن سازی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 29,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_30",
+          "title": "برداشت و",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 30,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_31",
+          "title": "بهسازی ایستگاه",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 31,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_32",
+          "title": "بهسازی دوربین",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 32,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_33",
+          "title": "بهسازی سرویس",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 33,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_34",
+          "title": "بهسازی معابر",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 34,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_35",
+          "title": "بهسازی و",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 35,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_36",
+          "title": "بهینه سازی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 36,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_37",
+          "title": "تامین معوض",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 37,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_38",
+          "title": "تبدیل و",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 38,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_39",
+          "title": "تجهیز و",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 39,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_40",
+          "title": "تجهیزات و علائم ترافیکی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 40,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_41",
+          "title": "تدقیق خط",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 41,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_42",
+          "title": "ترمیم سیستم",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 42,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_43",
+          "title": "ترمیم شبکه",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 43,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_44",
+          "title": "تعریض گذر",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 44,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_45",
+          "title": "تهیه طرح",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 45,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_46",
+          "title": "توسعه انرژی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 46,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_47",
+          "title": "توسعه سامانه",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 47,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_48",
+          "title": "توسعه سیستم",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 48,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_49",
+          "title": "توسعه شبکه",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 49,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_50",
+          "title": "جدول‌گذاری و کانیو",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 50,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_51",
+          "title": "حفاظ ایمنی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 51,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_52",
+          "title": "خرید ملزومات و تجهیزات",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 52,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_53",
+          "title": "خط انتقال",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 53,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_54",
+          "title": "خیابان سازی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 54,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_55",
+          "title": "دوربین ثبت",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 55,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_56",
+          "title": "دوربین نظارت",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 56,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_57",
+          "title": "دیوار نگاره",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 57,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_58",
+          "title": "دیوارنگاره خیابان",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 58,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_59",
+          "title": "دیوارنگاره و",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 59,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_60",
+          "title": "راه اندازی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 60,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_61",
+          "title": "رنگ آمیزی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 61,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_62",
+          "title": "روشنایی و نورپردازی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 62,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_63",
+          "title": "روکش و ترمیم آسفالت",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 63,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_64",
+          "title": "زیبا سازی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 64,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_65",
+          "title": "زیباسازی و",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 65,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_66",
+          "title": "ساماندهی بوستان",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 66,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_67",
+          "title": "ساماندهی جداول",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 67,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_68",
+          "title": "ساماندهی خیابان",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 68,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_69",
+          "title": "ساماندهی محله",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 69,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_70",
+          "title": "ساماندهی محوطه",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 70,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_71",
+          "title": "ساماندهی معابر",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 71,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_72",
+          "title": "ساماندهی و",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 72,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_73",
+          "title": "ساماندهی ورودی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 73,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_74",
+          "title": "ساماندهی پایانه",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 74,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_75",
+          "title": "ساماندهی گذر",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 75,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_76",
+          "title": "شبکه توزیع",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 76,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_77",
+          "title": "طرح توسعه",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 77,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_78",
+          "title": "قطارشهری خط",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 78,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_79",
+          "title": "مرمت خانه",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 79,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_80",
+          "title": "مرمت و",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 80,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_81",
+          "title": "مناسب سازی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 81,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_82",
+          "title": "نصب ادوات",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 82,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_83",
+          "title": "نصب دوربین",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 83,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_84",
+          "title": "نصب دوربینهای",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 84,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_85",
+          "title": "نصب شیر",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 85,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_86",
+          "title": "نصب نمادها",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 86,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_87",
+          "title": "نقشه برداری",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 87,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_88",
+          "title": "نور پردازی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 88,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_89",
+          "title": "پدافند غیرعامل",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 89,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_90",
+          "title": "پرداخت حقوق و مزایا",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 90,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_91",
+          "title": "پروژه های",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 91,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_92",
+          "title": "پل و تقاطع غیرهمسطح",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 92,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_93",
+          "title": "پیاده‌روسازی و اصلاح معابر",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 93,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_94",
+          "title": "پیرایش شهری",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 94,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "CONTRACTORS_95",
+          "title": "کف سازی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 95,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "WELFARE",
+      "title": "سامانه رفاه کارکنان",
+      "icon": "Heart",
+      "attachment_type": "upload",
+      "order": 8,
+      "is_active": true,
+      "activities": [
+        {
+          "code": "WELFARE_01",
+          "title": "خدمات رفاهی و انگیزشی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 1,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "WELFARE_02",
+          "title": "احداث و بازسازی ابنیه",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 2,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "WELFARE_03",
+          "title": "تعمیر و نگهداری ساختمان‌ها",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 3,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "WELFARE_04",
+          "title": "لایروبی انهار و مسیل‌ها",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 4,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "WELFARE_05",
+          "title": "نگهداری و توسعه فضای سبز",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 5,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "WELFARE_06",
+          "title": "پیاده‌روسازی و اصلاح معابر",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 6,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "REAL_ESTATE",
+      "title": "سامانه املاک",
+      "icon": "Home",
+      "attachment_type": "both",
+      "order": 9,
+      "is_active": true,
+      "activities": [
+        {
+          "code": "REAL_ESTATE_01",
+          "title": "احداث و بازسازی ابنیه",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 1,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "REAL_ESTATE_02",
+          "title": "تجهیزات و علائم ترافیکی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 2,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "REAL_ESTATE_03",
+          "title": "ترمیم سیستم",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 3,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "REAL_ESTATE_04",
+          "title": "تملک و آزادسازی اراضی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 4,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "REAL_ESTATE_05",
+          "title": "خدمات رفاهی و انگیزشی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 5,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "REAL_ESTATE_06",
+          "title": "روشنایی و نورپردازی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 6,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "REAL_ESTATE_07",
+          "title": "روکش و ترمیم آسفالت",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 7,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "REAL_ESTATE_08",
+          "title": "سایر خدمات املاک",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 8,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "REAL_ESTATE_09",
+          "title": "لایروبی انهار و مسیل‌ها",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 9,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "REAL_ESTATE_10",
+          "title": "نظافت شهری و مدیریت پسماند",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 10,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "REAL_ESTATE_11",
+          "title": "نگهداری و توسعه فضای سبز",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 11,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "REAL_ESTATE_12",
+          "title": "پل و تقاطع غیرهمسطح",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 12,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "REAL_ESTATE_13",
+          "title": "پیاده‌روسازی و اصلاح معابر",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 13,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "WAREHOUSE",
+      "title": "سامانه انبار و اموال",
+      "icon": "Package",
+      "attachment_type": "upload",
+      "order": 10,
+      "is_active": true,
+      "activities": [
+        {
+          "code": "WAREHOUSE_01",
+          "title": "سایر خدمات انبار و اموال",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 1,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "REVENUE",
+      "title": "سامانه درآمد",
+      "icon": "TrendingUp",
+      "attachment_type": "api",
+      "order": 11,
+      "is_active": true,
+      "activities": [
+        {
+          "code": "REVENUE_01",
+          "title": "تعمیر و نگهداری ساختمان‌ها",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 1,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "REVENUE_02",
+          "title": "تملک و آزادسازی اراضی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 2,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "REVENUE_03",
+          "title": "وصول درآمد و عوارض",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 3,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "REVENUE_04",
+          "title": "پیاده‌روسازی و اصلاح معابر",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 4,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "INVESTMENT",
+      "title": "سامانه مشارکت‌ها و سرمایه‌گذاری",
+      "icon": "Handshake",
+      "attachment_type": "both",
+      "order": 13,
+      "is_active": true,
+      "activities": [
+        {
+          "code": "INVESTMENT_01",
+          "title": "پروژه‌های مشارکتی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 1,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "INVESTMENT_02",
+          "title": "احداث و بازسازی ابنیه",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 2,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "INVESTMENT_03",
+          "title": "تعمیر و نگهداری ساختمان‌ها",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 3,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "INVESTMENT_04",
+          "title": "نظافت شهری و مدیریت پسماند",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 4,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "INVESTMENT_05",
+          "title": "نگهداری و توسعه فضای سبز",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 5,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "INVESTMENT_06",
+          "title": "پل و تقاطع غیرهمسطح",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 6,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "capital"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه سرمایه‌ای"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "OTHER",
+      "title": "سایر / عمومی",
+      "icon": "MoreHorizontal",
+      "attachment_type": "upload",
+      "order": 14,
+      "is_active": true,
+      "activities": [
+        {
+          "code": "OTHER_01",
+          "title": "اجرای برنامه",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 1,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "OTHER_02",
+          "title": "احداث و بازسازی ابنیه",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 2,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "OTHER_03",
+          "title": "اطلاع رسانی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 3,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "OTHER_04",
+          "title": "برنامه های",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 4,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "OTHER_05",
+          "title": "تجهیزات و علائم ترافیکی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 5,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "OTHER_06",
+          "title": "تعمیر و نگهداری ساختمان‌ها",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 6,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "OTHER_07",
+          "title": "خدمات رفاهی و انگیزشی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 7,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "OTHER_08",
+          "title": "روشنایی و نورپردازی",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 8,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "OTHER_09",
+          "title": "سایر خدمات سایر",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 9,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "OTHER_10",
+          "title": "فعالیت و",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 10,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "OTHER_11",
+          "title": "لایروبی انهار و مسیل‌ها",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 11,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "OTHER_12",
+          "title": "نظافت شهری و مدیریت پسماند",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 12,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "OTHER_13",
+          "title": "نگهداری و توسعه فضای سبز",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 13,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "OTHER_14",
+          "title": "هزینه های",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 14,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "OTHER_15",
+          "title": "واگذاری خدمات",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 15,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "OTHER_16",
+          "title": "پل و تقاطع غیرهمسطح",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 16,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        },
+        {
+          "code": "OTHER_17",
+          "title": "کمک به",
+          "form_type": null,
+          "frequency": "MONTHLY",
+          "requires_file_upload": false,
+          "external_service_url": null,
+          "order": 17,
+          "is_active": true,
+          "constraints": [
+            {
+              "budget_code_pattern": null,
+              "allowed_budget_types": [
+                "expense"
+              ],
+              "cost_center_pattern": null,
+              "allowed_cost_centers": null,
+              "constraint_type": "INCLUDE",
+              "priority": 1,
+              "description": "فقط ردیف‌های بودجه هزینه‌ای"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

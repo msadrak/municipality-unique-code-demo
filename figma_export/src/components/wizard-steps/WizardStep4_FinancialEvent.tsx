@@ -26,33 +26,35 @@ export function WizardStep4_FinancialEvent({ formData, updateFormData }: Props) 
 
   // Load data on mount and when org context changes
   // Cost centers and continuous actions use org-filtered APIs from Hesabdary Information.xlsx
+  // Load data on mount and when org context changes
+  // Cost centers use org-filtered APIs from Hesabdary Information.xlsx
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
       setError(null);
 
       try {
-        // Financial events remain global (not org-specific)
-        const eventsPromise = fetchFinancialEvents();
+        // MOCK: Financial events (hardcoded for now as per user request)
+        const mockEvents: FigmaFinancialEvent[] = [
+          { id: 1, code: '101', name: 'خرید متوسط' },
+          { id: 2, code: '102', name: 'ترک تشریفات' }
+        ];
+        setFinancialEvents(mockEvents);
 
-        // Cost centers and continuous actions use org-filtered endpoints
-        // Only fetch if zoneId is set
-        if (formData.zoneId) {
-          const [events, centers, actions] = await Promise.all([
-            eventsPromise,
-            fetchCostCentersForOrg(formData.zoneId, formData.departmentId, formData.sectionId),
-            fetchContinuousActionsForOrg(formData.zoneId, formData.departmentId, formData.sectionId)
-          ]);
-          setFinancialEvents(events);
-          setCostCenters(centers);
-          setContinuousActions(actions);
-        } else {
-          // If no zone selected, just load financial events
-          const events = await eventsPromise;
-          setFinancialEvents(events);
-          setCostCenters([]);
-          setContinuousActions([]);
-        }
+        // Cost centers use org-filtered endpoints
+        // MOCK: Hardcoded data to unblock wizard flow
+        const MOCK_COST_CENTERS = [
+          { id: 1, code: '201', name: 'مرکز هزینه ستاد مرکزی' },
+          { id: 2, code: '202', name: 'مرکز هزینه منطقه ۱ - امور شهری' },
+          { id: 3, code: '203', name: 'مرکز هزینه منطقه ۱ - عمرانی' }
+        ];
+
+        // Filter mock data if needed, or just set all (for demo)
+        setCostCenters(MOCK_COST_CENTERS as FigmaCostCenter[]);
+
+        // Continuous Actions removed as per request
+        setContinuousActions([]);
+
       } catch (err) {
         console.error('Failed to load data:', err);
         setError('خطا در بارگیری اطلاعات');
@@ -183,37 +185,7 @@ export function WizardStep4_FinancialEvent({ formData, updateFormData }: Props) 
         </p>
       </div>
 
-      {/* Continuous Action - Optional (from Hesabdary Information.xlsx - سرفصل جزء) */}
-      <div className="space-y-3">
-        <Label htmlFor="continuousAction">
-          اقدام مستمر (سرفصل جزء) <span className="text-muted-foreground">(اختیاری)</span>
-        </Label>
-        <div className="relative">
-          <Activity className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
-          <Select
-            value={formData.continuousActionId?.toString()}
-            onValueChange={handleContinuousActionChange}
-          >
-            <SelectTrigger id="continuousAction" className="pr-10">
-              <SelectValue placeholder={
-                continuousActions.length === 0
-                  ? "سرفصل جزء‌ای برای این واحد یافت نشد"
-                  : "انتخاب اقدام مستمر"
-              } />
-            </SelectTrigger>
-            <SelectContent>
-              {continuousActions.map(action => (
-                <SelectItem key={action.id} value={action.id.toString()}>
-                  {action.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          سرفصل جزء از فایل اطلاعات حسابداری
-        </p>
-      </div>
+      {/* Continuous Action Removed per request */}
 
       {/* Summary */}
       {formData.financialEventId && formData.costCenterId && (

@@ -12,7 +12,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collap
 type Transaction = {
   id: number;
   uniqueCode: string;
-  status: 'draft' | 'pending' | 'approved' | 'rejected' | 'paid';
+  status: string; // Can be PENDING_L1-L4, APPROVED, REJECTED, DRAFT, or legacy values
   amount: number;
   budgetCode?: string;
   budgetDescription?: string;
@@ -35,13 +35,26 @@ type GroupedTransactions = {
   totalAmount: number;
 };
 
-const STATUS_CONFIG = {
-  draft: { label: 'پیش‌نویس', color: 'bg-gray-500', order: 0 },
-  pending: { label: 'در انتظار تایید', color: 'bg-amber-500', order: 1 },
-  approved: { label: 'تایید شده', color: 'bg-green-600', order: 2 },
-  rejected: { label: 'رد شده', color: 'bg-red-600', order: 3 },
-  paid: { label: 'پرداخت شده', color: 'bg-blue-600', order: 4 },
+// Helper to get status display info - handles both old and new formats
+const getStatusConfig = (status: string) => {
+  // New format
+  if (status.startsWith('PENDING_')) return { label: 'در انتظار تایید', color: 'bg-amber-500', order: 1 };
+  if (status === 'APPROVED') return { label: 'تایید شده', color: 'bg-green-600', order: 2 };
+  if (status === 'REJECTED') return { label: 'رد شده', color: 'bg-red-600', order: 3 };
+  if (status === 'DRAFT') return { label: 'پیش‌نویس', color: 'bg-gray-500', order: 0 };
+  // Legacy format fallback
+  if (status === 'pending') return { label: 'در انتظار تایید', color: 'bg-amber-500', order: 1 };
+  if (status === 'approved') return { label: 'تایید شده', color: 'bg-green-600', order: 2 };
+  if (status === 'rejected') return { label: 'رد شده', color: 'bg-red-600', order: 3 };
+  if (status === 'paid') return { label: 'پرداخت شده', color: 'bg-blue-600', order: 4 };
+  if (status === 'draft') return { label: 'پیش‌نویس', color: 'bg-gray-500', order: 0 };
+  return { label: status, color: 'bg-gray-500', order: 5 };
 };
+
+// Helper to check if status is "rejected" (either format)
+const isRejected = (status: string) => status === 'REJECTED' || status === 'rejected';
+const isPending = (status: string) => status.startsWith('PENDING_') || status === 'pending';
+const isApproved = (status: string) => status === 'APPROVED' || status === 'approved';
 
 export function MyTransactionsList({ userId }: MyTransactionsListProps) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -73,12 +86,12 @@ export function MyTransactionsList({ userId }: MyTransactionsListProps) {
         // Map API response to component format
         const mapped: Transaction[] = data.map(t => ({
           id: t.id,
-          uniqueCode: t.uniqueCode,
-          status: t.status,
-          amount: t.amount,
-          beneficiaryName: t.beneficiaryName,
-          createdAt: t.createdAt,
-          rejectionReason: t.rejectionReason,
+          uniqueCode: t.uniqueCode || '---',
+          status: t.status || 'draft',
+          amount: t.amount || 0,
+          beneficiaryName: t.beneficiaryName || '',
+          createdAt: t.createdAt || '',
+          rejectionReason: t.rejectionReason || '',
         }));
         setTransactions(mapped);
       } catch (err) {
@@ -131,7 +144,7 @@ export function MyTransactionsList({ userId }: MyTransactionsListProps) {
           comparison = a.amount - b.amount;
           break;
         case 'status':
-          comparison = STATUS_CONFIG[a.status].order - STATUS_CONFIG[b.status].order;
+          comparison = getStatusConfig(a.status).order - getStatusConfig(b.status).order;
           break;
       }
 
@@ -207,8 +220,8 @@ export function MyTransactionsList({ userId }: MyTransactionsListProps) {
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
               <p className="font-mono text-sm" dir="ltr">{tx.uniqueCode}</p>
-              <Badge className={`${STATUS_CONFIG[tx.status].color} text-white`}>
-                {STATUS_CONFIG[tx.status].label}
+              <Badge className={`${getStatusConfig(tx.status).color} text-white`}>
+                {getStatusConfig(tx.status).label}
               </Badge>
             </div>
             {tx.beneficiaryName && (
@@ -224,7 +237,7 @@ export function MyTransactionsList({ userId }: MyTransactionsListProps) {
         </div>
 
         {/* Rejection Reason */}
-        {tx.status === 'rejected' && tx.rejectionReason && (
+        {isRejected(tx.status) && tx.rejectionReason && (
           <div className="bg-destructive/10 border border-destructive/20 p-3 rounded text-sm">
             <p className="text-destructive">
               <span className="font-medium">دلیل رد:</span> {tx.rejectionReason}
@@ -443,19 +456,19 @@ export function MyTransactionsList({ userId }: MyTransactionsListProps) {
           <div>
             <p className="text-muted-foreground">در انتظار</p>
             <p className="text-xl mt-1 text-amber-600">
-              {transactions.filter(t => t.status === 'pending').length}
+              {transactions.filter(t => isPending(t.status)).length}
             </p>
           </div>
           <div>
             <p className="text-muted-foreground">تایید شده</p>
             <p className="text-xl mt-1 text-green-600">
-              {transactions.filter(t => t.status === 'approved').length}
+              {transactions.filter(t => isApproved(t.status)).length}
             </p>
           </div>
           <div>
             <p className="text-muted-foreground">رد شده</p>
             <p className="text-xl mt-1 text-red-600">
-              {transactions.filter(t => t.status === 'rejected').length}
+              {transactions.filter(t => isRejected(t.status)).length}
             </p>
           </div>
           <div>

@@ -109,6 +109,14 @@ export default defineConfig({
         target: 'http://localhost:8000',
         changeOrigin: true,
       },
+      '/budget': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/rbac': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
     },
   },
 });

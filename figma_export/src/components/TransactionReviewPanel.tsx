@@ -7,7 +7,7 @@ import { Separator } from './ui/separator';
 type Transaction = {
   id: number;
   uniqueCode: string;
-  status: 'draft' | 'pending' | 'approved' | 'rejected' | 'paid';
+  status: 'PENDING_L1' | 'PENDING_L2' | 'PENDING_L3' | 'PENDING_L4' | 'APPROVED' | 'REJECTED' | 'DRAFT';
   amount: number;
   budgetCode?: string;
   budgetDescription?: string;
@@ -47,7 +47,7 @@ export function TransactionReviewPanel({
     }
   };
 
-  const isPending = transaction.status === 'pending';
+  const isPending = transaction.status.startsWith('PENDING_');
 
   return (
     <>
@@ -77,17 +77,17 @@ export function TransactionReviewPanel({
           {/* Status Badge */}
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">وضعیت فعلی:</span>
-            <span className={`px-3 py-1 rounded text-white text-sm ${transaction.status === 'pending' ? 'bg-amber-500' :
-                transaction.status === 'approved' ? 'bg-green-600' :
-                  transaction.status === 'rejected' ? 'bg-red-600' :
-                    transaction.status === 'paid' ? 'bg-blue-600' :
-                      'bg-gray-500'
+            <span className={`px-3 py-1 rounded text-white text-sm ${transaction.status.startsWith('PENDING_') ? 'bg-amber-500' :
+              transaction.status === 'APPROVED' ? 'bg-green-600' :
+                transaction.status === 'REJECTED' ? 'bg-red-600' :
+                  transaction.status === 'DRAFT' ? 'bg-gray-500' :
+                    'bg-gray-500'
               }`}>
-              {transaction.status === 'pending' ? 'در انتظار تایید' :
-                transaction.status === 'approved' ? 'تایید شده' :
-                  transaction.status === 'rejected' ? 'رد شده' :
-                    transaction.status === 'paid' ? 'پرداخت شده' :
-                      'پیش‌نویس'}
+              {transaction.status.startsWith('PENDING_') ? 'در انتظار تایید' :
+                transaction.status === 'APPROVED' ? 'تایید شده' :
+                  transaction.status === 'REJECTED' ? 'رد شده' :
+                    transaction.status === 'DRAFT' ? 'پیش‌نویس' :
+                      'نامشخص'}
             </span>
           </div>
 
@@ -172,7 +172,7 @@ export function TransactionReviewPanel({
             </div>
 
             {/* Rejection Reason (if rejected) */}
-            {transaction.status === 'rejected' && transaction.rejectionReason && (
+            {transaction.status === 'REJECTED' && transaction.rejectionReason && (
               <div className="bg-destructive/10 border border-destructive/20 p-4 rounded-lg">
                 <p className="text-sm text-destructive mb-1">دلیل رد:</p>
                 <p className="text-sm">{transaction.rejectionReason}</p>

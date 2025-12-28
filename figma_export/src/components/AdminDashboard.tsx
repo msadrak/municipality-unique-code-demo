@@ -5,21 +5,34 @@ import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
-import { Building2, LogOut, Search, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './ui/dialog';
+import { Textarea } from './ui/textarea';
+import { Building2, LogOut, Search, ChevronLeft, ChevronRight, Loader2, CheckCircle2, Clock, XCircle, Circle } from 'lucide-react';
 import { TransactionReviewPanel } from './TransactionReviewPanel';
-import { fetchAdminTransactions, FigmaTransaction } from '../services/adapters';
+import { fetchAdminTransactions, approveTransaction, rejectTransaction } from '../services/adapters';
 
 type User = {
   id: number;
   username: string;
   fullName: string;
-  role: 'user' | 'admin';
+  role: string;
+  admin_level?: number;
 };
+
+// Updated Transaction type with approval workflow statuses
+type TransactionStatus =
+  | 'PENDING_L1'
+  | 'PENDING_L2'
+  | 'PENDING_L3'
+  | 'PENDING_L4'
+  | 'APPROVED'
+  | 'REJECTED';
 
 type Transaction = {
   id: number;
   uniqueCode: string;
-  status: 'draft' | 'pending' | 'approved' | 'rejected' | 'paid';
+  status: TransactionStatus;
+  currentApprovalLevel: number; // 1=Section, 2=Office, 3=Zone, 4=Finance
   amount: number;
   budgetCode?: string;
   budgetDescription?: string;
@@ -39,14 +52,176 @@ type AdminDashboardProps = {
   onNavigateToPublic: () => void;
 };
 
-const STATUS_CONFIG = {
-  draft: { label: 'پیش‌نویس', color: 'bg-gray-500' },
-  pending: { label: 'در انتظار تایید', color: 'bg-amber-500' },
-  approved: { label: 'تایید شده', color: 'bg-green-600' },
-  rejected: { label: 'رد شده', color: 'bg-red-600' },
-  paid: { label: 'پرداخت شده', color: 'bg-blue-600' },
+// Map status to approval level
+const STATUS_TO_LEVEL: Record<TransactionStatus, number> = {
+  'PENDING_L1': 1,
+  'PENDING_L2': 2,
+  'PENDING_L3': 3,
+  'PENDING_L4': 4,
+  'APPROVED': 5,
+  'REJECTED': 0,
 };
 
+// Approval steps configuration
+const APPROVAL_STEPS = [
+  { level: 1, label: 'قسمت', status: 'PENDING_L1' as const },
+  { level: 2, label: 'اداره', status: 'PENDING_L2' as const },
+  { level: 3, label: 'حوزه', status: 'PENDING_L3' as const },
+  { level: 4, label: 'ذی‌حساب', status: 'PENDING_L4' as const },
+];
+
+// ==========================================
+// ApprovalStepsCell Component
+// ==========================================
+type ApprovalStepsCellProps = {
+  status: TransactionStatus;
+  adminLevel: number;
+  onApprove: () => void;
+  onRejectClick: () => void;
+};
+
+function ApprovalStepsCell({ status, adminLevel, onApprove, onRejectClick }: ApprovalStepsCellProps) {
+  const currentLevel = STATUS_TO_LEVEL[status] || 1;
+  const isRejected = status === 'REJECTED';
+  const isApproved = status === 'APPROVED';
+
+  const getStepIcon = (stepLevel: number) => {
+    if (isRejected) {
+      return <XCircle className="h-5 w-5 text-red-500" />;
+    }
+    if (isApproved || stepLevel < currentLevel) {
+      return <CheckCircle2 className="h-5 w-5 text-green-500" />;
+    }
+    if (stepLevel === currentLevel) {
+      return <Clock className="h-5 w-5 text-amber-500 animate-pulse" />;
+    }
+    return <Circle className="h-5 w-5 text-gray-300" />;
+  };
+
+  // Admin can act if their level matches current approval level
+  const canAct = adminLevel === currentLevel && !isRejected && !isApproved;
+
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1">
+        {APPROVAL_STEPS.map((step, index) => (
+          <React.Fragment key={step.level}>
+            <div
+              className="flex flex-col items-center"
+              title={step.label}
+            >
+              {getStepIcon(step.level)}
+              <span className="text-[9px] text-muted-foreground mt-0.5">{step.label}</span>
+            </div>
+            {index < APPROVAL_STEPS.length - 1 && (
+              <div className={`w-3 h-0.5 ${step.level < currentLevel || isApproved ? 'bg-green-500' : 'bg-gray-200'
+                }`} />
+            )}
+          </React.Fragment>
+        ))}
+      </div>
+      {canAct && (
+        <div className="flex gap-1 mr-3 border-r pr-3">
+          <Button
+            size="sm"
+            variant="default"
+            className="h-7 px-2 bg-green-600 hover:bg-green-700"
+            onClick={(e) => { e.stopPropagation(); onApprove(); }}
+          >
+            تایید
+          </Button>
+          <Button
+            size="sm"
+            variant="destructive"
+            className="h-7 px-2"
+            onClick={(e) => { e.stopPropagation(); onRejectClick(); }}
+          >
+            رد
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ==========================================
+// RejectionModal Component
+// ==========================================
+type RejectionModalProps = {
+  isOpen: boolean;
+  transactionCode: string;
+  onClose: () => void;
+  onConfirm: (reason: string) => void;
+};
+
+function RejectionModal({ isOpen, transactionCode, onClose, onConfirm }: RejectionModalProps) {
+  const [reason, setReason] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleConfirm = async () => {
+    if (!reason.trim()) return;
+    setIsSubmitting(true);
+    try {
+      await onConfirm(reason);
+      setReason('');
+      onClose();
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleClose = () => {
+    setReason('');
+    onClose();
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-right">رد درخواست</DialogTitle>
+          <DialogDescription className="text-right">
+            درخواست با کد <span className="font-mono text-primary" dir="ltr">{transactionCode}</span> رد خواهد شد.
+            <br />
+            لطفاً دلیل رد را وارد کنید تا به کاربر اطلاع داده شود.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="py-4">
+          <Textarea
+            placeholder="دلیل رد را بنویسید... (الزامی)"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            className="min-h-[120px] text-right"
+            dir="rtl"
+          />
+        </div>
+        <DialogFooter className="gap-2 sm:gap-0">
+          <Button variant="outline" onClick={handleClose} disabled={isSubmitting}>
+            انصراف
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={handleConfirm}
+            disabled={!reason.trim() || isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                در حال ارسال...
+              </>
+            ) : (
+              'تایید رد درخواست'
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ==========================================
+// Main AdminDashboard Component
+// ==========================================
 export function AdminDashboard({ user, onLogout, onNavigateToPublic }: AdminDashboardProps) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,38 +232,75 @@ export function AdminDashboard({ user, onLogout, onNavigateToPublic }: AdminDash
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // Load transactions from API
-  useEffect(() => {
-    const loadTransactions = async () => {
-      setLoading(true);
-      setError(null);
+  // Rejection modal state
+  const [rejectionModalOpen, setRejectionModalOpen] = useState(false);
+  const [transactionToReject, setTransactionToReject] = useState<Transaction | null>(null);
 
-      try {
-        const result = await fetchAdminTransactions({
-          status: statusFilter !== 'all' ? statusFilter : undefined,
-          search: searchTerm || undefined,
-          page: currentPage
-        });
-        // Map to component format
-        const mapped: Transaction[] = result.transactions.map(t => ({
-          id: t.id,
-          uniqueCode: t.uniqueCode,
-          status: t.status,
-          amount: t.amount,
-          beneficiaryName: t.beneficiaryName,
-          createdAt: t.createdAt,
-          zoneName: t.zoneName,
-          rejectionReason: t.rejectionReason,
-        }));
-        setTransactions(mapped);
-      } catch (err) {
-        console.error('Failed to load transactions:', err);
-        setError('خطا در بارگیری تراکنش‌ها');
-      } finally {
-        setLoading(false);
+  // Get admin level from user
+  const adminLevel = user.admin_level || 0;
+
+  // Improved Header Role Display (5-Level Hierarchy)
+  const getRoleLabel = () => {
+    if (user.role === 'inspector') return 'ناظر / بازرسی';
+    if (user.role === 'admin') {
+      switch (user.admin_level) {
+        case 5: return 'طراح و راهبر سیستم';
+        case 4: return 'ذی‌حساب (تایید نهایی)';
+        case 3: return 'مدیر حوزه / منطقه';
+        case 2: return 'رئیس اداره';
+        case 1: return 'مسئول قسمت';
+        default: return 'مدیر سیستم';
       }
-    };
+    }
+    return 'کاربر';
+  };
 
+  // Load transactions from API - extracted as reusable function
+  const loadTransactions = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const result = await fetchAdminTransactions({
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+        search: searchTerm || undefined,
+        page: currentPage
+      });
+
+      // Map to component format with defensive checks
+      const mapped: Transaction[] = (result.transactions || []).map((t: any) => {
+        // Convert old status format to new if needed
+        let status: TransactionStatus = t.status || 'PENDING_L1';
+        if (status === 'pending' as any) status = 'PENDING_L1';
+        if (status === 'approved' as any) status = 'APPROVED';
+        if (status === 'rejected' as any) status = 'REJECTED';
+
+        return {
+          id: t.id,
+          uniqueCode: t.uniqueCode || '---',
+          status,
+          currentApprovalLevel: t.currentApprovalLevel || STATUS_TO_LEVEL[status] || 1,
+          amount: t.amount || 0,
+          budgetCode: t.budgetCode || '',
+          budgetDescription: t.budgetDescription || '',
+          beneficiaryName: t.beneficiaryName || '',
+          createdBy: t.createdBy || '',
+          createdAt: t.createdAt || '',
+          zoneName: t.zoneName || '',
+          rejectionReason: t.rejectionReason,
+        };
+      });
+      setTransactions(mapped);
+    } catch (err) {
+      console.error('Failed to load transactions:', err);
+      setError('خطا در بارگیری تراکنش‌ها');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load transactions on mount and when filters change
+  useEffect(() => {
     loadTransactions();
   }, [statusFilter, currentPage]);
 
@@ -108,29 +320,65 @@ export function AdminDashboard({ user, onLogout, onNavigateToPublic }: AdminDash
     currentPage * itemsPerPage
   );
 
-  const handleApprove = (txId: number) => {
-    setTransactions(prev =>
-      prev.map(tx => tx.id === txId ? { ...tx, status: 'approved' as const } : tx)
-    );
-    setSelectedTransaction(null);
+  // Handle approve - call API and reload transactions
+  const handleApprove = async (txId: number) => {
+    try {
+      setLoading(true);
+      const result = await approveTransaction(txId);
+      console.log('Approve result:', result);
+      // Reload transactions to get fresh data from server
+      await loadTransactions();
+      // Close the review panel if open
+      setSelectedTransaction(null);
+    } catch (err) {
+      console.error('Approve failed:', err);
+      setError(err instanceof Error ? err.message : 'خطا در تایید تراکنش');
+      setLoading(false);
+    }
   };
 
-  const handleReject = (txId: number, reason: string) => {
-    setTransactions(prev =>
-      prev.map(tx => tx.id === txId ? { ...tx, status: 'rejected' as const, rejectionReason: reason } : tx)
-    );
-    setSelectedTransaction(null);
+  // Handle reject - open modal
+  const handleRejectClick = (tx: Transaction) => {
+    setTransactionToReject(tx);
+    setRejectionModalOpen(true);
+  };
+
+  // Handle reject confirmation - call API and reload transactions
+  const handleRejectConfirm = async (reason: string) => {
+    if (!transactionToReject) return;
+
+    try {
+      setLoading(true);
+      const result = await rejectTransaction(transactionToReject.id, reason);
+      console.log('Reject result:', result);
+      // Reload transactions to get fresh data from server
+      await loadTransactions();
+      // Close the review panel if open
+      setSelectedTransaction(null);
+    } catch (err) {
+      console.error('Reject failed:', err);
+      setError(err instanceof Error ? err.message : 'خطا در رد تراکنش');
+      setLoading(false);
+    }
+
+    setTransactionToReject(null);
   };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('fa-IR').format(amount);
   };
 
+  // Updated stats for new statuses
   const stats = {
     total: transactions.length,
-    pending: transactions.filter(t => t.status === 'pending').length,
-    approved: transactions.filter(t => t.status === 'approved').length,
-    rejected: transactions.filter(t => t.status === 'rejected').length,
+    pendingSection: transactions.filter(t => t.status === 'PENDING_L1').length,
+    pendingOffice: transactions.filter(t => t.status === 'PENDING_L2').length,
+    pendingZone: transactions.filter(t => t.status === 'PENDING_L3').length,
+    pendingFinance: transactions.filter(t => t.status === 'PENDING_L4').length,
+    approved: transactions.filter(t => t.status === 'APPROVED').length,
+    rejected: transactions.filter(t => t.status === 'REJECTED').length,
+    // Total pending at my level
+    myPending: transactions.filter(t => STATUS_TO_LEVEL[t.status] === adminLevel).length,
   };
 
   return (
@@ -151,8 +399,12 @@ export function AdminDashboard({ user, onLogout, onNavigateToPublic }: AdminDash
 
             <div className="flex items-center gap-4">
               <div className="text-left">
-                <p className="text-sm">{user.fullName}</p>
-                <p className="text-xs text-muted-foreground">مدیر سیستم</p>
+                <p className="text-sm font-medium">{user.fullName}</p>
+                <div className="flex items-center gap-1 justify-end">
+                  <Badge variant="outline" className="text-[10px] h-5 px-1 bg-primary/5 border-primary/20">
+                    {getRoleLabel()}
+                  </Badge>
+                </div>
               </div>
               <Button variant="outline" size="sm" onClick={onLogout}>
                 <LogOut className="h-4 w-4 ml-2" />
@@ -165,15 +417,23 @@ export function AdminDashboard({ user, onLogout, onNavigateToPublic }: AdminDash
 
       <main className="container mx-auto px-4 py-8">
         <div className="space-y-6">
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {/* Stats Cards - Updated for approval workflow */}
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
             <Card className="p-4">
               <p className="text-sm text-muted-foreground">کل تراکنش‌ها</p>
               <p className="text-3xl mt-2">{stats.total}</p>
             </Card>
             <Card className="p-4 bg-amber-50 border-amber-200">
-              <p className="text-sm text-amber-800">در انتظار تایید</p>
-              <p className="text-3xl mt-2 text-amber-600">{stats.pending}</p>
+              <p className="text-sm text-amber-800">در انتظار من</p>
+              <p className="text-3xl mt-2 text-amber-600">{stats.myPending}</p>
+            </Card>
+            <Card className="p-4">
+              <p className="text-sm text-muted-foreground">قسمت</p>
+              <p className="text-2xl mt-2 text-amber-500">{stats.pendingSection}</p>
+            </Card>
+            <Card className="p-4">
+              <p className="text-sm text-muted-foreground">اداره</p>
+              <p className="text-2xl mt-2 text-amber-500">{stats.pendingOffice}</p>
             </Card>
             <Card className="p-4 bg-green-50 border-green-200">
               <p className="text-sm text-green-800">تایید شده</p>
@@ -203,34 +463,43 @@ export function AdminDashboard({ user, onLogout, onNavigateToPublic }: AdminDash
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">همه وضعیت‌ها</SelectItem>
-                  <SelectItem value="pending">در انتظار تایید</SelectItem>
-                  <SelectItem value="approved">تایید شده</SelectItem>
-                  <SelectItem value="rejected">رد شده</SelectItem>
-                  <SelectItem value="paid">پرداخت شده</SelectItem>
+                  <SelectItem value="PENDING_L1">در انتظار قسمت</SelectItem>
+                  <SelectItem value="PENDING_L2">در انتظار اداره</SelectItem>
+                  <SelectItem value="PENDING_L3">در انتظار حوزه</SelectItem>
+                  <SelectItem value="PENDING_L4">در انتظار ذی‌حساب</SelectItem>
+                  <SelectItem value="APPROVED">تایید شده</SelectItem>
+                  <SelectItem value="REJECTED">رد شده</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </Card>
 
-          {/* Transactions Table - NO INLINE EDITING */}
+          {/* Transactions Table with Progressive Approval */}
           <Card>
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead className="text-right">کد یکتا</TableHead>
-                  <TableHead className="text-right">وضعیت</TableHead>
+                  <TableHead className="text-right">مراحل تایید</TableHead>
                   <TableHead className="text-right">مبلغ (ریال)</TableHead>
                   <TableHead className="text-right">ردیف بودجه</TableHead>
                   <TableHead className="text-right">ذینفع</TableHead>
                   <TableHead className="text-right">ایجادکننده</TableHead>
                   <TableHead className="text-right">تاریخ</TableHead>
-                  <TableHead className="text-right">عملیات</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paginatedTransactions.length === 0 ? (
+                {loading ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={7} className="text-center py-8">
+                      <div className="flex justify-center">
+                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : paginatedTransactions.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                       تراکنشی یافت نشد
                     </TableCell>
                   </TableRow>
@@ -243,27 +512,18 @@ export function AdminDashboard({ user, onLogout, onNavigateToPublic }: AdminDash
                     >
                       <TableCell className="font-mono text-sm" dir="ltr">{tx.uniqueCode}</TableCell>
                       <TableCell>
-                        <Badge className={`${STATUS_CONFIG[tx.status].color} text-white`}>
-                          {STATUS_CONFIG[tx.status].label}
-                        </Badge>
+                        <ApprovalStepsCell
+                          status={tx.status}
+                          adminLevel={adminLevel}
+                          onApprove={() => handleApprove(tx.id)}
+                          onRejectClick={() => handleRejectClick(tx)}
+                        />
                       </TableCell>
                       <TableCell className="font-mono">{formatCurrency(tx.amount)}</TableCell>
                       <TableCell className="font-mono text-sm">{tx.budgetCode}</TableCell>
                       <TableCell className="max-w-[150px] truncate">{tx.beneficiaryName || '-'}</TableCell>
                       <TableCell>{tx.createdBy || '-'}</TableCell>
                       <TableCell className="text-sm">{tx.createdAt?.split(' - ')[0] || '-'}</TableCell>
-                      <TableCell>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e: React.MouseEvent) => {
-                            e.stopPropagation();
-                            setSelectedTransaction(tx);
-                          }}
-                        >
-                          بررسی
-                        </Button>
-                      </TableCell>
                     </TableRow>
                   ))
                 )}
@@ -300,15 +560,28 @@ export function AdminDashboard({ user, onLogout, onNavigateToPublic }: AdminDash
         </div>
       </main>
 
-      {/* Side Panel for Review - NEVER INLINE EDITING */}
+      {/* Side Panel for Review */}
       {selectedTransaction && (
         <TransactionReviewPanel
-          transaction={selectedTransaction}
+          transaction={selectedTransaction as any}
           onClose={() => setSelectedTransaction(null)}
-          onApprove={handleApprove}
-          onReject={handleReject}
+          onApprove={(id) => handleApprove(id)}
+          onReject={(id, reason) => {
+            setTransactions(prev => prev.filter(t => t.id !== id));
+          }}
         />
       )}
+
+      {/* Rejection Modal */}
+      <RejectionModal
+        isOpen={rejectionModalOpen}
+        transactionCode={transactionToReject?.uniqueCode || ''}
+        onClose={() => {
+          setRejectionModalOpen(false);
+          setTransactionToReject(null);
+        }}
+        onConfirm={handleRejectConfirm}
+      />
     </div>
   );
 }

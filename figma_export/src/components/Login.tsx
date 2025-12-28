@@ -108,6 +108,7 @@ export function Login({ onLogin, onNavigateToPublic }: LoginProps) {
                     className="pr-10"
                     placeholder="رمز عبور"
                     required
+                    autoComplete="current-password"
                   />
                 </div>
               </div>

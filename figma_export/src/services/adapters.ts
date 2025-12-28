@@ -118,12 +118,19 @@ export function adaptCostCenters(backendArray: any[]): FigmaCostCenter[] {
  * Adapt backend Transaction to Figma format
  */
 export function adaptTransaction(backend: any): FigmaTransaction {
+    // Normalize legacy statuses to new PENDING_L format
+    let status = backend.status || 'PENDING_L1';
+    // Map old 'pending' to PENDING_L1
+    if (status === 'pending') status = 'PENDING_L1';
+    if (status === 'approved') status = 'APPROVED';
+    if (status === 'rejected') status = 'REJECTED';
+
     return {
         id: backend.id,
         uniqueCode: backend.unique_code || '',
         beneficiaryName: backend.beneficiary_name || '',
         amount: backend.amount || 0,
-        status: backend.status || 'pending',
+        status: status,
         zoneName: backend.zone_title,
         createdAt: backend.created_at,
         rejectionReason: backend.rejection_reason,
@@ -243,6 +250,7 @@ export async function fetchContinuousActions(): Promise<FigmaContinuousAction[]>
 /**
  * Fetch budgets filtered by org context (zone/department/section).
  * This replaces the trustee-based budget fetching.
+ * @deprecated Use fetchBudgetsByActivity for Zero-Trust budget access
  */
 export async function fetchBudgetsForOrg(
     zoneId: number,
@@ -258,6 +266,92 @@ export async function fetchBudgetsForOrg(
     if (!response.ok) throw new Error('Failed to fetch budgets for org');
     const data = await response.json();
     return adaptBudgetItems(data);
+}
+
+// ==================== ZERO-TRUST BUDGET API ====================
+// New API that fetches from BudgetRow table with activity-based filtering
+
+/**
+ * Response type from /budget/list/{activity_id} endpoint
+ */
+export interface BudgetRowResponse {
+    budget_row_id: number;
+    budget_code: string;
+    description: string;
+    activity_id: number;
+    activity_code: string | null;
+    fiscal_year: string;
+    total_approved: number;
+    total_blocked: number;
+    total_spent: number;
+    remaining_available: number;
+    status: 'AVAILABLE' | 'LOW' | 'EXHAUSTED';
+    utilization_percent: number;
+}
+
+/**
+ * Fetch budget rows by activity ID (Zero-Trust API)
+ * This is the NEW recommended way to fetch budgets for WizardStep3
+ * 
+ * @param activityId - The selected activity ID
+ * @param zoneId - Optional zone ID for zone-based filtering
+ * @param fiscalYear - Optional fiscal year (defaults to "1403")
+ */
+export async function fetchBudgetsByActivity(
+    activityId: number,
+    zoneId?: number,
+    fiscalYear?: string
+): Promise<BudgetRowResponse[]> {
+    console.group("🔍 Budget API Request");
+    console.log("Inputs:", { activityId, zoneId, fiscalYear });
+
+    const params = new URLSearchParams();
+    if (zoneId) params.append('zone_id', zoneId.toString());
+    if (fiscalYear) params.append('fiscal_year', fiscalYear);
+
+    const url = `/budget/list/${activityId}${params.toString() ? '?' + params : ''}`;
+    console.log("Request URL:", url);
+
+    const response = await fetch(url, { credentials: 'include' });
+    console.log("Response Status:", response.status);
+
+    if (!response.ok) {
+        const error = await response.json().catch(() => ({ detail: 'Failed to fetch budgets' }));
+        console.error("❌ API Error:", error);
+        console.groupEnd();
+        throw new Error(error.detail || 'Failed to fetch budgets');
+    }
+
+    const data = await response.json();
+    console.log("Rows Received:", data.budget_rows?.length ?? 0);
+    console.log("Raw Response:", data);
+    console.groupEnd();
+
+    // FIXED: Unwrap the response object (backend returns { budget_rows: [...] })
+    // Ensure we return the array directly, not the wrapper object
+    if (Array.isArray(data.budget_rows)) {
+        return data.budget_rows;
+    }
+
+    // Defensive fallback
+    console.warn("⚠️ API response structure mismatch: 'budget_rows' not found or not an array");
+    return [];
+}
+
+/**
+ * Adapt BudgetRowResponse to FigmaBudgetItem for backwards compatibility
+ */
+export function adaptBudgetRowToFigma(budgetRow: BudgetRowResponse): FigmaBudgetItem {
+    return {
+        id: budgetRow.budget_row_id,
+        code: budgetRow.budget_code,
+        name: budgetRow.description,
+        allocated: budgetRow.total_approved,
+        remaining: budgetRow.remaining_available,
+        type: undefined, // Not available in new API
+        rowType: undefined,
+        trustee: undefined,
+    };
 }
 
 /**
@@ -375,6 +469,56 @@ export async function createTransaction(data: TransactionCreateData): Promise<Tr
     return response.json();
 }
 
+// ==================== ADMIN APPROVAL WORKFLOW ====================
+
+export interface ApprovalResponse {
+    status: string;
+    message: string;
+    new_status: string;
+    approved_by_level?: number;
+    rejected_by_level?: number;
+}
+
+/**
+ * Approve a transaction (calls backend API)
+ * Advances the transaction to the next approval level
+ */
+export async function approveTransaction(txId: number): Promise<ApprovalResponse> {
+    const response = await fetch(`/admin/transactions/${txId}/approve`, {
+        method: 'POST',
+        credentials: 'include',
+    });
+    if (!response.ok) {
+        const error = await response.json().catch(() => ({ detail: 'خطا در تایید تراکنش' }));
+        throw new Error(error.detail || 'خطا در تایید تراکنش');
+    }
+    return response.json();
+}
+
+/**
+ * Reject a transaction (calls backend API)
+ * @param txId - Transaction ID
+ * @param reason - Rejection reason (required)
+ * @param returnToUser - If true, returns to DRAFT for user to fix; if false, REJECTED (final)
+ */
+export async function rejectTransaction(
+    txId: number,
+    reason: string,
+    returnToUser: boolean = false
+): Promise<ApprovalResponse> {
+    const response = await fetch(`/admin/transactions/${txId}/reject`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason, return_to_user: returnToUser }),
+    });
+    if (!response.ok) {
+        const error = await response.json().catch(() => ({ detail: 'خطا در رد تراکنش' }));
+        throw new Error(error.detail || 'خطا در رد تراکنش');
+    }
+    return response.json();
+}
+
 export default {
     fetchZones,
     fetchOrgChildren,
@@ -388,4 +532,6 @@ export default {
     fetchMyTransactions,
     fetchAdminTransactions,
     createTransaction,
+    approveTransaction,
+    rejectTransaction,
 };

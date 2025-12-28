@@ -1,7 +1,33 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, Date, DateTime, Boolean, Enum, JSON
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, Date, DateTime, Boolean, Enum, JSON, CheckConstraint, BigInteger, UniqueConstraint
+from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship, backref
 from app.database import Base
 from datetime import datetime
+import enum
+
+
+# --- Enums ---
+class ActivityFrequency(enum.Enum):
+    """فرکانس اجرای فعالیت"""
+    DAILY = "DAILY"
+    MONTHLY = "MONTHLY"
+    YEARLY = "YEARLY"
+
+
+class OperationType(enum.Enum):
+    """نوع عملیات بودجه برای ثبت در دفتر حسابداری"""
+    BLOCK = "BLOCK"                 # رزرو اعتبار برای درخواست در انتظار
+    RELEASE = "RELEASE"             # آزادسازی اعتبار رزرو شده (رد درخواست)
+    SPEND = "SPEND"                 # تایید پرداخت (از رزرو به هزینه)
+    INCREASE_BUDGET = "INCREASE_BUDGET"  # اصلاحیه بودجه
+
+
+class HistoryAction(enum.Enum):
+    """Action types for transaction history audit log"""
+    SUBMIT = "SUBMIT"           # Initial submission by user
+    APPROVE = "APPROVE"         # Approved by an admin level
+    REJECT = "REJECT"           # Rejected and returned to user
+    RESUBMIT = "RESUBMIT"       # Resubmitted after rejection
 
 # --- جداول پایه ---
 class OrgUnit(Base):
@@ -161,8 +187,14 @@ class SubsystemActivity(Base):
     is_active = Column(Boolean, default=True)
     order = Column(Integer, default=0)
     
+    # Service Catalog fields
+    frequency = Column(Enum(ActivityFrequency), default=ActivityFrequency.MONTHLY)
+    requires_file_upload = Column(Boolean, default=False)
+    external_service_url = Column(String, nullable=True)  # URL for external API (e.g., PMIS)
+    
     # Relationships
     subsystem = relationship("Subsystem", back_populates="activities")
+    constraints = relationship("ActivityConstraint", back_populates="activity")
 
 
 # --- ارتباط قسمت با سامانه‌ها ---
@@ -180,6 +212,40 @@ class SectionSubsystemAccess(Base):
     # Relationships
     section = relationship("OrgUnit")
     subsystem = relationship("Subsystem")
+
+
+class ActivityConstraint(Base):
+    """
+    Constraint Engine: defines valid Budget/CostCenter combinations per activity.
+    
+    Examples:
+    - Activity "SALARY_PAYMENT" → budget_code_pattern="1%"  (starts with 1)
+    - Activity "CONTRACT_REGISTER" → allowed_budget_types=["capital"]
+    
+    این جدول ترکیبات معتبر بودجه و مرکز هزینه را برای هر فعالیت تعریف می‌کند
+    """
+    __tablename__ = "activity_constraints"
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # Link to activity
+    subsystem_activity_id = Column(Integer, ForeignKey("subsystem_activities.id"), nullable=False)
+    
+    # Budget constraints (mutually exclusive)
+    budget_code_pattern = Column(String, nullable=True)     # SQL LIKE pattern, e.g., "1%"
+    allowed_budget_types = Column(JSON, nullable=True)      # ["expense"] or ["capital"]
+    
+    # Cost Center constraints
+    cost_center_pattern = Column(String, nullable=True)     # SQL LIKE pattern
+    allowed_cost_centers = Column(JSON, nullable=True)      # List of specific IDs
+    
+    # Metadata
+    constraint_type = Column(String, default="INCLUDE")     # INCLUDE or EXCLUDE
+    priority = Column(Integer, default=0)                   # Higher = applied first
+    description = Column(String, nullable=True)             # Admin description
+    is_active = Column(Boolean, default=True)
+    
+    # Relationship
+    activity = relationship("SubsystemActivity", back_populates="constraints")
 
 
 
@@ -224,6 +290,9 @@ class User(Base):
     default_zone = relationship("OrgUnit", foreign_keys=[default_zone_id])
     default_dept = relationship("OrgUnit", foreign_keys=[default_dept_id])
     default_section = relationship("OrgUnit", foreign_keys=[default_section_id])
+    
+    # RBAC: Subsystem access control (DENY ALL if empty)
+    subsystem_access_list = relationship("UserSubsystemAccess", back_populates="user", cascade="all, delete-orphan")
 
 
 
@@ -236,6 +305,30 @@ class UserBudgetAccess(Base):
     
     user = relationship("User", backref="budget_accesses")
     budget_item = relationship("BudgetItem", backref="user_accesses")
+
+
+class UserSubsystemAccess(Base):
+    """
+    دسترسی کاربر به زیرسامانه‌ها (RBAC)
+    
+    هر کاربر می‌تواند به یک یا چند زیرسامانه دسترسی داشته باشد.
+    اگر کاربر هیچ رکوردی در این جدول نداشته باشد، به هیچ سامانه‌ای دسترسی ندارد (DENY ALL).
+    """
+    __tablename__ = "user_subsystem_access"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    subsystem_id = Column(Integer, ForeignKey("subsystems.id"), nullable=False, index=True)
+    created_at = Column(DateTime, default=func.now())
+    
+    # Ensure one user can't be assigned the same subsystem twice
+    __table_args__ = (
+        UniqueConstraint('user_id', 'subsystem_id', name='user_subsystem_unique'),
+    )
+    
+    # Relationships
+    user = relationship("User", back_populates="subsystem_access_list")
+    subsystem = relationship("Subsystem")
 
 
 # --- تراکنش‌های مالی با workflow ---
@@ -266,6 +359,10 @@ class Transaction(Base):
     reviewed_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     reviewed_at = Column(DateTime, nullable=True)
     rejection_reason = Column(String, nullable=True)
+    
+    # Rejection tracking (specific rejector)
+    rejected_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    rejected_at = Column(DateTime, nullable=True)
     
     # اطلاعات سازمانی
     zone_id = Column(Integer, ForeignKey("org_units.id"))
@@ -301,6 +398,7 @@ class Transaction(Base):
     # Relationships
     created_by = relationship("User", foreign_keys=[created_by_id], backref="created_transactions")
     reviewed_by = relationship("User", foreign_keys=[reviewed_by_id], backref="reviewed_transactions")
+    rejected_by = relationship("User", foreign_keys=[rejected_by_user_id], backref="rejected_transactions")
     zone = relationship("OrgUnit", foreign_keys=[zone_id])
     department = relationship("OrgUnit", foreign_keys=[department_id])
     section = relationship("OrgUnit", foreign_keys=[section_id])
@@ -407,4 +505,124 @@ class PermanentAccountRecord(Base):
     is_bank = Column(Boolean, default=False)
     
     account_code = relationship("AccountCode", backref="permanent_accounts")
+
+
+# ============================================
+# Budget Control Module - Zero Trust
+# ============================================
+
+class BudgetRow(Base):
+    """
+    ردیف بودجه - ساختار "غیرقابل نفوذ"
+    
+    این جدول اطلاعات بودجه مصوب و مصرف شده را نگهداری می‌کند.
+    با استفاده از CHECK Constraint در سطح دیتابیس، از خرج کردن بیش از بودجه جلوگیری می‌شود.
+    
+    Invariant: spent_amount + blocked_amount <= approved_amount (ALWAYS)
+    """
+    __tablename__ = "budget_rows"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # Link to activity (strict referential integrity)
+    activity_id = Column(Integer, ForeignKey("subsystem_activities.id"), nullable=False, index=True)
+    
+    # Zone-Based Budgeting: Link to organizational unit (zone/region)
+    # NULL = Global/HQ budget (accessible by all zones)
+    org_unit_id = Column(Integer, ForeignKey("org_units.id"), nullable=True, index=True)
+    
+    # Budget identification
+    budget_coding = Column(String, unique=True, index=True)  # e.g., "20501001"
+    description = Column(String)
+    
+    # Financial amounts (stored in smallest unit - Rials)
+    approved_amount = Column(BigInteger, nullable=False)     # مبلغ مصوب
+    blocked_amount = Column(BigInteger, default=0)           # مبلغ رزرو شده
+    spent_amount = Column(BigInteger, default=0)             # مبلغ هزینه شده
+    
+    # Metadata
+    fiscal_year = Column(String, default="1403", index=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    activity = relationship("SubsystemActivity", backref="budget_rows")
+    org_unit = relationship("OrgUnit")  # Zone/Region this budget belongs to
+    transactions = relationship("BudgetTransaction", back_populates="budget_row", cascade="all, delete-orphan")
+    
+    # Database-level constraint: ACID safety net
+    __table_args__ = (
+        CheckConstraint(
+            'spent_amount + blocked_amount <= approved_amount',
+            name='budget_balance_check'
+        ),
+    )
+    
+    @property
+    def remaining_balance(self) -> int:
+        """Calculate available budget for new operations."""
+        return self.approved_amount - self.spent_amount - self.blocked_amount
+
+
+class BudgetTransaction(Base):
+    """
+    تراکنش بودجه - دفتر حسابداری کامل
+    
+    هر تغییر در وضعیت بودجه در این جدول ثبت می‌شود.
+    این جدول غیرقابل تغییر است (append-only audit log).
+    """
+    __tablename__ = "budget_transactions"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # Link to budget row
+    budget_row_id = Column(Integer, ForeignKey("budget_rows.id"), nullable=False, index=True)
+    
+    # Transaction details
+    amount = Column(BigInteger, nullable=False)
+    operation_type = Column(Enum(OperationType), nullable=False, index=True)
+    reference_doc = Column(String, nullable=True, index=True)  # e.g., "Request-1024"
+    
+    # Audit fields
+    performed_by = Column(String, nullable=False)            # User ID who performed
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    notes = Column(String, nullable=True)
+    
+    # Snapshot of state at transaction time (for forensics)
+    balance_before = Column(BigInteger, nullable=True)       # remaining before operation
+    balance_after = Column(BigInteger, nullable=True)        # remaining after operation
+    
+    # Relationship
+    budget_row = relationship("BudgetRow", back_populates="transactions")
+
+
+# ============================================
+# Transaction History - Audit Log
+# ============================================
+
+class TransactionHistory(Base):
+    """Audit log for transaction workflow.
+    
+    Tracks all actions taken on a transaction:
+    - Initial submission
+    - Approvals at each level
+    - Rejections with reasons
+    - Resubmissions after rejection
+    """
+    __tablename__ = "transaction_history"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    transaction_id = Column(Integer, ForeignKey("transactions.id"), nullable=False, index=True)
+    action = Column(Enum(HistoryAction), nullable=False, index=True)
+    actor_user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+    comment = Column(String, nullable=True)  # Notes or rejection reason
+    
+    # Snapshot for audit trail
+    previous_status = Column(String, nullable=True)
+    new_status = Column(String, nullable=True)
+    
+    # Relationships
+    transaction = relationship("Transaction", backref="history_entries")
+    actor = relationship("User")
 

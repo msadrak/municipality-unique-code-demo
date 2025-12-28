@@ -18,9 +18,17 @@ from app.database import SessionLocal, engine
 from app.auth_utils import hash_password, verify_password, upgrade_hash_if_needed
 from sqlalchemy import or_
 
+# Import routers
+from app.routers import budget as budget_router
+from app.routers import rbac as rbac_router
+
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Municipality Action Portal")
+
+# Register API routers
+app.include_router(budget_router.router, tags=["Budget Control"])
+app.include_router(rbac_router.router, tags=["RBAC - Access Control"])
 
 # --- CORS Configuration ---
 # In production, set ALLOWED_ORIGINS environment variable
@@ -298,15 +306,39 @@ def admin_get_transactions(
     search: str = "",
     page: int = 1,
     limit: int = 10,
+    my_level_only: bool = True,  # Filter to show only transactions at admin's level
     db: Session = Depends(get_db)
 ):
-    """Get all transactions with filters (admin only)"""
+    """
+    Get transactions with filters.
+    
+    Hierarchy filtering (when my_level_only=True):
+    - Level 1 admin sees PENDING_L1 transactions
+    - Level 2 admin sees PENDING_L2 transactions
+    - Level 3 admin sees PENDING_L3 transactions
+    - Level 4 admin sees PENDING_L4 transactions
+    - Level 5 (god) or legacy 'admin' role sees ALL transactions
+    """
     current_user = get_current_user(request, db)
-    if not current_user or current_user.role != "admin":
+    if not current_user:
+        raise HTTPException(status_code=401, detail="احراز هویت الزامی است")
+    
+    # Check admin access - allow both 'admin' role and users with admin_level
+    if current_user.role != "admin" and not current_user.admin_level:
         raise HTTPException(status_code=403, detail="فقط ادمین دسترسی دارد")
+    
+    # Get admin level (0 = legacy admin, 1-4 = hierarchical levels, 5 = god)
+    admin_level = current_user.admin_level or 0
     
     query = db.query(models.Transaction)
     
+    # Apply hierarchy filter - only show transactions at this admin's level
+    # Level 5 (god) and legacy admin (level 0) see all
+    if my_level_only and admin_level > 0 and admin_level < 5:
+        level_status = f"PENDING_L{admin_level}"
+        query = query.filter(models.Transaction.status == level_status)
+    
+    # Apply explicit status filter if provided (overrides my_level_only)
     if status:
         query = query.filter(models.Transaction.status == status)
     if search:
@@ -320,12 +352,22 @@ def admin_get_transactions(
     # Get total count
     total = query.count()
     
-    # Get stats
+    # Get stats using new status format
     stats = {
         "total": db.query(models.Transaction).count(),
-        "pending": db.query(models.Transaction).filter(models.Transaction.status == "pending").count(),
-        "approved": db.query(models.Transaction).filter(models.Transaction.status == "approved").count(),
-        "rejected": db.query(models.Transaction).filter(models.Transaction.status == "rejected").count(),
+        "pending_l1": db.query(models.Transaction).filter(models.Transaction.status == "PENDING_L1").count(),
+        "pending_l2": db.query(models.Transaction).filter(models.Transaction.status == "PENDING_L2").count(),
+        "pending_l3": db.query(models.Transaction).filter(models.Transaction.status == "PENDING_L3").count(),
+        "pending_l4": db.query(models.Transaction).filter(models.Transaction.status == "PENDING_L4").count(),
+        "approved": db.query(models.Transaction).filter(models.Transaction.status == "APPROVED").count(),
+        "rejected": db.query(models.Transaction).filter(models.Transaction.status == "REJECTED").count(),
+        # Legacy pending count (for backwards compat)
+        "pending": db.query(models.Transaction).filter(
+            or_(
+                models.Transaction.status == "pending",
+                models.Transaction.status.like("PENDING_%")
+            )
+        ).count(),
     }
     
     # Pagination
@@ -350,8 +392,11 @@ def admin_get_transactions(
         "total": total,
         "page": page,
         "limit": limit,
-        "stats": stats
+        "stats": stats,
+        "admin_level": admin_level,
+        "filtered_by_level": my_level_only and admin_level > 0 and admin_level < 5
     }
+
 
 @app.get("/admin/transactions/{transaction_id}")
 def admin_get_transaction_detail(transaction_id: int, request: Request, db: Session = Depends(get_db)):
@@ -698,6 +743,7 @@ def get_my_transactions(request: Request, db: Session = Depends(get_db)):
             "beneficiary_name": t.beneficiary_name,
             "amount": t.amount,
             "status": t.status,
+            "rejection_reason": t.rejection_reason,  # Added for user visibility
             "created_at": t.created_at.strftime("%Y/%m/%d %H:%M") if t.created_at else None
         })
     
@@ -787,6 +833,217 @@ def get_user_allowed_activities(request: Request, db: Session = Depends(get_db))
         "allowed_subsystems": result_subsystems,
         "subsystem_count": len(result_subsystems)
     }
+
+
+# --- DASHBOARD INITIALIZATION API ---
+
+@app.get("/portal/dashboard/init", response_model=schemas.DashboardInitResponse)
+def get_dashboard_init(request: Request, db: Session = Depends(get_db)):
+    """
+    Dashboard Initialization API
+    
+    این API تمام اطلاعات لازم برای راه‌اندازی داشبورد و ویزارد را برمی‌گرداند:
+    1. اطلاعات سازمانی کاربر (zone, section)
+    2. سامانه مربوط به قسمت کاربر
+    3. فعالیت‌های مجاز با محدودیت‌های بودجه/مرکز هزینه
+    
+    هدف: یک فراخوانی API جایگزین چندین درخواست جداگانه
+    """
+    current_user = get_current_user(request, db)
+    if not current_user:
+        raise HTTPException(status_code=401, detail="احراز هویت الزامی است")
+    
+    # 1. Build user context
+    section = None
+    zone = None
+    
+    if current_user.default_section_id:
+        section = db.query(models.OrgUnit).filter(
+            models.OrgUnit.id == current_user.default_section_id
+        ).first()
+    
+    if current_user.default_zone_id:
+        zone = db.query(models.OrgUnit).filter(
+            models.OrgUnit.id == current_user.default_zone_id
+        ).first()
+    
+    user_context = schemas.UserContextSchema(
+        user_id=current_user.id,
+        user_name=current_user.full_name,
+        zone_id=zone.id if zone else None,
+        zone_code=zone.code if zone else None,
+        zone_title=zone.title if zone else None,
+        section_id=section.id if section else None,
+        section_code=section.code if section else None,
+        section_title=section.title if section else None
+    )
+    
+    # 2. Handle case: no section assigned - check UserSubsystemAccess as fallback
+    if not section:
+        # Check if user has direct subsystem access via UserSubsystemAccess
+        user_subsystem_access = db.query(models.UserSubsystemAccess).filter(
+            models.UserSubsystemAccess.user_id == current_user.id
+        ).all()
+        
+        if user_subsystem_access:
+            # User has direct subsystem access - use first one
+            first_subsystem_id = user_subsystem_access[0].subsystem_id
+            subsystem = db.query(models.Subsystem).filter(
+                models.Subsystem.id == first_subsystem_id,
+                models.Subsystem.is_active == True
+            ).first()
+            
+            if subsystem:
+                # Fetch activities for this subsystem
+                activities = db.query(models.SubsystemActivity).filter(
+                    models.SubsystemActivity.subsystem_id == subsystem.id,
+                    models.SubsystemActivity.is_active == True
+                ).order_by(models.SubsystemActivity.order).all()
+                
+                allowed_activities = []
+                for activity in activities:
+                    constraint = db.query(models.ActivityConstraint).filter(
+                        models.ActivityConstraint.subsystem_activity_id == activity.id,
+                        models.ActivityConstraint.is_active == True
+                    ).order_by(models.ActivityConstraint.priority.desc()).first()
+                    
+                    constraint_schema = None
+                    if constraint:
+                        constraint_schema = schemas.ActivityConstraintSchema(
+                            budget_code_pattern=constraint.budget_code_pattern,
+                            allowed_budget_types=constraint.allowed_budget_types,
+                            cost_center_pattern=constraint.cost_center_pattern,
+                            allowed_cost_centers=constraint.allowed_cost_centers,
+                            constraint_type=constraint.constraint_type or "INCLUDE"
+                        )
+                    
+                    frequency_value = None
+                    if hasattr(activity, 'frequency') and activity.frequency:
+                        frequency_value = activity.frequency.value if hasattr(activity.frequency, 'value') else str(activity.frequency)
+                    
+                    allowed_activities.append(schemas.AllowedActivitySchema(
+                        id=activity.id,
+                        code=activity.code,
+                        title=activity.title,
+                        form_type=activity.form_type,
+                        frequency=frequency_value,
+                        requires_file_upload=activity.requires_file_upload or False,
+                        external_service_url=activity.external_service_url,
+                        constraints=constraint_schema
+                    ))
+                
+                return schemas.DashboardInitResponse(
+                    user_context=user_context,
+                    subsystem=schemas.SubsystemInfoSchema(
+                        id=subsystem.id,
+                        code=subsystem.code,
+                        title=subsystem.title,
+                        icon=subsystem.icon,
+                        attachment_type=subsystem.attachment_type
+                    ),
+                    allowed_activities=allowed_activities,
+                    has_subsystem=True,
+                    message=None
+                )
+        
+        # No section and no direct subsystem access
+        return schemas.DashboardInitResponse(
+            user_context=user_context,
+            subsystem=None,
+            allowed_activities=[],
+            has_subsystem=False,
+            message="کاربر هنوز به قسمتی تخصیص داده نشده است"
+        )
+    
+    # 3. Find subsystem for user's section
+    subsystem_mapping = db.query(models.SectionSubsystemAccess).filter(
+        models.SectionSubsystemAccess.section_id == section.id
+    ).first()
+    
+    if not subsystem_mapping:
+        # No specific mapping - return first active subsystem as fallback
+        subsystem = db.query(models.Subsystem).filter(
+            models.Subsystem.is_active == True
+        ).order_by(models.Subsystem.order).first()
+        
+        if not subsystem:
+            return schemas.DashboardInitResponse(
+                user_context=user_context,
+                subsystem=None,
+                allowed_activities=[],
+                has_subsystem=False,
+                message="سامانه‌ای برای این قسمت تعریف نشده است"
+            )
+    else:
+        subsystem = db.query(models.Subsystem).filter(
+            models.Subsystem.id == subsystem_mapping.subsystem_id,
+            models.Subsystem.is_active == True
+        ).first()
+        
+        if not subsystem:
+            return schemas.DashboardInitResponse(
+                user_context=user_context,
+                subsystem=None,
+                allowed_activities=[],
+                has_subsystem=False,
+                message="سامانه مربوطه غیرفعال است"
+            )
+    
+    subsystem_info = schemas.SubsystemInfoSchema(
+        id=subsystem.id,
+        code=subsystem.code,
+        title=subsystem.title,
+        icon=subsystem.icon,
+        attachment_type=subsystem.attachment_type
+    )
+    
+    # 4. Fetch activities with constraints
+    activities = db.query(models.SubsystemActivity).filter(
+        models.SubsystemActivity.subsystem_id == subsystem.id,
+        models.SubsystemActivity.is_active == True
+    ).order_by(models.SubsystemActivity.order).all()
+    
+    allowed_activities = []
+    for activity in activities:
+        # Get first active constraint for this activity (if any)
+        constraint = db.query(models.ActivityConstraint).filter(
+            models.ActivityConstraint.subsystem_activity_id == activity.id,
+            models.ActivityConstraint.is_active == True
+        ).order_by(models.ActivityConstraint.priority.desc()).first()
+        
+        constraint_schema = None
+        if constraint:
+            constraint_schema = schemas.ActivityConstraintSchema(
+                budget_code_pattern=constraint.budget_code_pattern,
+                allowed_budget_types=constraint.allowed_budget_types,
+                cost_center_pattern=constraint.cost_center_pattern,
+                allowed_cost_centers=constraint.allowed_cost_centers,
+                constraint_type=constraint.constraint_type or "INCLUDE"
+            )
+        
+        # Get frequency value safely
+        frequency_value = None
+        if hasattr(activity, 'frequency') and activity.frequency:
+            frequency_value = activity.frequency.value if hasattr(activity.frequency, 'value') else str(activity.frequency)
+        
+        allowed_activities.append(schemas.AllowedActivitySchema(
+            id=activity.id,
+            code=activity.code,
+            title=activity.title,
+            form_type=activity.form_type,
+            frequency=frequency_value,
+            requires_file_upload=activity.requires_file_upload or False,
+            external_service_url=activity.external_service_url,
+            constraints=constraint_schema
+        ))
+    
+    return schemas.DashboardInitResponse(
+        user_context=user_context,
+        subsystem=subsystem_info,
+        allowed_activities=allowed_activities,
+        has_subsystem=True,
+        message=None
+    )
 
 
 # --- SUBSYSTEMS API ENDPOINTS ---

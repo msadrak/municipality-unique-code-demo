@@ -1,56 +1,83 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Label } from '../ui/label';
 import { Input } from '../ui/input';
+import { Badge } from '../ui/badge';
 import { TransactionFormData } from '../TransactionWizard';
-import { Search, CheckCircle2, Loader2 } from 'lucide-react';
-import { fetchBudgetsForOrg, FigmaBudgetItem } from '../../services/adapters';
+import { Search, CheckCircle2, Loader2, Filter, AlertCircle } from 'lucide-react';
+import { fetchBudgetsByActivity, BudgetRowResponse, adaptBudgetRowToFigma, FigmaBudgetItem } from '../../services/adapters';
+import { ActivityConstraint } from '../../types/dashboard';
 
 type Props = {
   formData: TransactionFormData;
   updateFormData: (data: Partial<TransactionFormData>) => void;
+  constraints?: ActivityConstraint | null;  // Constraint from selected activity
 };
 
-// Internal type for UI display with additional calculated fields
-interface BudgetDisplayItem extends FigmaBudgetItem {
+// Internal type for UI display (now based on BudgetRowResponse)
+interface BudgetDisplayItem {
+  id: number;
+  code: string;
+  name: string;
+  allocated: number;
+  remaining: number;
+  status: 'AVAILABLE' | 'LOW' | 'EXHAUSTED';
+  utilization_percent: number;
   budgetType?: string;
 }
 
-export function WizardStep3_Budget({ formData, updateFormData }: Props) {
+export function WizardStep3_Budget({ formData, updateFormData, constraints }: Props) {
   const [searchTerm, setSearchTerm] = useState('');
   const [allBudgets, setAllBudgets] = useState<BudgetDisplayItem[]>([]);
   const [filteredBudgets, setFilteredBudgets] = useState<BudgetDisplayItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load budgets automatically when org context is set (zone is required)
-  // NO trustee selection needed - budgets are derived from org context
+  // Load budgets when activity is selected (Zero-Trust: activity-based filtering)
   useEffect(() => {
     const loadBudgets = async () => {
-      // Need at least zone to load budgets
-      if (!formData.zoneId) {
+      // REQUIRE: subsystemActivityId (activity_id) to fetch budgets
+      if (!formData.subsystemActivityId) {
+        console.log("⚡ Budget fetch skipped: No activity selected");
         setAllBudgets([]);
+        setError(null);
         return;
       }
 
+      console.log("⚡ Triggering fetch for Activity:", formData.subsystemActivityId, "Zone:", formData.zoneId);
       setLoading(true);
       setError(null);
 
       try {
-        // Use new org-based API - no trustee parameter needed
-        const budgets = await fetchBudgetsForOrg(
+        // NEW ZERO-TRUST API: Fetch by activity_id + optional zone_id
+        const budgetRows = await fetchBudgetsByActivity(
+          formData.subsystemActivityId,
           formData.zoneId,
-          formData.departmentId,
-          formData.sectionId
+          '1403'  // Fiscal year
         );
 
-        // Map to display format with budgetType mapping
-        const displayItems: BudgetDisplayItem[] = budgets.map(b => ({
-          ...b,
-          budgetType: b.type === 'expense' ? 'expense' : b.type === 'capital' ? 'capital' : 'expense'
+        console.log("📊 Budget rows received in component:", budgetRows.length);
+
+        // Map to display format
+        const displayItems: BudgetDisplayItem[] = budgetRows.map(row => ({
+          id: row.budget_row_id,
+          code: row.budget_code,
+          name: row.description,
+          allocated: row.total_approved,
+          remaining: row.remaining_available,
+          status: row.status,
+          utilization_percent: row.utilization_percent,
+          budgetType: undefined, // Not needed for new API
         }));
+
         setAllBudgets(displayItems);
+
+        if (displayItems.length === 0) {
+          console.warn("⚠️ No budget rows returned for activity", formData.subsystemActivityId);
+          setError('هیچ ردیف بودجه‌ای برای این فعالیت یافت نشد');
+        }
       } catch (err) {
-        console.error('Failed to load budgets:', err);
+        console.error('❌ Failed to load budgets:', err);
+        console.error('Error details:', err instanceof Error ? err.message : String(err));
         setError('خطا در بارگیری ردیف‌های بودجه');
       } finally {
         setLoading(false);
@@ -58,18 +85,72 @@ export function WizardStep3_Budget({ formData, updateFormData }: Props) {
     };
 
     loadBudgets();
-  }, [formData.zoneId, formData.departmentId, formData.sectionId]);
+  }, [formData.subsystemActivityId, formData.zoneId]);
 
-  // Filter budgets by type and search term
+  // Derive active constraint info for display
+  const constraintInfo = useMemo(() => {
+    if (!constraints) return null;
+
+    const parts: string[] = [];
+
+    if (constraints.budget_code_pattern) {
+      parts.push(`کد: ${constraints.budget_code_pattern}`);
+    }
+
+    if (constraints.allowed_budget_types?.length) {
+      const typeLabels = constraints.allowed_budget_types.map(t =>
+        t === 'expense' ? 'هزینه‌ای' : t === 'capital' ? 'سرمایه‌ای' : t
+      );
+      parts.push(`نوع: ${typeLabels.join(', ')}`);
+    }
+
+    return parts.length > 0 ? parts.join(' | ') : null;
+  }, [constraints]);
+
+  // Filter budgets by type, search term, and CONSTRAINTS
   useEffect(() => {
     let items = allBudgets;
 
-    // Filter by transaction type if set
-    if (formData.transactionType) {
-      items = items.filter(item => item.budgetType === formData.transactionType);
+    // 1. Filter by constraint: allowed_budget_types
+    if (constraints?.allowed_budget_types?.length) {
+      // FIXED: Allow undefined budgetType (trust the API result), or check against constraint
+      items = items.filter(item =>
+        !item.budgetType ||
+        constraints.allowed_budget_types!.includes(item.budgetType)
+      );
+    } else if (formData.transactionType) {
+      // Fallback to transaction type if no constraint
+      // FIXED: Allow items with undefined budgetType (new API data), otherwise they get filtered out
+      items = items.filter(item => !item.budgetType || item.budgetType === formData.transactionType);
     }
 
-    // Filter by search term
+    // 2. Filter by constraint: budget_code_pattern (SQL LIKE pattern)
+    if (constraints?.budget_code_pattern) {
+      const pattern = constraints.budget_code_pattern;
+
+      // Convert SQL LIKE pattern to regex
+      // "1%" -> starts with "1"
+      // "%123" -> ends with "123"
+      // "%123%" -> contains "123"
+      if (pattern.endsWith('%') && !pattern.startsWith('%')) {
+        // Starts with pattern: "1%" or "10%"
+        const prefix = pattern.slice(0, -1);
+        items = items.filter(item => item.code.startsWith(prefix));
+      } else if (pattern.startsWith('%') && !pattern.endsWith('%')) {
+        // Ends with pattern: "%01"
+        const suffix = pattern.slice(1);
+        items = items.filter(item => item.code.endsWith(suffix));
+      } else if (pattern.startsWith('%') && pattern.endsWith('%')) {
+        // Contains pattern: "%123%"
+        const substring = pattern.slice(1, -1);
+        items = items.filter(item => item.code.includes(substring));
+      } else {
+        // Exact match
+        items = items.filter(item => item.code === pattern);
+      }
+    }
+
+    // 3. Filter by search term
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       items = items.filter(item =>
@@ -79,7 +160,7 @@ export function WizardStep3_Budget({ formData, updateFormData }: Props) {
     }
 
     setFilteredBudgets(items);
-  }, [searchTerm, formData.transactionType, allBudgets]);
+  }, [searchTerm, formData.transactionType, allBudgets, constraints]);
 
   const handleSelectBudget = (budget: BudgetDisplayItem) => {
     updateFormData({
@@ -88,7 +169,7 @@ export function WizardStep3_Budget({ formData, updateFormData }: Props) {
       budgetDescription: budget.name,
       budgetType: budget.budgetType,
       availableBudget: budget.remaining,
-      budgetRowType: budget.rowType, // For form selection in Step 5
+      // budgetRowType removed - not available in new Zero-Trust API
     });
   };
 
@@ -113,6 +194,20 @@ export function WizardStep3_Budget({ formData, updateFormData }: Props) {
         </p>
       </div>
 
+      {/* Constraint Banner - shows active filtering */}
+      {constraintInfo && (
+        <div className="bg-primary/10 border border-primary/20 px-4 py-3 rounded-lg flex items-center gap-3">
+          <Filter className="h-4 w-4 text-primary flex-shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-primary">فیلتر فعال بر اساس فعالیت</p>
+            <p className="text-xs text-muted-foreground truncate">{constraintInfo}</p>
+          </div>
+          <Badge variant="secondary" className="text-xs flex-shrink-0">
+            {filteredBudgets.length} نتیجه
+          </Badge>
+        </div>
+      )}
+
       {/* Search Budget */}
       <div className="space-y-3">
         <Label htmlFor="budgetSearch">جستجو در ردیف‌های بودجه</Label>
@@ -129,13 +224,16 @@ export function WizardStep3_Budget({ formData, updateFormData }: Props) {
         </div>
       </div>
 
-      {/* Budget List as Searchable List */}
+      {/* Budget List */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <Label>لیست ردیف‌های بودجه</Label>
           {filteredBudgets.length > 0 && (
             <span className="text-xs text-muted-foreground">
-              {filteredBudgets.length} ردیف ({formData.transactionType === 'expense' ? 'هزینه‌ای' : 'سرمایه‌ای'})
+              {filteredBudgets.length} ردیف
+              {constraints?.allowed_budget_types?.length === 1 && (
+                <> ({constraints.allowed_budget_types[0] === 'expense' ? 'هزینه‌ای' : 'سرمایه‌ای'})</>
+              )}
             </span>
           )}
         </div>
@@ -155,19 +253,18 @@ export function WizardStep3_Budget({ formData, updateFormData }: Props) {
           </div>
         ) : filteredBudgets.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
-            ردیف بودجه‌ای یافت نشد
+            {constraints ? 'ردیف بودجه‌ای مطابق با محدودیت فعالیت یافت نشد' : 'ردیف بودجه‌ای یافت نشد'}
           </div>
         ) : (
           <div
             className="border rounded-lg overflow-y-auto"
             style={{
-              maxHeight: '240px', // ارتفاع ثابت برای نمایش حدود 3 ردیف
-              scrollbarWidth: 'thin', // برای فایرفاکس
-              scrollbarColor: '#94a3b8 transparent' // رنگ اسکرول بار
+              maxHeight: '240px',
+              scrollbarWidth: 'thin',
+              scrollbarColor: '#94a3b8 transparent'
             }}
           >
             <style>{`
-              /* استایل اختصاصی برای اسکرول بار وب‌کیت (کروم، اج) داخل همین کامپوننت */
               .budget-list-container::-webkit-scrollbar {
                 width: 6px;
               }
@@ -202,7 +299,7 @@ export function WizardStep3_Budget({ formData, updateFormData }: Props) {
                         )}
                       </div>
 
-                      {/* Budget Info - Main */}
+                      {/* Budget Info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-mono text-sm">{budget.code}</span>
