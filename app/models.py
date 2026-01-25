@@ -29,6 +29,21 @@ class HistoryAction(enum.Enum):
     REJECT = "REJECT"           # Rejected and returned to user
     RESUBMIT = "RESUBMIT"       # Resubmitted after rejection
 
+
+class AccountingStatus(enum.Enum):
+    """Accounting posting state (separate from workflow)"""
+    READY_TO_POST = "READY_TO_POST"
+    POSTED = "POSTED"
+    POST_ERROR = "POST_ERROR"
+
+
+class AccountingEventType(enum.Enum):
+    """Event types for accounting audit log"""
+    POSTED = "POSTED"
+    POST_FAILED = "POST_FAILED"
+    EXPORTED = "EXPORTED"
+    SNAPSHOT_CREATED = "SNAPSHOT_CREATED"
+
 # --- جداول پایه ---
 class OrgUnit(Base):
     __tablename__ = "org_units"
@@ -82,13 +97,21 @@ class SpecialAction(Base):
     __tablename__ = "special_actions"
     id = Column(Integer, primary_key=True, index=True)
     unique_code = Column(String, unique=True, index=True)
-    org_unit_id = Column(Integer, nullable=True) # برای سادگی nullable کردیم
+    org_unit_id = Column(Integer, ForeignKey("org_units.id"), nullable=True)
     amount = Column(Float)
     local_record_id = Column(String, index=True)
     description = Column(String, nullable=True)
     action_date = Column(Date, nullable=True)
     details = Column(JSON, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationship for eager loading
+    org_unit = relationship("OrgUnit")
+    
+    @property
+    def org_unit_title(self) -> str:
+        """Computed property for schema compatibility - use with selectinload(SpecialAction.org_unit)."""
+        return self.org_unit.title if self.org_unit else None
 
 class FinancialDocument(Base):
     __tablename__ = "financial_documents"
@@ -395,10 +418,32 @@ class Transaction(Base):
     # سال مالی
     fiscal_year = Column(String, default="1403")
     
+    # === Accounting Posting Module ===
+    accounting_status = Column(Enum(AccountingStatus), nullable=True, index=True)
+    posted_at = Column(DateTime, nullable=True)
+    posted_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    posting_ref = Column(String(100), nullable=True, index=True)
+    posting_notes = Column(String(500), nullable=True)
+    
+    # Error tracking
+    post_error_message = Column(String, nullable=True)
+    post_error_at = Column(DateTime, nullable=True)
+    post_retry_count = Column(Integer, default=0)
+    
+    # Export tracking
+    export_count = Column(Integer, default=0)
+    last_exported_at = Column(DateTime, nullable=True)
+    last_exported_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    
+    # Optimistic locking
+    version = Column(Integer, default=1, nullable=False)
+    
     # Relationships
     created_by = relationship("User", foreign_keys=[created_by_id], backref="created_transactions")
     reviewed_by = relationship("User", foreign_keys=[reviewed_by_id], backref="reviewed_transactions")
     rejected_by = relationship("User", foreign_keys=[rejected_by_user_id], backref="rejected_transactions")
+    posted_by = relationship("User", foreign_keys=[posted_by_id], backref="posted_transactions")
+    last_exported_by = relationship("User", foreign_keys=[last_exported_by_id])
     zone = relationship("OrgUnit", foreign_keys=[zone_id])
     department = relationship("OrgUnit", foreign_keys=[department_id])
     section = relationship("OrgUnit", foreign_keys=[section_id])
@@ -624,5 +669,116 @@ class TransactionHistory(Base):
     
     # Relationships
     transaction = relationship("Transaction", backref="history_entries")
+    actor = relationship("User")
+
+
+# ============================================
+# Accounting Posting Module
+# ============================================
+
+class JournalSnapshot(Base):
+    """Immutable journal entry frozen at L4 approval.
+    
+    Contains the journal lines that represent the accounting entry
+    for a transaction. Created when transaction reaches APPROVED status.
+    """
+    __tablename__ = "journal_snapshots"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    transaction_id = Column(Integer, ForeignKey("transactions.id"), unique=True, nullable=False)
+    unique_code = Column(String(64), unique=True, nullable=True)  # Denormalized for lookups
+    
+    # Snapshot metadata
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    snapshot_version = Column(Integer, default=1, nullable=False)
+    snapshot_hash = Column(String(64), nullable=False)  # SHA-256
+    
+    # Aggregates (denormalized for performance)
+    total_debit = Column(BigInteger, nullable=False)
+    total_credit = Column(BigInteger, nullable=False)
+    is_balanced = Column(Boolean, nullable=False)
+    line_count = Column(Integer, nullable=False)
+    
+    # Validation state at snapshot
+    validation_status = Column(String(20), default="VALID")  # VALID, WARNING, BLOCKED
+    validation_errors_json = Column(JSON, nullable=True)
+    
+    # Relationships
+    transaction = relationship("Transaction", backref="journal_snapshot")
+    lines = relationship("JournalLine", back_populates="snapshot", cascade="all, delete-orphan")
+
+
+class JournalLine(Base):
+    """Individual debit/credit line within a journal snapshot."""
+    __tablename__ = "journal_lines"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    snapshot_id = Column(Integer, ForeignKey("journal_snapshots.id"), nullable=False)
+    
+    # Line identification
+    line_sequence = Column(Integer, nullable=False)  # 1, 2, 3...
+    
+    # Account reference
+    account_code = Column(String(20), nullable=False, index=True)
+    account_name = Column(String(200), nullable=False)
+    account_type = Column(String(20), nullable=False)  # TEMPORARY, PERMANENT, BANK
+    
+    # Amounts (exactly one non-zero)
+    debit_amount = Column(BigInteger, default=0, nullable=False)
+    credit_amount = Column(BigInteger, default=0, nullable=False)
+    
+    # Optional classification
+    cost_center_code = Column(String(20), nullable=True)
+    budget_code = Column(String(20), nullable=True, index=True)
+    
+    # Description
+    line_description = Column(String(500), nullable=True)
+    
+    # Audit trail
+    source_budget_item_id = Column(Integer, nullable=True)
+    
+    # Relationships
+    snapshot = relationship("JournalSnapshot", back_populates="lines")
+    
+    __table_args__ = (
+        CheckConstraint(
+            '(debit_amount > 0 AND credit_amount = 0) OR (debit_amount = 0 AND credit_amount > 0)',
+            name='check_journal_line_single_side'
+        ),
+    )
+
+
+class AccountingAuditLog(Base):
+    """Immutable audit trail for all accounting operations."""
+    __tablename__ = "accounting_audit_logs"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # What
+    event_type = Column(Enum(AccountingEventType), nullable=False, index=True)
+    transaction_id = Column(Integer, ForeignKey("transactions.id"), nullable=False, index=True)
+    
+    # When
+    occurred_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    
+    # Who
+    actor_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    actor_username = Column(String, nullable=False)  # Denormalized for immutability
+    actor_ip = Column(String(45), nullable=True)
+    
+    # Details
+    posting_ref = Column(String(100), nullable=True)
+    export_id = Column(String(50), nullable=True)
+    error_message = Column(String, nullable=True)
+    
+    # State snapshot
+    before_status = Column(String, nullable=True)
+    after_status = Column(String, nullable=True)
+    
+    # Metadata
+    request_id = Column(String(36), nullable=True)  # Correlation ID
+    
+    # Relationships
+    transaction = relationship("Transaction")
     actor = relationship("User")
 
