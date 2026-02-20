@@ -32,17 +32,28 @@ from app.database import SessionLocal, engine
 # Configure logging for response validation errors
 logger = logging.getLogger(__name__)
 from app.routers import (
-    budget_router, rbac_router, auth_router, admin_router,
+    auth_router, admin_router, budget_router, rbac_router,
     portal_router, subsystems_router, orgs_router, 
-    test_mode_router, accounts_router, accounting_router
+    test_mode_router, accounts_router, accounting_router,
+    treasury_integration_router, credit_requests_router,
+    contractors_router, templates_router, contracts_router,
+    statements_router, reports_router,
 )
 from pydantic import BaseModel
 
-# --- Database Initialization ---
-models.Base.metadata.create_all(bind=engine)
-
 # --- FastAPI App ---
 app = FastAPI(title="Municipality Action Portal")
+
+# --- Database Initialization (lazy - on startup) ---
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database tables on server startup"""
+    try:
+        models.Base.metadata.create_all(bind=engine)
+        logger.info("Database tables initialized successfully")
+    except Exception as e:
+        logger.warning(f"Database initialization failed (PostgreSQL may not be running): {e}")
+        logger.warning("Server will continue, but database operations may fail until PostgreSQL is available")
 
 # --- Register API Routers ---
 app.include_router(auth_router)
@@ -55,6 +66,13 @@ app.include_router(accounts_router)
 app.include_router(budget_router, tags=["Budget Control"])
 app.include_router(rbac_router, tags=["RBAC - Access Control"])
 app.include_router(accounting_router)
+app.include_router(treasury_integration_router)
+app.include_router(credit_requests_router)
+app.include_router(contractors_router)
+app.include_router(templates_router)
+app.include_router(contracts_router)
+app.include_router(statements_router)
+app.include_router(reports_router, tags=["Reports"])
 
 # --- CORS Configuration ---
 allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8000,http://localhost:5173").split(",")
@@ -84,8 +102,22 @@ async def response_validation_exception_handler(request: Request, exc: ResponseV
 
 # --- Mount React Build Static Files ---
 REACT_BUILD_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", "build")
+ARCHIVE_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "archive")
 if os.path.exists(REACT_BUILD_PATH):
     app.mount("/react-assets", StaticFiles(directory=os.path.join(REACT_BUILD_PATH, "assets")), name="react-assets")
+
+
+# Helper function to serve React app with proper asset paths
+def serve_react_app():
+    """Serve React build index.html with corrected asset paths"""
+    react_index = os.path.join(REACT_BUILD_PATH, "index.html")
+    if os.path.exists(react_index):
+        with open(react_index, "r", encoding="utf-8") as f:
+            html = f.read()
+            html = html.replace('="/assets/', '="/react-assets/')
+            html = html.replace("='/assets/", "='/react-assets/")
+            return html
+    return None
 
 
 # --- Portal Submit (for legacy 11-part code generation) ---
@@ -136,47 +168,52 @@ def submit_action(data: PortalSubmit):
     }
 
 
-# --- HTML Page Serving ---
+# --- HTML Page Serving (React-First with Archive Fallback) ---
 @app.get("/login", response_class=HTMLResponse)
 def read_login():
-    """Serve login page"""
+    """Serve React app for login (legacy HTML archived)"""
+    react_html = serve_react_app()
+    if react_html:
+        return react_html
+    # Fallback to archived HTML
     try:
-        with open("login.html", "r", encoding="utf-8") as f:
+        with open(os.path.join(ARCHIVE_PATH, "login.html"), "r", encoding="utf-8") as f:
             return f.read()
     except FileNotFoundError:
-        return "<h1>Error: login.html not found!</h1>"
+        return "<h1>React build not found. Run 'npm run build' in frontend/</h1>"
 
 
 @app.get("/portal", response_class=HTMLResponse)
 def read_portal():
-    """Serve React app for portal"""
-    react_index = os.path.join(REACT_BUILD_PATH, "index.html")
-    if os.path.exists(react_index):
-        with open(react_index, "r", encoding="utf-8") as f:
-            html = f.read()
-            html = html.replace('="/assets/', '="/react-assets/')
-            html = html.replace("='/assets/", "='/react-assets/")
-            return html
+    """Serve React app for portal (legacy HTML archived)"""
+    react_html = serve_react_app()
+    if react_html:
+        return react_html
+    # Fallback to archived HTML
     try:
-        with open("portal.html", "r", encoding="utf-8") as f:
+        with open(os.path.join(ARCHIVE_PATH, "portal.html"), "r", encoding="utf-8") as f:
             return f.read()
     except FileNotFoundError:
-        return "<h1>Error: portal not found!</h1>"
+        return "<h1>React build not found. Run 'npm run build' in frontend/</h1>"
 
 
 @app.get("/admin", response_class=HTMLResponse)
 def read_admin():
-    """Serve admin dashboard"""
+    """Serve React app for admin dashboard (legacy HTML archived)"""
+    react_html = serve_react_app()
+    if react_html:
+        return react_html
+    # Fallback to archived HTML
     try:
-        with open("admin.html", "r", encoding="utf-8") as f:
+        with open(os.path.join(ARCHIVE_PATH, "admin.html"), "r", encoding="utf-8") as f:
             return f.read()
     except FileNotFoundError:
-        return "<h1>Error: admin.html not found!</h1>"
+        return "<h1>React build not found. Run 'npm run build' in frontend/</h1>"
 
 
 @app.get("/portal/test2", response_class=HTMLResponse)
 def read_test_mode2():
-    """Serve Test Mode 2 page"""
+    """Serve Test Mode 2 page (standalone debug tool - kept as-is)"""
     try:
         with open("test_mode2.html", "r", encoding="utf-8") as f:
             return f.read()
@@ -184,6 +221,16 @@ def read_test_mode2():
         return "<h1>Error: test_mode2.html not found!</h1>"
 
 
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
 def root():
-    return RedirectResponse(url="/login")
+    """Serve React app for root (public dashboard)"""
+    react_html = serve_react_app()
+    if react_html:
+        return react_html
+    # Fallback to archived HTML
+    try:
+        with open(os.path.join(ARCHIVE_PATH, "index.html"), "r", encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        return RedirectResponse(url="/login")
+

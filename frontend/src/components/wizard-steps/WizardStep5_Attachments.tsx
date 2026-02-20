@@ -5,6 +5,7 @@ import { Input } from '../ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { Card } from '../ui/card';
 import { Badge } from '../ui/badge';
+import { formatNumber } from '../../lib/utils';
 import {
     FileText,
     Upload,
@@ -154,10 +155,9 @@ export function WizardStep5_Attachments({ formData, updateFormData }: Props) {
         }
     };
 
-    // Helper for currency formatting
     const formatAmount = (val: number | undefined) => {
         if (!val) return '';
-        return new Intl.NumberFormat('fa-IR').format(val);
+        return formatNumber(val);
     };
 
     return (
@@ -249,7 +249,7 @@ export function WizardStep5_Attachments({ formData, updateFormData }: Props) {
                                                                     </span>
                                                                     {doc.meta.amt > 0 && (
                                                                         <span className="text-[10px] bg-slate-100 px-1 rounded text-slate-600">
-                                                                            مبلغ: {new Intl.NumberFormat('fa-IR').format(doc.meta.amt)}
+                                                                            مبلغ: {formatNumber(doc.meta.amt)}
                                                                         </span>
                                                                     )}
                                                                 </div>
@@ -302,7 +302,7 @@ export function WizardStep5_Attachments({ formData, updateFormData }: Props) {
                                                 inputMode="numeric"
                                                 placeholder="0"
                                                 className="pr-10"
-                                                value={formData.amount ? new Intl.NumberFormat('fa-IR').format(formData.amount) : ''}
+                                                value={formData.amount ? formatNumber(formData.amount) : ''}
                                                 onChange={handleAmountChange}
                                             />
                                         </div>

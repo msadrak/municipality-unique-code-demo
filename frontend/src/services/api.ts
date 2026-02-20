@@ -2,6 +2,14 @@
 
 const API_BASE_URL = '';  // Same origin, use relative URLs
 
+// Custom error class for 403 Forbidden responses
+export class ForbiddenError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'ForbiddenError';
+    }
+}
+
 interface RequestOptions extends RequestInit {
     params?: Record<string, string | number | undefined>;
 }
@@ -34,6 +42,22 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
     });
 
     if (!response.ok) {
+        // Handle 401 Unauthorized - session expired
+        if (response.status === 401) {
+            // Clear auth state and redirect to login
+            // Import dynamically to avoid circular dependency
+            const { useAuthStore } = await import('../stores/useAuthStore');
+            useAuthStore.getState().logout();
+            window.location.href = '/login';
+            throw new Error('جلسه شما منقضی شده است. لطفا مجددا وارد شوید.');
+        }
+
+        // Handle 403 Forbidden
+        if (response.status === 403) {
+            const error = await response.json().catch(() => ({ detail: 'دسترسی غیرمجاز' }));
+            throw new ForbiddenError(error.detail || 'شما دسترسی به این بخش را ندارید');
+        }
+
         const error = await response.json().catch(() => ({ detail: 'خطای سرور' }));
         throw new Error(error.detail || `HTTP error ${response.status}`);
     }

@@ -429,6 +429,7 @@ export async function fetchAdminTransactions(params?: {
 
 // Transaction Creation Types
 export interface TransactionCreateData {
+    credit_request_id?: number;  // Stage 1 Gateway
     zone_id: number;
     department_id?: number;
     section_id?: number;

@@ -13,6 +13,7 @@ import {
     fetchAccountingInbox, fetchJournalPreview,
     postTransaction, batchPostTransactions, exportTransactions
 } from '../../services/accounting';
+import { formatRial } from '../../lib/utils';
 
 // ============ CONSTANTS ============
 const STATUS_OPTIONS = [
@@ -271,10 +272,6 @@ export function AccountingInboxPage() {
     }, [items, focusedIndex, openPreview, toggleSelection, handlePostClick, handleExport, closePreview]);
 
     // ============ RENDER ============
-    const formatAmount = (amount: number) => {
-        return new Intl.NumberFormat('fa-IR').format(amount) + ' ریال';
-    };
-
     const formatDate = (dateStr: string | null) => {
         if (!dateStr) return '-';
         return new Date(dateStr).toLocaleDateString('fa-IR');
@@ -405,7 +402,7 @@ export function AccountingInboxPage() {
                                 <td>{item.unique_code}</td>
                                 <td>{formatDate(item.approved_at)}</td>
                                 <td>{item.beneficiary_name}</td>
-                                <td className="amount">{formatAmount(item.amount)}</td>
+                                <td className="amount">{formatRial(item.amount)}</td>
                                 <td>{item.zone_title}</td>
                                 <td>
                                     <span className={`badge ${STATUS_BADGE_CLASSES[item.accounting_status || 'READY_TO_POST']}`}>
@@ -484,16 +481,16 @@ export function AccountingInboxPage() {
                                                 <td>{line.sequence}</td>
                                                 <td>{line.account_code}</td>
                                                 <td>{line.account_name}</td>
-                                                <td className="amount">{line.debit_amount > 0 ? formatAmount(line.debit_amount) : '-'}</td>
-                                                <td className="amount">{line.credit_amount > 0 ? formatAmount(line.credit_amount) : '-'}</td>
+                                                <td className="amount">{line.debit_amount > 0 ? formatRial(line.debit_amount) : '-'}</td>
+                                                <td className="amount">{line.credit_amount > 0 ? formatRial(line.credit_amount) : '-'}</td>
                                             </tr>
                                         ))}
                                     </tbody>
                                     <tfoot>
                                         <tr>
                                             <td colSpan={3}><strong>جمع</strong></td>
-                                            <td className="amount">{formatAmount(preview.total_debit)}</td>
-                                            <td className="amount">{formatAmount(preview.total_credit)}</td>
+                                            <td className="amount">{formatRial(preview.total_debit)}</td>
+                                            <td className="amount">{formatRial(preview.total_credit)}</td>
                                         </tr>
                                     </tfoot>
                                 </table>
@@ -539,7 +536,7 @@ export function AccountingInboxPage() {
                         <div className="modal-content">
                             <p><strong>شناسه:</strong> {postingItem.unique_code}</p>
                             <p><strong>ذینفع:</strong> {postingItem.beneficiary_name}</p>
-                            <p><strong>مبلغ:</strong> {formatAmount(postingItem.amount)}</p>
+                            <p><strong>مبلغ:</strong> {formatRial(postingItem.amount)}</p>
 
                             <label>
                                 شماره مرجع ثبت:

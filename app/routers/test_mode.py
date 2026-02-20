@@ -1,13 +1,20 @@
 """
 Test Mode Router - Excel-based test endpoints for verification
 """
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
-import pandas as pd
 import os
 from app import models
 from app.routers.auth import get_db
+
+# Optional pandas import - required for Excel operations
+try:
+    import pandas as pd
+    PANDAS_AVAILABLE = True
+except ImportError:
+    PANDAS_AVAILABLE = False
+    pd = None
 
 router = APIRouter(prefix="/portal", tags=["Test Mode"])
 
@@ -18,6 +25,8 @@ _sheet_names_cache = None
 _transaction_df_cache = None
 
 def get_sheet_names():
+    if not PANDAS_AVAILABLE:
+        raise HTTPException(status_code=503, detail="pandas is required for Excel operations but is not installed. Please install pandas: pip install pandas openpyxl")
     global _sheet_names_cache
     if _sheet_names_cache is None:
         xl = pd.ExcelFile(EXCEL_FILE)
@@ -25,11 +34,19 @@ def get_sheet_names():
     return _sheet_names_cache
 
 def safe_str(val, default=""):
+    if not PANDAS_AVAILABLE:
+        return str(val) if val is not None else default
     if pd.isna(val):
         return default
     return str(val)
 
 def clean_request_id(req):
+    if not PANDAS_AVAILABLE:
+        if req is None:
+            return None
+        req_str = str(req).strip()
+        req_str = ' '.join(req_str.split())
+        return req_str if req_str else None
     if pd.isna(req):
         return None
     req_str = str(req).strip()
@@ -37,6 +54,8 @@ def clean_request_id(req):
     return req_str if req_str else None
 
 def get_transaction_df():
+    if not PANDAS_AVAILABLE:
+        raise HTTPException(status_code=503, detail="pandas is required for Excel operations but is not installed. Please install pandas: pip install pandas openpyxl")
     global _transaction_df_cache
     if _transaction_df_cache is None:
         df = pd.read_excel(TRANSACTION_FILE)
@@ -56,6 +75,8 @@ def get_excel_sheets():
 @router.get("/test/requests/{sheet_name:path}")
 def get_sheet_requests(sheet_name: str):
     """Get request numbers for a specific sheet (Zone 20 only)"""
+    if not PANDAS_AVAILABLE:
+        raise HTTPException(status_code=503, detail="pandas is required for Excel operations but is not installed. Please install pandas: pip install pandas openpyxl")
     try:
         actual_sheet_name = None
         for name in get_sheet_names():
@@ -108,6 +129,8 @@ def get_budget_items(search: str = "", trustee: str = "", subject: str = "", row
 @router.get("/test2/budget-items/{budget_code}")
 def get_budget_item_detail(budget_code: str, db: Session = Depends(get_db)):
     """Get single budget item with transaction summary"""
+    if not PANDAS_AVAILABLE:
+        raise HTTPException(status_code=503, detail="pandas is required for Excel operations but is not installed. Please install pandas: pip install pandas openpyxl")
     item = db.query(models.BudgetItem).filter(models.BudgetItem.budget_code == budget_code).first()
     if not item:
         return {"error": f"Budget code not found: {budget_code}"}

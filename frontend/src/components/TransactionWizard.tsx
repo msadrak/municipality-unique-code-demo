@@ -14,7 +14,10 @@ import { WizardStep7_Submit } from './wizard-steps/WizardStep7_Submit';
 import { createTransaction, TransactionCreateData } from '../services/adapters';
 import { useTransactionStore } from '../stores/useTransactionStore';
 import { ActivityConstraint } from '../types/dashboard';
-import { useBudgetValidation, blockBudgetFunds, formatCurrencyRial } from '../services/budgetValidation';
+import { useBudgetValidation, blockBudgetFunds } from '../services/budgetValidation';
+import { formatRial } from '../lib/utils';
+import { CreditRequestGateSelector } from './CreditRequestGateSelector';
+import type { CreditRequestListItem } from '../types/creditRequest';
 
 export type TransactionFormData = {
   // Step 0 - Subsystem Selection (NEW)
@@ -75,6 +78,11 @@ export type TransactionFormData = {
 
   // Step 7 - Preview
   uniqueCode?: string;
+
+  // Stage 1 Gateway
+  creditRequestId?: number;
+  creditRequestCode?: string;
+  creditRequestAmount?: number;
 };
 
 
@@ -209,6 +217,12 @@ export function TransactionWizard({ userId }: TransactionWizardProps) {
   };
 
   const handleSubmit = async () => {
+    // Stage 1 Gateway check: credit request is mandatory
+    if (!formData.creditRequestId) {
+      setSubmitError('انتخاب درخواست تامین اعتبار تایید شده الزامی است. لطفاً به مرحله ۷ بازگردید و درخواست را انتخاب کنید.');
+      return;
+    }
+
     // Build the payload for the API
     if (!formData.zoneId || !formData.budgetCode || !formData.beneficiaryName || !formData.amount) {
       setSubmitError('لطفاً تمام فیلدهای الزامی را تکمیل کنید');
@@ -218,8 +232,8 @@ export function TransactionWizard({ userId }: TransactionWizardProps) {
     // VALIDATION: Check if amount exceeds available budget
     if (formData.amount > (formData.availableBudget || 0)) {
       setSubmitError(
-        `مبلغ وارد شده (${formatCurrencyRial(formData.amount)}) بیشتر از مانده اعتبار ` +
-        `(${formatCurrencyRial(formData.availableBudget || 0)}) است. امکان ثبت وجود ندارد.`
+        `مبلغ وارد شده (${formatRial(formData.amount)}) بیشتر از مانده اعتبار ` +
+        `(${formatRial(formData.availableBudget || 0)}) است. امکان ثبت وجود ندارد.`
       );
       return;
     }
@@ -255,6 +269,7 @@ export function TransactionWizard({ userId }: TransactionWizardProps) {
 
       // STEP 2: Create the transaction (only if blocking succeeded)
       const payload: TransactionCreateData = {
+        credit_request_id: formData.creditRequestId,
         zone_id: formData.zoneId,
         department_id: formData.departmentId,
         section_id: formData.sectionId,
@@ -398,6 +413,7 @@ export function TransactionWizard({ userId }: TransactionWizardProps) {
             formData={formData}
             updateFormData={updateFormData}
             constraints={budgetConstraints}  // Pass constraints for filtering
+            onConfirmAndNext={formData.budgetItemId ? nextStep : undefined}
           />
         )}
         {currentStep === 4 && (
@@ -410,7 +426,38 @@ export function TransactionWizard({ userId }: TransactionWizardProps) {
           <WizardStep6_Preview formData={formData} updateFormData={updateFormData} />
         )}
         {currentStep === 7 && (
-          <WizardStep7_Submit formData={formData} />
+          <div className="space-y-6">
+            {/* Stage 1 Gateway: CR selector */}
+            <CreditRequestGateSelector
+              zoneId={formData.zoneId}
+              departmentId={formData.departmentId}
+              sectionId={formData.sectionId}
+              budgetCode={formData.budgetCode}
+              selectedCRId={formData.creditRequestId}
+              onSelect={(cr: CreditRequestListItem) => {
+                updateFormData({
+                  creditRequestId: cr.id,
+                  creditRequestCode: cr.credit_request_code,
+                  creditRequestAmount: cr.amount_approved ?? cr.amount_requested,
+                });
+              }}
+              onCreateNew={() => {
+                // Open credit request manager in a new tab/view
+                // For now, show a helpful message
+                window.open('/portal#credit-requests', '_blank');
+              }}
+            />
+            {formData.creditRequestId && (
+              <div className="bg-green-50 border border-green-200 p-3 rounded text-sm text-green-700">
+                درخواست تامین اعتبار انتخاب شده: <strong>{formData.creditRequestCode}</strong>
+                {' — '}سقف: <span className="font-mono-num">{formData.creditRequestAmount
+                  ? formatRial(formData.creditRequestAmount)
+                  : '-'}</span>
+              </div>
+            )}
+            <hr className="border-border" />
+            <WizardStep7_Submit formData={formData} onResetWizard={resetWizard} />
+          </div>
         )}
       </Card>
 
@@ -450,24 +497,9 @@ export function TransactionWizard({ userId }: TransactionWizardProps) {
               )}
             </Button>
           ) : (
-            <Button
-              onClick={handleSubmit}
-              size="lg"
-              className="bg-green-600 hover:bg-green-700"
-              disabled={isSubmitting || isBudgetExceeded}  // Also disable if budget exceeded
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  در حال ثبت...
-                </>
-              ) : (
-                <>
-                  ثبت نهایی تراکنش
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
-                </>
-              )}
-            </Button>
+            <div className="px-3 text-sm text-muted-foreground">
+              Final submission is handled inside Step 7.
+            </div>
           )}
         </div>
       </Card>

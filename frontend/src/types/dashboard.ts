@@ -46,3 +46,23 @@ export interface DashboardInitResponse {
     has_subsystem: boolean;
     message: string | null;
 }
+
+// ============ Executive Dashboard Report Types ============
+
+export interface DashboardSummaryResponse {
+    total_budget: number;
+    committed_funds: number;
+    executed_funds: number;
+    active_contracts: number;
+    by_department: Array<{
+        name: string; // Persian name
+        budget: number;
+        spent: number;
+        remaining: number;
+    }>;
+    by_section: Array<{
+        name: string;
+        value: number; // Budget amount
+        color: string; // Hex code
+    }>;
+}

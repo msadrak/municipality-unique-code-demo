@@ -2,10 +2,11 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
 import { Badge } from './ui/badge';
-import { Building2, LogOut, FileText, List, Loader2, AlertCircle, RefreshCw, ArrowRight } from 'lucide-react';
+import { Building2, LogOut, FileText, List, Loader2, AlertCircle, RefreshCw, ArrowRight, ShieldCheck } from 'lucide-react';
 import { TransactionWizard } from './TransactionWizard';
 import { MyTransactionsList } from './MyTransactionsList';
 import { DashboardActivityCard } from './DashboardActivityCard';
+import { CreditRequestManager } from './CreditRequestManager';
 import { useTransactionStore } from '../stores/useTransactionStore';
 import { AllowedActivity } from '../types/dashboard';
 
@@ -22,8 +23,8 @@ type UserPortalProps = {
   onNavigateToPublic: () => void;
 };
 
-// Simplified views: activity-selection (Grid) or wizard (in-progress transaction)
-type View = 'activity-selection' | 'wizard' | 'my-transactions';
+// Views: activity-selection (Grid), wizard (in-progress transaction), my-transactions, credit-requests
+type View = 'activity-selection' | 'wizard' | 'my-transactions' | 'credit-requests';
 
 export function UserPortal({ user, onLogout, onNavigateToPublic }: UserPortalProps) {
   const [currentView, setCurrentView] = useState<View>('activity-selection');
@@ -144,6 +145,18 @@ export function UserPortal({ user, onLogout, onNavigateToPublic }: UserPortalPro
             >
               <List className="h-4 w-4 inline-block ml-2" />
               تراکنش‌های من
+            </button>
+
+            {/* Tab 3: Credit Requests (Stage 1 Gateway) */}
+            <button
+              onClick={() => setCurrentView('credit-requests')}
+              className={`px-6 py-3 border-b-2 transition-colors ${currentView === 'credit-requests'
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-muted-foreground hover:text-foreground'
+                }`}
+            >
+              <ShieldCheck className="h-4 w-4 inline-block ml-2" />
+              تامین اعتبار
             </button>
           </div>
         </div>
@@ -271,6 +284,17 @@ export function UserPortal({ user, onLogout, onNavigateToPublic }: UserPortalPro
 
         {/* My Transactions View */}
         {currentView === 'my-transactions' && <MyTransactionsList userId={user.id} />}
+
+        {/* Credit Requests View (Stage 1 Gateway) */}
+        {currentView === 'credit-requests' && (
+          <CreditRequestManager
+            userId={user.id}
+            userZoneId={userContext?.zone_id ?? undefined}
+            userDeptId={undefined}
+            userSectionId={userContext?.section_id ?? undefined}
+            userZoneCode={userContext?.zone_code ?? undefined}
+          />
+        )}
       </main>
     </div>
   );

@@ -1,10 +1,11 @@
 """
 Admin Router - Transaction management with 4-level workflow
 """
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import or_
+from sqlalchemy import or_, func, case
 from pydantic import BaseModel
+from typing import Optional
 from datetime import datetime
 from app import models
 from app.routers.auth import get_current_user, get_db
@@ -150,3 +151,245 @@ def admin_reject_transaction(transaction_id: int, data: RejectWithReasonRequest,
     db.add(models.WorkflowLog(transaction_id=t.id, admin_id=current_user.id, admin_level=admin_level, action=action, comment=data.reason, previous_status=previous_status, new_status=new_status))
     db.commit()
     return {"status": "success", "message": "تراکنش به کاربر برگشت داده شد" if data.return_to_user else "تراکنش رد شد", "new_status": new_status}
+
+
+# ============================================================
+# GET /admin/inbox — Items pending for the current user's level
+# ============================================================
+
+def _require_admin(request: Request, db: Session):
+    """Get authenticated admin user or raise."""
+    user = get_current_user(request, db)
+    if not user:
+        raise HTTPException(status_code=401, detail="احراز هویت الزامی است")
+    if user.role != "admin" and not (user.role or "").startswith("ADMIN_L"):
+        raise HTTPException(status_code=403, detail="فقط ادمین دسترسی دارد")
+    return user
+
+
+def _serialize_transaction(t: models.Transaction, db: Session) -> dict:
+    """Convert a Transaction ORM instance to a JSON-safe dict."""
+    zone = db.query(models.OrgUnit).filter(models.OrgUnit.id == t.zone_id).first() if t.zone_id else None
+    dept = db.query(models.OrgUnit).filter(models.OrgUnit.id == t.department_id).first() if t.department_id else None
+    budget = db.query(models.BudgetItem).filter(models.BudgetItem.id == t.budget_item_id).first() if t.budget_item_id else None
+    creator = db.query(models.User).filter(models.User.id == t.created_by_id).first() if t.created_by_id else None
+    return {
+        "id": t.id,
+        "unique_code": t.unique_code,
+        "status": t.status,
+        "current_approval_level": t.current_approval_level,
+        "beneficiary_name": t.beneficiary_name,
+        "amount": t.amount,
+        "description": t.description,
+        "contract_number": t.contract_number,
+        "zone_title": zone.title if zone else "-",
+        "dept_title": dept.title if dept else "-",
+        "budget_code": budget.budget_code if budget else "-",
+        "budget_description": budget.description if budget else "-",
+        "created_by_name": creator.full_name if creator else "-",
+        "rejection_reason": t.rejection_reason,
+        "created_at": t.created_at.strftime("%Y/%m/%d %H:%M") if t.created_at else None,
+    }
+
+
+def _serialize_contract(c: models.Contract, db: Session) -> dict:
+    """Convert a Contract ORM instance to a JSON-safe dict."""
+    status_val = c.status.value if isinstance(c.status, models.ContractStatus) else str(c.status)
+    contractor = c.contractor.company_name if c.contractor else "-"
+    org = db.query(models.OrgUnit).filter(models.OrgUnit.id == c.org_unit_id).first() if c.org_unit_id else None
+    return {
+        "id": c.id,
+        "entity_type": "CONTRACT",
+        "contract_number": c.contract_number,
+        "title": c.title,
+        "status": status_val,
+        "contractor_name": contractor,
+        "total_amount": c.total_amount,
+        "paid_amount": c.paid_amount or 0,
+        "org_unit_title": org.title if org else "-",
+        "created_at": c.created_at.strftime("%Y/%m/%d %H:%M") if c.created_at else None,
+    }
+
+
+@router.get("/inbox")
+def admin_inbox(
+    request: Request,
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+    entity_type: Optional[str] = Query(None, description="TRANSACTION or CONTRACT"),
+    db: Session = Depends(get_db),
+):
+    """
+    Inbox: return items pending for the requesting user's approval level.
+
+    For ADMIN_L1 → items with status PENDING_L1
+    For ADMIN_L2 → items with status PENDING_L2
+    etc.
+
+    Includes both Transactions and Contracts (where applicable).
+    """
+    user = _require_admin(request, db)
+    admin_level = user.admin_level or 0
+
+    # Super-admin (role="admin") sees all pending items
+    if user.role == "admin":
+        pending_statuses = ["PENDING_L1", "PENDING_L2", "PENDING_L3", "PENDING_L4"]
+    elif 1 <= admin_level <= 4:
+        pending_statuses = [f"PENDING_L{admin_level}"]
+    else:
+        pending_statuses = []
+
+    items = []
+
+    # --- Transactions ---
+    if entity_type is None or entity_type == "TRANSACTION":
+        tx_query = (
+            db.query(models.Transaction)
+            .filter(models.Transaction.status.in_(pending_statuses))
+            .order_by(models.Transaction.created_at.desc())
+        )
+        tx_total = tx_query.count()
+        offset = (page - 1) * limit
+        for t in tx_query.offset(offset).limit(limit).all():
+            row = _serialize_transaction(t, db)
+            row["entity_type"] = "TRANSACTION"
+            items.append(row)
+    else:
+        tx_total = 0
+
+    # --- Contracts pending approval ---
+    if entity_type is None or entity_type == "CONTRACT":
+        contract_query = (
+            db.query(models.Contract)
+            .filter(models.Contract.status == models.ContractStatus.PENDING_APPROVAL)
+            .order_by(models.Contract.created_at.desc())
+        )
+        contract_total = contract_query.count()
+        for c in contract_query.all():
+            items.append(_serialize_contract(c, db))
+    else:
+        contract_total = 0
+
+    return {
+        "items": items,
+        "total_transactions": tx_total,
+        "total_contracts": contract_total,
+        "admin_level": admin_level,
+        "admin_role": user.role,
+        "page": page,
+        "limit": limit,
+    }
+
+
+# ============================================================
+# GET /admin/overview — All active items with workflow state
+# ============================================================
+
+@router.get("/overview")
+def admin_overview(
+    request: Request,
+    page: int = Query(1, ge=1),
+    limit: int = Query(30, ge=1, le=100),
+    db: Session = Depends(get_db),
+):
+    """
+    System overview: active Transactions and Contracts with their current
+    workflow state for the visual dashboard.
+    """
+    user = _require_admin(request, db)
+
+    active_statuses = [
+        "DRAFT", "PENDING_L1", "PENDING_L2", "PENDING_L3", "PENDING_L4",
+        "APPROVED", "BOOKED",
+    ]
+
+    offset = (page - 1) * limit
+    tx_query = (
+        db.query(models.Transaction)
+        .filter(models.Transaction.status.in_(active_statuses))
+        .order_by(models.Transaction.created_at.desc())
+    )
+    total = tx_query.count()
+    transactions = []
+    for t in tx_query.offset(offset).limit(limit).all():
+        row = _serialize_transaction(t, db)
+        row["entity_type"] = "TRANSACTION"
+        transactions.append(row)
+
+    contract_statuses = [
+        models.ContractStatus.DRAFT,
+        models.ContractStatus.PENDING_APPROVAL,
+        models.ContractStatus.APPROVED,
+        models.ContractStatus.IN_PROGRESS,
+        models.ContractStatus.PENDING_COMPLETION,
+    ]
+    contracts = []
+    for c in (
+        db.query(models.Contract)
+        .filter(models.Contract.status.in_(contract_statuses))
+        .order_by(models.Contract.created_at.desc())
+        .limit(20)
+        .all()
+    ):
+        contracts.append(_serialize_contract(c, db))
+
+    return {
+        "transactions": transactions,
+        "contracts": contracts,
+        "total_transactions": total,
+        "total_contracts": len(contracts),
+        "page": page,
+        "limit": limit,
+    }
+
+
+# ============================================================
+# GET /admin/stats — Aggregate counters for dashboard
+# ============================================================
+
+@router.get("/stats")
+def admin_stats(request: Request, db: Session = Depends(get_db)):
+    """Aggregate counters for the admin command-center dashboard."""
+    user = _require_admin(request, db)
+    admin_level = user.admin_level or 0
+
+    tx_counts = dict(
+        db.query(models.Transaction.status, func.count(models.Transaction.id))
+        .group_by(models.Transaction.status)
+        .all()
+    )
+
+    contract_counts = {}
+    for row in (
+        db.query(models.Contract.status, func.count(models.Contract.id))
+        .group_by(models.Contract.status)
+        .all()
+    ):
+        key = row[0].value if hasattr(row[0], "value") else str(row[0])
+        contract_counts[key] = row[1]
+
+    my_pending = tx_counts.get(f"PENDING_L{admin_level}", 0) if 1 <= admin_level <= 4 else 0
+
+    return {
+        "transactions": {
+            "total": sum(tx_counts.values()),
+            "pending_l1": tx_counts.get("PENDING_L1", 0),
+            "pending_l2": tx_counts.get("PENDING_L2", 0),
+            "pending_l3": tx_counts.get("PENDING_L3", 0),
+            "pending_l4": tx_counts.get("PENDING_L4", 0),
+            "approved": tx_counts.get("APPROVED", 0),
+            "rejected": tx_counts.get("REJECTED", 0),
+            "booked": tx_counts.get("BOOKED", 0),
+            "my_pending": my_pending,
+        },
+        "contracts": {
+            "total": sum(contract_counts.values()),
+            "draft": contract_counts.get("DRAFT", 0),
+            "pending_approval": contract_counts.get("PENDING_APPROVAL", 0),
+            "approved": contract_counts.get("APPROVED", 0),
+            "in_progress": contract_counts.get("IN_PROGRESS", 0),
+            "completed": contract_counts.get("COMPLETED", 0),
+            "closed": contract_counts.get("CLOSED", 0),
+        },
+        "admin_level": admin_level,
+    }

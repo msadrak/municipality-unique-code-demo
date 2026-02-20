@@ -9,6 +9,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import api from './api';
+import { formatRial } from '../lib/utils';
 
 // Types
 export interface BudgetCheckResponse {
@@ -70,11 +71,10 @@ export interface BudgetApiError {
 }
 
 /**
- * Format currency to Persian Rials with thousands separator
+ * @deprecated Use `formatRial` from `@/lib/utils` instead.
+ * Kept as a re-export for backward-compatibility during migration.
  */
-export const formatCurrencyRial = (amount: number): string => {
-    return new Intl.NumberFormat('fa-IR').format(amount) + ' ریال';
-};
+export const formatCurrencyRial = formatRial;
 
 /**
  * useBudgetValidation - Custom Hook for Real-Time Budget Validation
@@ -155,7 +155,7 @@ export function useBudgetValidation(
         if (amount > remaining) {
             state.isValid = false;
             state.canProceed = false;  // DISABLE NEXT BUTTON
-            state.errorMessage = `مبلغ وارد شده (${formatCurrencyRial(amount)}) بیشتر از مانده اعتبار (${formatCurrencyRial(remaining)}) است.`;
+            state.errorMessage = `مبلغ وارد شده (${formatRial(amount)}) بیشتر از مانده اعتبار (${formatRial(remaining)}) است.`;
             return state;
         }
 
@@ -165,7 +165,7 @@ export function useBudgetValidation(
         if (totalApproved > 0) {
             const utilizationAfter = ((totalApproved - remainingAfter) / totalApproved) * 100;
             if (utilizationAfter > 80 && utilizationAfter < 100) {
-                state.warningMessage = `توجه: پس از این تراکنش، تنها ${formatCurrencyRial(remainingAfter)} از بودجه باقی می‌ماند.`;
+                state.warningMessage = `توجه: پس از این تراکنش، تنها ${formatRial(remainingAfter)} از بودجه باقی می‌ماند.`;
             }
         }
 
@@ -208,8 +208,8 @@ export async function blockBudgetFunds(
 
         if (status === 400 && data?.error === 'INSUFFICIENT_FUNDS') {
             throw new Error(
-                `بودجه کافی نیست. مبلغ درخواستی: ${formatCurrencyRial(data.requested_amount ?? 0)}، ` +
-                `مانده قابل استفاده: ${formatCurrencyRial(data.available_balance ?? 0)}`
+                `بودجه کافی نیست. مبلغ درخواستی: ${formatRial(data.requested_amount ?? 0)}، ` +
+                `مانده قابل استفاده: ${formatRial(data.available_balance ?? 0)}`
             );
         }
 

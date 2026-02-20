@@ -8,7 +8,7 @@ import enum
 
 # --- Enums ---
 class ActivityFrequency(enum.Enum):
-    """فرکانس اجرای فعالیت"""
+    """تناوب اجرای فعالیت"""
     DAILY = "DAILY"
     MONTHLY = "MONTHLY"
     YEARLY = "YEARLY"
@@ -396,6 +396,9 @@ class Transaction(Base):
     subsystem_id = Column(Integer, ForeignKey("subsystems.id"), nullable=True)
     subsystem_activity_id = Column(Integer, ForeignKey("subsystem_activities.id"), nullable=True)
     
+    # Stage 1 Gateway: link to approved CreditRequest (nullable for legacy rows)
+    credit_request_id = Column(Integer, ForeignKey("credit_requests.id"), nullable=True, index=True)
+    
     # اطلاعات بودجه و مالی
     budget_item_id = Column(Integer, ForeignKey("budget_items.id"))
     cost_center_id = Column(Integer, ForeignKey("cost_center_refs.id"), nullable=True)
@@ -453,6 +456,7 @@ class Transaction(Base):
     financial_event = relationship("FinancialEventRef")
     subsystem = relationship("Subsystem")
     subsystem_activity = relationship("SubsystemActivity")
+    credit_request = relationship("CreditRequest", foreign_keys=[credit_request_id], backref="linked_transaction")
 
 
 # --- تاریخچه گردش کار ---
@@ -748,6 +752,131 @@ class JournalLine(Base):
     )
 
 
+# ============================================
+# Stage 1 Gateway - Credit Provision Request
+# ============================================
+
+class CreditRequestStatus(enum.Enum):
+    """State machine for Credit Provision Request (درخواست تامین اعتبار)"""
+    DRAFT = "DRAFT"
+    SUBMITTED = "SUBMITTED"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
+    CANCELLED = "CANCELLED"
+
+
+class CreditRequest(Base):
+    """
+    درخواست تامین اعتبار - Stage 1 Gateway Artifact
+    
+    This is the mandatory authorization gate. A downstream Transaction cannot be
+    created unless it references an APPROVED CreditRequest with matching org
+    context, budget_code, and sufficient amount.
+    
+    State machine (minimal):
+        DRAFT -> SUBMITTED -> APPROVED (terminal)
+        DRAFT -> CANCELLED (terminal)
+        SUBMITTED -> REJECTED (terminal)
+        SUBMITTED -> CANCELLED (terminal)
+    
+    Single-use enforcement: used_transaction_id is set when a Transaction
+    consumes this CR. Once set, no further Transactions may reference this CR.
+    """
+    __tablename__ = "credit_requests"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    
+    # Display identifier: CR-<fiscal_year>-<zone_code>-<sequence>
+    credit_request_code = Column(String, unique=True, index=True, nullable=False)
+    
+    # State machine
+    status = Column(
+        Enum(CreditRequestStatus),
+        default=CreditRequestStatus.DRAFT,
+        nullable=False,
+        index=True
+    )
+    
+    # Creator
+    created_by_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Approval / Rejection
+    reviewed_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    reviewed_at = Column(DateTime, nullable=True)
+    rejection_reason = Column(String, nullable=True)
+    
+    # Org context (gate matching fields)
+    zone_id = Column(Integer, ForeignKey("org_units.id"), nullable=False)
+    department_id = Column(Integer, ForeignKey("org_units.id"), nullable=True)
+    section_id = Column(Integer, ForeignKey("org_units.id"), nullable=True)
+    
+    # Budget reference (string match for Stage 1)
+    budget_code = Column(String, nullable=False, index=True)
+    
+    # Amounts
+    amount_requested = Column(Float, nullable=False)
+    amount_approved = Column(Float, nullable=True)  # Set on approval
+    
+    # Content
+    description = Column(String, nullable=False)
+    fiscal_year = Column(String, default="1403", nullable=False, index=True)
+    attachments = Column(JSON, nullable=True)
+    form_data = Column(JSON, nullable=True)
+    
+    # Single-use enforcement: once a transaction uses this CR, record it here
+    used_transaction_id = Column(Integer, ForeignKey("transactions.id"), nullable=True, unique=True)
+    
+    # Optimistic locking
+    version = Column(Integer, default=1, nullable=False)
+    
+    # Idempotency key (optional, unique per creator)
+    client_request_id = Column(String, nullable=True)
+    
+    # Relationships
+    created_by = relationship("User", foreign_keys=[created_by_id], backref="credit_requests_created")
+    reviewed_by = relationship("User", foreign_keys=[reviewed_by_id], backref="credit_requests_reviewed")
+    zone = relationship("OrgUnit", foreign_keys=[zone_id])
+    department = relationship("OrgUnit", foreign_keys=[department_id])
+    section = relationship("OrgUnit", foreign_keys=[section_id])
+    used_transaction = relationship("Transaction", foreign_keys=[used_transaction_id])
+    logs = relationship("CreditRequestLog", back_populates="credit_request", cascade="all, delete-orphan")
+    
+    __table_args__ = (
+        CheckConstraint(
+            'amount_requested > 0',
+            name='cr_amount_requested_positive'
+        ),
+        CheckConstraint(
+            'amount_approved IS NULL OR (amount_approved > 0 AND amount_approved <= amount_requested)',
+            name='cr_amount_approved_valid'
+        ),
+        UniqueConstraint('created_by_id', 'client_request_id', name='cr_idempotency_key'),
+    )
+
+
+class CreditRequestLog(Base):
+    """
+    Append-only audit log for CreditRequest state transitions.
+    Every approve/reject/submit/cancel is recorded here.
+    """
+    __tablename__ = "credit_request_logs"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    credit_request_id = Column(Integer, ForeignKey("credit_requests.id"), nullable=False, index=True)
+    actor_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    action = Column(String, nullable=False)  # SUBMIT, APPROVE, REJECT, CANCEL
+    previous_status = Column(String, nullable=False)
+    new_status = Column(String, nullable=False)
+    comment = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    
+    # Relationships
+    credit_request = relationship("CreditRequest", back_populates="logs")
+    actor = relationship("User")
+
+
 class AccountingAuditLog(Base):
     """Immutable audit trail for all accounting operations."""
     __tablename__ = "accounting_audit_logs"
@@ -782,3 +911,253 @@ class AccountingAuditLog(Base):
     transaction = relationship("Transaction")
     actor = relationship("User")
 
+
+# ============================================
+# Phase 2: Contract Lifecycle Models
+# ============================================
+
+class ContractStatus(enum.Enum):
+    """Contract status state machine (Phase 2)"""
+    DRAFT = "DRAFT"
+    PENDING_APPROVAL = "PENDING_APPROVAL"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
+    NOTIFIED = "NOTIFIED"
+    IN_PROGRESS = "IN_PROGRESS"
+    PENDING_COMPLETION = "PENDING_COMPLETION"
+    COMPLETED = "COMPLETED"
+    GUARANTEE_PERIOD = "GUARANTEE_PERIOD"
+    CLOSED = "CLOSED"
+
+
+class ProgressStatementStatus(enum.Enum):
+    """Progress Statement status state machine (Sprint 3)
+    
+    DRAFT → SUBMITTED → APPROVED → PAID
+    """
+    DRAFT = "DRAFT"
+    SUBMITTED = "SUBMITTED"
+    APPROVED = "APPROVED"
+    PAID = "PAID"
+
+
+class Contractor(Base):
+    """
+    پیمانکار - Contractor entity (data-only in Phase 2, no portal)
+    
+    Contractors are fetched from Setad (mock in Phase 2) or manually entered.
+    The portal_enabled field is reserved for Phase 3 contractor portal activation.
+    """
+    __tablename__ = "contractors"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    national_id = Column(String, unique=True, nullable=False, index=True)  # کد ملی / شناسه ملی
+    company_name = Column(String, nullable=False, index=True)  # نام شرکت
+    registration_number = Column(String, nullable=True)  # شماره ثبت
+    ceo_name = Column(String, nullable=True)  # نام مدیرعامل
+    phone = Column(String, nullable=True)  # تلفن
+    address = Column(String, nullable=True)  # آدرس
+    
+    # Setad integration fields
+    setad_ref_id = Column(String, nullable=True, index=True)  # شناسه سامانه ستاد
+    source_system = Column(String, default="MANUAL")  # MANUAL | SETAD
+    
+    # Verification
+    is_verified = Column(Boolean, default=False)  # تایید شده توسط کارشناس
+    portal_enabled = Column(Boolean, default=False)  # Phase 3: فعال‌سازی پرتال پیمانکار
+    
+    # Metadata
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    contracts = relationship("Contract", back_populates="contractor")
+
+
+class ContractTemplate(Base):
+    """
+    قالب قرارداد - Dynamic Contract Template with JSON Schema
+    
+    Admins define contract types (e.g., Civil Type A, Green Space Type B)
+    using a JSON Schema stored in schema_definition. The frontend renders
+    dynamic forms from this schema. New contract types = new DB row, zero code changes.
+    
+    Versioning: version increments on edit. Existing contracts keep their
+    template_id pointing to the version they were created with.
+    """
+    __tablename__ = "contract_templates"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    code = Column(String, unique=True, nullable=False, index=True)  # e.g., CIVIL_TYPE_A
+    title = Column(String, nullable=False)  # عنوان فارسی
+    category = Column(String, nullable=True, index=True)  # CIVIL, GREEN_SPACE, SERVICES, ...
+    
+    # JSON Schema definition for dynamic form fields
+    schema_definition = Column(JSON, nullable=False)  # JSON Schema (type, properties, required)
+    default_values = Column(JSON, nullable=True)  # Default field values
+    required_fields = Column(JSON, nullable=True)  # Override required fields list
+    
+    # Approval workflow configuration
+    approval_workflow_config = Column(JSON, nullable=True)  # {required_levels, requires_legal_review, ...}
+    
+    # Status & Versioning
+    is_active = Column(Boolean, default=True)
+    version = Column(Integer, default=1, nullable=False)
+    
+    # Metadata
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    contracts = relationship("Contract", back_populates="template")
+
+
+class Contract(Base):
+    """
+    قرارداد - Contract entity (shell for Sprint 1, lifecycle in Sprint 2)
+    
+    The Golden Thread: Activity → BudgetRow → CreditRequest → Contract → ProgressStatement → Transaction
+    Every entity links back to its parent, creating an auditable chain from Activity to Payment.
+    """
+    __tablename__ = "contracts"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    contract_number = Column(String, unique=True, nullable=False, index=True)  # شماره قرارداد
+    title = Column(String, nullable=False)  # عنوان قرارداد
+    
+    # Golden Thread: Foreign Keys
+    credit_request_id = Column(Integer, ForeignKey("credit_requests.id"), nullable=True, index=True)
+    contractor_id = Column(Integer, ForeignKey("contractors.id"), nullable=False, index=True)
+    activity_id = Column(Integer, ForeignKey("subsystem_activities.id"), nullable=True, index=True)
+    budget_row_id = Column(Integer, ForeignKey("budget_rows.id"), nullable=True, index=True)
+    template_id = Column(Integer, ForeignKey("contract_templates.id"), nullable=True, index=True)
+    org_unit_id = Column(Integer, ForeignKey("org_units.id"), nullable=True, index=True)
+    
+    # Status machine
+    status = Column(
+        Enum(ContractStatus),
+        default=ContractStatus.DRAFT,
+        nullable=False,
+        index=True
+    )
+    
+    # Financial
+    total_amount = Column(BigInteger, nullable=False)  # مبلغ کل قرارداد (ریال)
+    paid_amount = Column(BigInteger, default=0)  # مبلغ پرداخت شده
+    
+    # Dates
+    start_date = Column(Date, nullable=True)  # تاریخ شروع
+    end_date = Column(Date, nullable=True)  # تاریخ پایان
+    
+    # Dynamic template data (filled from ContractTemplate.schema_definition)
+    template_data = Column(JSON, nullable=True)  # Data filled against template schema
+    metadata_extra = Column(JSON, nullable=True)  # Additional metadata
+    
+    # Audit
+    created_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Optimistic locking
+    version = Column(Integer, default=1, nullable=False)
+    
+    # Relationships
+    credit_request = relationship("CreditRequest", foreign_keys=[credit_request_id])
+    contractor = relationship("Contractor", back_populates="contracts")
+    activity = relationship("SubsystemActivity")
+    budget_row = relationship("BudgetRow")
+    template = relationship("ContractTemplate", back_populates="contracts")
+    org_unit = relationship("OrgUnit", foreign_keys=[org_unit_id])
+    created_by = relationship("User", foreign_keys=[created_by_id])
+    progress_statements = relationship("ProgressStatement", back_populates="contract", cascade="all, delete-orphan")
+    guarantees = relationship("ContractGuarantee", back_populates="contract", cascade="all, delete-orphan")
+
+
+class ProgressStatement(Base):
+    """
+    صورت وضعیت - Progress Statement (shell for Sprint 1, logic in Sprint 3)
+    
+    Submitted by internal staff on behalf of contractors (no contractor portal in Phase 2).
+    Each statement generates a Transaction for payment upon approval.
+    """
+    __tablename__ = "progress_statements"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    statement_number = Column(String, unique=True, nullable=False, index=True)  # شماره صورت وضعیت
+    contract_id = Column(Integer, ForeignKey("contracts.id"), nullable=False, index=True)
+    sequence_number = Column(Integer, nullable=False)  # شماره ترتیب (1, 2, 3, ...)
+    
+    # Type: INTERIM (موقت), FINAL (قطعی), ADJUSTMENT (اصلاحی)
+    statement_type = Column(String, default="INTERIM")
+    
+    # Content
+    description = Column(String, nullable=True)  # شرح صورت وضعیت
+    period_start = Column(Date, nullable=True)  # تاریخ شروع دوره
+    period_end = Column(Date, nullable=True)  # تاریخ پایان دوره
+    
+    # Financial
+    gross_amount = Column(BigInteger, nullable=False)  # مبلغ ناخالص
+    deductions = Column(BigInteger, default=0)  # کسورات
+    net_amount = Column(BigInteger, nullable=False)  # مبلغ خالص
+    cumulative_amount = Column(BigInteger, default=0)  # مبلغ تجمیعی
+    
+    # Status machine
+    status = Column(
+        Enum(ProgressStatementStatus),
+        default=ProgressStatementStatus.DRAFT,
+        nullable=False,
+        index=True
+    )
+    
+    # Detail data
+    line_items = Column(JSON, nullable=True)  # [{description, quantity, unit_price, total}, ...]
+    attachments = Column(JSON, nullable=True)  # [{filename, url, type}, ...]
+    
+    # Workflow
+    submitted_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    reviewed_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    review_comment = Column(String, nullable=True)
+    submitted_at = Column(DateTime, nullable=True)
+    reviewed_at = Column(DateTime, nullable=True)
+    
+    # Metadata
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Optimistic locking
+    version = Column(Integer, default=1, nullable=False)
+    
+    # Relationships
+    contract = relationship("Contract", back_populates="progress_statements")
+    submitted_by = relationship("User", foreign_keys=[submitted_by_id])
+    reviewed_by = relationship("User", foreign_keys=[reviewed_by_id])
+
+
+class ContractGuarantee(Base):
+    """
+    ضمانت‌نامه قرارداد - Contract Guarantee (bank guarantees, performance bonds)
+    """
+    __tablename__ = "contract_guarantees"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    contract_id = Column(Integer, ForeignKey("contracts.id"), nullable=False, index=True)
+    
+    # Guarantee details
+    guarantee_type = Column(String, nullable=False)  # PERFORMANCE (حسن انجام کار), ADVANCE (پیش‌پرداخت), TENDER (شرکت در مناقصه)
+    amount = Column(BigInteger, nullable=False)  # مبلغ ضمانت‌نامه (ریال)
+    bank_name = Column(String, nullable=True)  # نام بانک
+    guarantee_number = Column(String, nullable=True, index=True)  # شماره ضمانت‌نامه
+    
+    # Dates
+    issue_date = Column(Date, nullable=True)  # تاریخ صدور
+    expiry_date = Column(Date, nullable=True)  # تاریخ انقضا
+    
+    # Status: ACTIVE, RELEASED, EXPIRED, CLAIMED
+    status = Column(String, default="ACTIVE", index=True)
+    
+    # Metadata
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationship
+    contract = relationship("Contract", back_populates="guarantees")

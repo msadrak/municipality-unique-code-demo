@@ -3,6 +3,7 @@ import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { X, CheckCircle, XCircle, FileText, User, Calendar, Building2, Wallet } from 'lucide-react';
 import { Separator } from './ui/separator';
+import { formatRial } from '../lib/utils';
 
 type Transaction = {
   id: number;
@@ -36,10 +37,6 @@ export function TransactionReviewPanel({
 }: TransactionReviewPanelProps) {
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fa-IR').format(amount) + ' ریال';
-  };
 
   const handleReject = () => {
     if (rejectionReason.trim()) {
@@ -164,8 +161,8 @@ export function TransactionReviewPanel({
                 )}
                 <div>
                   <p className="text-muted-foreground">مبلغ تراکنش</p>
-                  <p className="text-2xl font-mono text-primary mt-1">
-                    {formatCurrency(transaction.amount)}
+                  <p className="text-2xl font-mono-num text-primary mt-1">
+                    {formatRial(transaction.amount)}
                   </p>
                 </div>
               </div>

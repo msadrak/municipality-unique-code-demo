@@ -5,6 +5,7 @@ import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from './ui/sheet';
+import { formatNumber } from '../lib/utils';
 import {
     Building2,
     LogOut,
@@ -244,9 +245,7 @@ type DetailsSheetProps = {
 function DetailsSheet({ transaction, isOpen, onClose }: DetailsSheetProps) {
     if (!transaction) return null;
 
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('fa-IR').format(amount);
-    };
+    const formatCurrency = formatNumber;
 
     return (
         <Sheet open={isOpen} onOpenChange={onClose}>
@@ -396,9 +395,7 @@ export function AccountantLedger({ user, onLogout, onNavigateToPublic }: Account
         setExportingId(null);
     };
 
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat('fa-IR').format(amount);
-    };
+    const formatCurrency = formatNumber;
 
     const stats = {
         total: transactions.length,

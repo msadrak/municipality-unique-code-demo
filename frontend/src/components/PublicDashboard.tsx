@@ -6,6 +6,7 @@ import { Badge } from './ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Building2, LogIn, Search, TrendingUp, Wallet, FileText, BarChart3 } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
+import { formatNumber } from '../lib/utils';
 
 type PublicDashboardProps = {
   onNavigateToLogin: () => void;
@@ -44,10 +45,6 @@ const TRANSACTION_STATS = {
 
 export function PublicDashboard({ onNavigateToLogin }: PublicDashboardProps) {
   const [searchCode, setSearchCode] = useState('');
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fa-IR').format(amount);
-  };
 
   const formatBillion = (amount: number) => {
     return (amount / 1000000000).toFixed(1) + ' میلیارد';
@@ -189,15 +186,15 @@ export function PublicDashboard({ onNavigateToLogin }: PublicDashboardProps) {
                       <div className="grid grid-cols-3 gap-3 text-sm">
                         <div>
                           <p className="text-muted-foreground">تخصیص</p>
-                          <p className="font-mono">{formatCurrency(zone.allocated)} ریال</p>
+                          <p className="font-mono-num">{formatNumber(zone.allocated)} ریال</p>
                         </div>
                         <div>
                           <p className="text-muted-foreground">هزینه شده</p>
-                          <p className="font-mono text-blue-600">{formatCurrency(zone.spent)} ریال</p>
+                          <p className="font-mono-num text-blue-600">{formatNumber(zone.spent)} ریال</p>
                         </div>
                         <div>
                           <p className="text-muted-foreground">مانده</p>
-                          <p className="font-mono text-green-600">{formatCurrency(zone.remaining)} ریال</p>
+                          <p className="font-mono-num text-green-600">{formatNumber(zone.remaining)} ریال</p>
                         </div>
                       </div>
                       <div className="mt-2 h-2 bg-muted rounded-full overflow-hidden">
@@ -240,7 +237,7 @@ export function PublicDashboard({ onNavigateToLogin }: PublicDashboardProps) {
                           <p className="text-sm text-muted-foreground">{item.date}</p>
                         </div>
                         <div className="text-left">
-                          <p className="font-mono">{formatCurrency(item.amount)} ریال</p>
+                          <p className="font-mono-num">{formatNumber(item.amount)} ریال</p>
                           <Badge className="bg-green-600 text-white mt-1">تایید شده</Badge>
                         </div>
                       </div>

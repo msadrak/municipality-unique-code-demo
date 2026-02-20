@@ -4,6 +4,7 @@ import { Card } from '../ui/card';
 import { Separator } from '../ui/separator';
 import { Hash, Calendar, Building2, Wallet, User, FileText } from 'lucide-react';
 import { CodeSegmentItem, SEGMENT_MAP, SegmentInfo } from '../ui/SegmentPopover';
+import { formatRial } from '../../lib/utils';
 
 type Props = {
   formData: TransactionFormData;
@@ -24,10 +25,6 @@ export function WizardStep6_Preview({ formData, updateFormData }: Props) {
   }, [formData.zoneCode, formData.departmentCode, formData.sectionCode, formData.budgetCode,
   formData.costCenterCode, formData.continuousActionCode, formData.financialEventCode,
   formData.fiscalYear, formData.beneficiaryName]);
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fa-IR').format(amount) + ' ریال';
-  };
 
   return (
     <div className="space-y-6">
@@ -175,8 +172,8 @@ export function WizardStep6_Preview({ formData, updateFormData }: Props) {
             )}
             <div className="md:col-span-2">
               <p className="text-muted-foreground">مبلغ</p>
-              <p className="text-xl font-mono text-primary">
-                {formData.amount ? formatCurrency(formData.amount) : '-'}
+              <p className="text-xl font-mono-num text-primary">
+                {formData.amount ? formatRial(formData.amount) : '-'}
               </p>
             </div>
             {formData.description && (

@@ -1,16 +1,20 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Label } from '../ui/label';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
+import { Button } from '../ui/button';
 import { TransactionFormData } from '../TransactionWizard';
-import { Search, CheckCircle2, Loader2, Filter, AlertCircle } from 'lucide-react';
-import { fetchBudgetsByActivity, BudgetRowResponse, adaptBudgetRowToFigma, FigmaBudgetItem } from '../../services/adapters';
+import { Search, CheckCircle2, Loader2, Filter, Wallet, ArrowLeft, Activity, Landmark } from 'lucide-react';
+import { fetchBudgetsByActivity } from '../../services/adapters';
 import { ActivityConstraint } from '../../types/dashboard';
+import { formatRial } from '../../lib/utils';
 
 type Props = {
   formData: TransactionFormData;
   updateFormData: (data: Partial<TransactionFormData>) => void;
   constraints?: ActivityConstraint | null;  // Constraint from selected activity
+  onConfirmAndNext?: () => void;
 };
 
 // Internal type for UI display (now based on BudgetRowResponse)
@@ -25,12 +29,99 @@ interface BudgetDisplayItem {
   budgetType?: string;
 }
 
-export function WizardStep3_Budget({ formData, updateFormData, constraints }: Props) {
+type BudgetSummaryPanelProps = {
+  selectedBudget: BudgetDisplayItem | null;
+  selectedActivityName?: string;
+  onConfirmAndNext?: () => void;
+  onProceedToContract?: () => void;
+  getBudgetStatus: (remaining: number, allocated: number) => 'sufficient' | 'warning' | 'critical';
+};
+
+function BudgetSummaryPanel({
+  selectedBudget,
+  selectedActivityName,
+  onConfirmAndNext,
+  onProceedToContract,
+  getBudgetStatus,
+}: BudgetSummaryPanelProps) {
+  if (!selectedBudget) {
+    return (
+      <div className="bg-white rounded-lg border border-dashed border-slate-300 p-5 text-center shadow-sm">
+        <Wallet className="h-8 w-8 text-slate-400 mx-auto mb-3" />
+        <p className="text-sm text-muted-foreground">لطفاً یک ردیف بودجه را انتخاب کنید</p>
+      </div>
+    );
+  }
+
+  const budgetStatus = getBudgetStatus(selectedBudget.remaining, selectedBudget.allocated);
+  const remainingCreditClassName =
+    budgetStatus === 'critical'
+      ? 'text-red-600'
+      : budgetStatus === 'warning'
+        ? 'text-amber-600'
+        : 'text-green-600';
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-white rounded-lg border border-slate-200 p-5 shadow-sm space-y-4">
+        <div className="flex items-center gap-2 text-slate-700">
+          <Activity className="h-4 w-4" />
+          <p className="text-xs text-muted-foreground">فعالیت انتخاب شده</p>
+        </div>
+        <p className="text-sm font-medium leading-6 text-right">{selectedActivityName || 'نامشخص'}</p>
+
+        <div className="border-t border-slate-100 pt-4">
+          <div className="flex items-center gap-2 text-slate-700">
+            <Landmark className="h-4 w-4" />
+            <p className="text-xs text-muted-foreground">کد بودجه</p>
+          </div>
+          <p dir="ltr" className="font-mono text-xl font-bold mt-1 tracking-wide text-left tabular-nums">{selectedBudget.code}</p>
+        </div>
+
+        <div className="border-t border-slate-100 pt-4">
+          <p className="text-xs text-muted-foreground text-right">مانده اعتبار</p>
+          <p className={`mt-1 text-lg font-semibold font-mono-num ${remainingCreditClassName}`}>
+            {formatRial(selectedBudget.remaining)}
+          </p>
+        </div>
+      </div>
+
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full"
+        onClick={onConfirmAndNext}
+        disabled={!onConfirmAndNext}
+      >
+        تایید و ادامه
+        <ArrowLeft className="h-4 w-4 mr-2" />
+      </Button>
+      <Button
+        type="button"
+        className="w-full"
+        onClick={onProceedToContract}
+        disabled={!onProceedToContract}
+      >
+        ثبت قرارداد برای این بودجه
+        <ArrowLeft className="h-4 w-4 mr-2" />
+      </Button>
+    </div>
+  );
+}
+
+export function WizardStep3_Budget({ formData, updateFormData, constraints, onConfirmAndNext }: Props) {
   const [searchTerm, setSearchTerm] = useState('');
   const [allBudgets, setAllBudgets] = useState<BudgetDisplayItem[]>([]);
   const [filteredBudgets, setFilteredBudgets] = useState<BudgetDisplayItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
+
+  const toNumber = (value: unknown) => {
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string' && value.trim() !== '') return Number(value);
+    return 0;
+  };
 
   // Load budgets when activity is selected (Zero-Trust: activity-based filtering)
   useEffect(() => {
@@ -43,7 +134,8 @@ export function WizardStep3_Budget({ formData, updateFormData, constraints }: Pr
         return;
       }
 
-      console.log("⚡ Triggering fetch for Activity:", formData.subsystemActivityId, "Zone:", formData.zoneId);
+      const orgUnitFilterId = formData.sectionId ?? formData.zoneId;
+      console.log("⚡ Triggering fetch for Activity:", formData.subsystemActivityId, "OrgUnit:", orgUnitFilterId);
       setLoading(true);
       setError(null);
 
@@ -51,23 +143,40 @@ export function WizardStep3_Budget({ formData, updateFormData, constraints }: Pr
         // NEW ZERO-TRUST API: Fetch by activity_id + optional zone_id
         const budgetRows = await fetchBudgetsByActivity(
           formData.subsystemActivityId,
-          formData.zoneId,
+          orgUnitFilterId,
           '1403'  // Fiscal year
         );
 
         console.log("📊 Budget rows received in component:", budgetRows.length);
 
         // Map to display format
-        const displayItems: BudgetDisplayItem[] = budgetRows.map(row => ({
-          id: row.budget_row_id,
-          code: row.budget_code,
-          name: row.description,
-          allocated: row.total_approved,
-          remaining: row.remaining_available,
-          status: row.status,
-          utilization_percent: row.utilization_percent,
-          budgetType: undefined, // Not needed for new API
-        }));
+        const displayItems: BudgetDisplayItem[] = budgetRows.map((row: any, index: number) => {
+          const budgetRowId =
+            row.budget_row_id ?? row.budgetRowId ?? row.id ?? index;
+          const budgetCode =
+            row.budget_code ?? row.budgetCode ?? row.budget_coding ?? row.budgetCoding ?? row.code ?? '';
+          const description = row.description ?? row.title ?? '';
+          // Accept both snake_case and camelCase to avoid API naming mismatch.
+          const totalApproved =
+            row.total_approved ?? row.totalApproved ?? row.approved_amount ?? row.approvedAmount ?? row.approved ?? 0;
+          const remainingAvailable =
+            row.remaining_available ?? row.remainingAvailable ?? row.remaining_balance ?? row.remainingBalance ?? row.remaining ?? 0;
+          const status = row.status ?? 'AVAILABLE';
+          const utilizationPercent =
+            row.utilization_percent ?? row.utilizationPercent ?? 0;
+          const budgetType = row.budget_type ?? row.budgetType ?? undefined;
+
+          return {
+            id: budgetRowId,
+            code: String(budgetCode),
+            name: String(description),
+            allocated: toNumber(totalApproved),
+            remaining: toNumber(remainingAvailable),
+            status,
+            utilization_percent: toNumber(utilizationPercent),
+            budgetType,
+          };
+        });
 
         setAllBudgets(displayItems);
 
@@ -173,9 +282,7 @@ export function WizardStep3_Budget({ formData, updateFormData, constraints }: Pr
     });
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fa-IR').format(amount) + ' ریال';
-  };
+  const formatCurrency = (amount: number) => formatRial(amount);
 
   const getBudgetStatus = (remaining: number, allocated: number) => {
     if (!allocated || allocated === 0) return 'sufficient';
@@ -183,6 +290,16 @@ export function WizardStep3_Budget({ formData, updateFormData, constraints }: Pr
     if (percentage > 20) return 'sufficient';
     if (percentage > 5) return 'warning';
     return 'critical';
+  };
+
+  const selectedBudget = useMemo(() => {
+    if (!formData.budgetItemId) return null;
+    return allBudgets.find((budget) => budget.id === formData.budgetItemId) ?? null;
+  }, [allBudgets, formData.budgetItemId]);
+
+  const handleProceedToContract = () => {
+    if (!selectedBudget) return;
+    navigate(`/contracts/new?budgetId=${selectedBudget.id}`);
   };
 
   return (
@@ -208,148 +325,128 @@ export function WizardStep3_Budget({ formData, updateFormData, constraints }: Pr
         </div>
       )}
 
-      {/* Search Budget */}
-      <div className="space-y-3">
-        <Label htmlFor="budgetSearch">جستجو در ردیف‌های بودجه</Label>
-        <div className="relative">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            id="budgetSearch"
-            placeholder="جستجو بر اساس کد یا شرح ردیف..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pr-10"
-            disabled={!formData.zoneId}
-          />
-        </div>
-      </div>
-
-      {/* Budget List */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <Label>لیست ردیف‌های بودجه</Label>
-          {filteredBudgets.length > 0 && (
-            <span className="text-xs text-muted-foreground">
-              {filteredBudgets.length} ردیف
-              {constraints?.allowed_budget_types?.length === 1 && (
-                <> ({constraints.allowed_budget_types[0] === 'expense' ? 'هزینه‌ای' : 'سرمایه‌ای'})</>
-              )}
-            </span>
-          )}
-        </div>
-
-        {loading ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            <span className="mr-2 text-muted-foreground">در حال بارگیری...</span>
-          </div>
-        ) : error ? (
-          <div className="text-center py-8 text-red-600">
-            {error}
-          </div>
-        ) : !formData.zoneId ? (
-          <div className="text-center py-8 text-muted-foreground">
-            ابتدا واحد سازمانی را انتخاب کنید
-          </div>
-        ) : filteredBudgets.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            {constraints ? 'ردیف بودجه‌ای مطابق با محدودیت فعالیت یافت نشد' : 'ردیف بودجه‌ای یافت نشد'}
-          </div>
-        ) : (
-          <div
-            className="border rounded-lg overflow-y-auto"
-            style={{
-              maxHeight: '240px',
-              scrollbarWidth: 'thin',
-              scrollbarColor: '#94a3b8 transparent'
-            }}
-          >
-            <style>{`
-              .budget-list-container::-webkit-scrollbar {
-                width: 6px;
-              }
-              .budget-list-container::-webkit-scrollbar-track {
-                background: transparent;
-              }
-              .budget-list-container::-webkit-scrollbar-thumb {
-                background-color: transparent;
-                border-radius: 20px;
-              }
-              .budget-list-container:hover::-webkit-scrollbar-thumb {
-                background-color: #94a3b8;
-              }
-            `}</style>
-            <div className="budget-list-container h-full">
-              {filteredBudgets.map((budget) => {
-                const status = getBudgetStatus(budget.remaining, budget.allocated);
-                const isSelected = formData.budgetItemId === budget.id;
-
-                return (
-                  <div
-                    key={budget.id}
-                    onClick={() => handleSelectBudget(budget)}
-                    className={`p-4 border-b last:border-b-0 cursor-pointer transition-colors hover:bg-accent/50 ${isSelected ? 'bg-primary/5 border-r-4 border-r-primary' : ''
-                      }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      {/* Selection Indicator */}
-                      <div className="mt-1 flex-shrink-0">
-                        {isSelected && (
-                          <CheckCircle2 className="h-5 w-5 text-primary" />
-                        )}
-                      </div>
-
-                      {/* Budget Info */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-mono text-sm">{budget.code}</span>
-                          <span className={`text-xs px-2 py-0.5 rounded ${budget.budgetType === 'expense'
-                            ? 'bg-blue-100 text-blue-700'
-                            : 'bg-purple-100 text-purple-700'
-                            }`}>
-                            {budget.budgetType === 'expense' ? 'هزینه‌ای' : 'سرمایه‌ای'}
-                          </span>
-                          {status === 'critical' && (
-                            <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded">
-                              بودجه محدود
-                            </span>
-                          )}
-                          {status === 'warning' && (
-                            <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded">
-                              توجه
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-1 truncate">
-                          {budget.name}
-                        </p>
-                      </div>
-
-                      {/* Budget Amount */}
-                      <div className="text-left flex-shrink-0">
-                        <p className="text-xs text-muted-foreground">مانده</p>
-                        <p className="font-mono text-sm">{formatCurrency(budget.remaining)}</p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+      <div className="grid grid-cols-12 gap-6">
+        <div className="col-span-12 lg:col-span-8 space-y-4">
+          {/* Search Budget */}
+          <div className="space-y-3">
+            <Label htmlFor="budgetSearch">جستجو در ردیف‌های بودجه</Label>
+            <div className="relative">
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="budgetSearch"
+                placeholder="جستجو بر اساس کد یا شرح ردیف..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pr-10 bg-white"
+                disabled={!formData.subsystemActivityId}
+              />
             </div>
           </div>
-        )}
-      </div>
 
-      {/* Selected Budget Summary */}
-      {formData.budgetItemId && (
-        <div className="bg-accent p-4 rounded-lg border border-border">
-          <p className="text-sm text-muted-foreground mb-2">ردیف بودجه انتخاب شده:</p>
-          <p className="font-mono">{formData.budgetCode}</p>
-          <p className="text-sm mt-1">{formData.budgetDescription}</p>
-          <p className="text-sm mt-2 text-green-700">
-            مانده قابل استفاده: {formatCurrency(formData.availableBudget || 0)}
-          </p>
+          {/* Budget List */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label>لیست ردیف‌های بودجه</Label>
+              {filteredBudgets.length > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  {filteredBudgets.length} ردیف
+                  {constraints?.allowed_budget_types?.length === 1 && (
+                    <> ({constraints.allowed_budget_types[0] === 'expense' ? 'هزینه‌ای' : 'سرمایه‌ای'})</>
+                  )}
+                </span>
+              )}
+            </div>
+
+            {loading ? (
+              <div className="flex items-center justify-center py-8 bg-white rounded-lg border border-slate-200">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                <span className="mr-2 text-muted-foreground">در حال بارگیری...</span>
+              </div>
+            ) : error ? (
+              <div className="text-center py-8 text-red-600 bg-white rounded-lg border border-red-100">
+                {error}
+              </div>
+            ) : filteredBudgets.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground bg-white rounded-lg border border-slate-200">
+                {constraints ? 'ردیف بودجه‌ای مطابق با محدودیت فعالیت یافت نشد' : 'ردیف بودجه‌ای یافت نشد'}
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-[480px] overflow-y-auto pl-1">
+                {filteredBudgets.map((budgetRow) => {
+                  if (!budgetRow) return null;
+                  const budget = budgetRow;
+                  const status = getBudgetStatus(budget.remaining, budget.allocated);
+                  const isSelected = formData.budgetItemId === budget.id;
+                  const statusBadgeClass =
+                    status === 'critical'
+                      ? 'bg-red-100 text-red-700'
+                      : status === 'warning'
+                        ? 'bg-amber-100 text-amber-700'
+                        : 'bg-green-100 text-green-700';
+
+                  return (
+                    <button
+                      key={budget.id}
+                      type="button"
+                      onClick={() => handleSelectBudget(budget)}
+                      className={`w-full text-right bg-white shadow-sm rounded-lg border p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-500 ${isSelected
+                        ? 'border-l-4 border-green-500 bg-green-50/50 border-green-200 scale-[1.01] shadow-md'
+                        : 'border-slate-200'
+                        }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="mt-1 flex-shrink-0">
+                          {isSelected ? (
+                            <CheckCircle2 className="h-5 w-5 text-green-600" />
+                          ) : (
+                            <div className="h-5 w-5 rounded-full border border-slate-300" />
+                          )}
+                        </div>
+
+                        <div className="flex-1 min-w-0 space-y-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span dir="ltr" className="font-mono font-semibold text-base text-left tabular-nums">{budget.code}</span>
+                            {budget.budgetType && (
+                              <span className={`text-xs px-2 py-0.5 rounded ${budget.budgetType === 'expense'
+                                ? 'bg-blue-100 text-blue-700'
+                                : 'bg-purple-100 text-purple-700'
+                                }`}>
+                                {budget.budgetType === 'expense' ? 'هزینه‌ای' : 'سرمایه‌ای'}
+                              </span>
+                            )}
+                            <span className={`text-xs px-2 py-0.5 rounded ${statusBadgeClass}`}>
+                              {status === 'critical' ? 'اعتبار کم' : status === 'warning' ? 'نزدیک سقف' : 'مناسب'}
+                            </span>
+                          </div>
+                          <p className="text-sm text-slate-600 leading-6 line-clamp-2 text-right">{budget.name}</p>
+                        </div>
+
+                        <div className="text-left flex-shrink-0">
+                          <p className="text-xs text-muted-foreground">اعتبار مصوب</p>
+                          <p className="font-mono-num text-sm font-semibold">{formatCurrency(budget.allocated)}</p>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
-      )}
+
+        <div className="col-span-12 lg:col-span-4">
+          <div className="sticky top-4 space-y-3">
+            <Label>خلاصه بودجه انتخابی</Label>
+            <BudgetSummaryPanel
+              selectedBudget={selectedBudget}
+              selectedActivityName={formData.subsystemActivityTitle}
+              onConfirmAndNext={selectedBudget ? onConfirmAndNext : undefined}
+              onProceedToContract={selectedBudget ? handleProceedToContract : undefined}
+              getBudgetStatus={getBudgetStatus}
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

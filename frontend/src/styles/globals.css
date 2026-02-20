@@ -1,8 +1,14 @@
 @custom-variant dark (&:is(.dark *));
 
+/* GLM-5: Vazirmatn as primary font, also used in monospace stack for Persian digit support */
+@theme inline {
+  --font-sans: 'Vazirmatn', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --font-mono: 'Vazirmatn', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
 :root {
   --font-size: 16px;
-  --background: #f8f9fa;
+  --background: oklch(0.984 0.003 247.858); /* bg-slate-50 */
   --foreground: #1a1a1a;
   --card: #ffffff;
   --card-foreground: #1a1a1a;
@@ -198,6 +204,16 @@ html {
 [dir="rtl"] {
   direction: rtl;
   text-align: right;
+}
+
+/* Financial typography: tabular-aligned numbers with strict LTR direction */
+@layer utilities {
+  .font-mono-num {
+    font-family: var(--font-mono);
+    font-feature-settings: "tnum" on, "lnum" on;
+    font-variant-numeric: tabular-nums;
+    direction: ltr;
+  }
 }
 
 /* Government-specific utility classes */

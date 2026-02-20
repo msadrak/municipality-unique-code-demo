@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Search, FileText, Calendar, DollarSign, Loader2, ChevronDown, ChevronUp, ArrowUpDown, ArrowUp, ArrowDown, Folder } from 'lucide-react';
 import { fetchMyTransactions, FigmaTransaction } from '../services/adapters';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
+import { formatRial } from '../lib/utils';
 
 type Transaction = {
   id: number;
@@ -182,10 +183,6 @@ export function MyTransactionsList({ userId }: MyTransactionsListProps) {
     return Array.from(groups.values());
   }, [sortedTransactions, groupByBudget]);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fa-IR').format(amount) + ' ریال';
-  };
-
   const toggleSort = (field: SortField) => {
     if (sortField === field) {
       setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
@@ -231,7 +228,7 @@ export function MyTransactionsList({ userId }: MyTransactionsListProps) {
             )}
           </div>
           <div className="text-left">
-            <p className="font-mono">{formatCurrency(tx.amount)}</p>
+            <p className="font-mono-num">{formatRial(tx.amount)}</p>
             <p className="text-xs text-muted-foreground mt-1">{tx.createdAt || '-'}</p>
           </div>
         </div>
@@ -402,7 +399,7 @@ export function MyTransactionsList({ userId }: MyTransactionsListProps) {
                     <div className="flex items-center gap-4">
                       <div className="text-left">
                         <p className="text-xs text-muted-foreground">{group.transactions.length} تراکنش</p>
-                        <p className="font-mono text-sm">{formatCurrency(group.totalAmount)}</p>
+                        <p className="font-mono-num text-sm">{formatRial(group.totalAmount)}</p>
                       </div>
                       {collapsedGroups.has(group.budgetCode) ? (
                         <ChevronDown className="h-5 w-5 text-muted-foreground" />

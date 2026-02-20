@@ -54,7 +54,9 @@ export default defineConfig({
     outDir: 'build',
   },
   server: {
+    host: '0.0.0.0', // Bind to all interfaces (IPv4 + IPv6)
     port: 3000,
+    strictPort: false, // Allow port change if 3000 is taken
     open: true,
     proxy: {
       '/auth': {
@@ -118,6 +120,34 @@ export default defineConfig({
         changeOrigin: true,
       },
       '/accounting': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/credit-requests': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/contractors': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/contract-templates': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/contracts': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/statements': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/treasury': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
+      '/reports/summary': {
         target: 'http://localhost:8000',
         changeOrigin: true,
       },

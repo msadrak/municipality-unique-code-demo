@@ -1,176 +1,298 @@
-import React from 'react';
-import { TransactionFormData } from '../TransactionWizard';
-import { Card } from '../ui/card';
-import { CheckCircle2, AlertTriangle, Info } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+    AlertTriangle,
+    CheckCircle,
+    ClipboardCopy,
+    LayoutDashboard,
+    Loader2,
+    RefreshCcw,
+    ShieldCheck,
+} from 'lucide-react';
 
-type Props = {
-  formData: TransactionFormData;
+import type { TransactionFormData } from '../TransactionWizard';
+import { createTransaction, type TransactionCreateData } from '../../services/adapters';
+import { blockBudgetFunds } from '../../services/budgetValidation';
+import { formatRial } from '../../lib/utils';
+import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
+import { Button } from '../ui/button';
+import { Card } from '../ui/card';
+
+type SubmissionPhase = 'gate' | 'block' | 'create';
+
+type SubmissionError = {
+    phase: SubmissionPhase;
+    message: string;
 };
 
-export function WizardStep7_Submit({ formData }: Props) {
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fa-IR').format(amount) + ' ریال';
-  };
+type Props = {
+    formData: TransactionFormData;
+    onResetWizard?: () => void;
+};
 
-  const hasAllRequiredFields = () => {
+const budgetService = {
+    blockFunds: async (params: {
+        budgetRowId: number;
+        amount: number;
+        referenceId?: string;
+        notes?: string;
+    }) => {
+        return blockBudgetFunds(
+            params.budgetRowId,
+            params.amount,
+            params.referenceId,
+            params.notes
+        );
+    },
+};
+
+const transactionService = {
+    create: async (formData: TransactionFormData): Promise<{ unique_code: string }> => {
+        if (
+            !formData.zoneId ||
+            !formData.budgetCode ||
+            !formData.beneficiaryName ||
+            !formData.amount
+        ) {
+            throw new Error('اطلاعات اجباری تراکنش کامل نیست.');
+        }
+
+        const payload: TransactionCreateData = {
+            credit_request_id: formData.creditRequestId,
+            zone_id: formData.zoneId,
+            department_id: formData.departmentId,
+            section_id: formData.sectionId,
+            budget_code: formData.budgetCode,
+            cost_center_code: formData.costCenterCode,
+            continuous_activity_code: formData.continuousActionCode,
+            financial_event_code: formData.financialEventCode,
+            beneficiary_name: formData.beneficiaryName,
+            contract_number: formData.contractNumber,
+            amount: formData.amount,
+            description: formData.description,
+            form_data: formData.formData,
+        };
+
+        const response = await createTransaction(payload);
+        return { unique_code: response.unique_code };
+    },
+};
+
+export function WizardStep7_Submit({ formData, onResetWizard }: Props) {
+    const navigate = useNavigate();
+
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [uniqueCode, setUniqueCode] = useState<string | null>(null);
+    const [copied, setCopied] = useState(false);
+    const [submitError, setSubmitError] = useState<SubmissionError | null>(null);
+
+    const canSubmit = useMemo(() => {
+        return Boolean(
+            formData.creditRequestId &&
+                formData.zoneId &&
+                formData.budgetItemId &&
+                formData.budgetCode &&
+                formData.beneficiaryName &&
+                formData.amount &&
+                formData.amount > 0
+        );
+    }, [formData]);
+
+    const phaseTitle: Record<SubmissionPhase, string> = {
+        gate: 'خطا در مرحله گیت اعتباری',
+        block: 'خطا در مسدودسازی بودجه',
+        create: 'خطا در ایجاد تراکنش',
+    };
+
+    const handleSubmit = async () => {
+        setSubmitError(null);
+
+        if (!formData.creditRequestId) {
+            setSubmitError({
+                phase: 'gate',
+                message: 'درخواست تامین اعتبار انتخاب نشده است.',
+            });
+            return;
+        }
+
+        if (!formData.budgetItemId || !formData.amount) {
+            setSubmitError({
+                phase: 'block',
+                message: 'اطلاعات بودجه برای مسدودسازی کامل نیست.',
+            });
+            return;
+        }
+
+        setIsSubmitting(true);
+
+        try {
+            await budgetService.blockFunds({
+                budgetRowId: formData.budgetItemId,
+                amount: formData.amount,
+                referenceId: formData.uniqueCode || `TXN-${Date.now()}`,
+                notes: `Block before transaction create: ${formData.beneficiaryName || '-'}`,
+            });
+        } catch (error) {
+            const detail = error instanceof Error ? error.message : 'خطای نامشخص';
+            setSubmitError({
+                phase: 'block',
+                message: `بودجه مسدود نشد. ${detail}`,
+            });
+            setIsSubmitting(false);
+            return;
+        }
+
+        try {
+            const result = await transactionService.create(formData);
+            setUniqueCode(result.unique_code);
+        } catch (error) {
+            const detail = error instanceof Error ? error.message : 'خطای نامشخص';
+            setSubmitError({
+                phase: 'create',
+                message: `ایجاد تراکنش انجام نشد. ${detail}`,
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleCopyCode = async () => {
+        if (!uniqueCode) return;
+        try {
+            await navigator.clipboard.writeText(uniqueCode);
+            setCopied(true);
+            window.setTimeout(() => setCopied(false), 1500);
+        } catch {
+            setSubmitError({
+                phase: 'create',
+                message: 'کپی کد امکان‌پذیر نیست. لطفا کد را دستی کپی کنید.',
+            });
+        }
+    };
+
+    const handleNewTransaction = () => {
+        if (onResetWizard) {
+            onResetWizard();
+            return;
+        }
+        setUniqueCode(null);
+        setSubmitError(null);
+        setCopied(false);
+    };
+
+    if (uniqueCode) {
+        return (
+            <Card className="border-emerald-200 bg-emerald-50/40 p-8 text-center">
+                <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-emerald-100">
+                    <CheckCircle className="h-12 w-12 animate-pulse text-emerald-600" />
+                </div>
+
+                <h3 className="text-2xl font-bold text-emerald-900">
+                    تراکنش با موفقیت ثبت شد
+                </h3>
+                <p className="mt-2 text-sm text-emerald-800">
+                    شناسه یکتای تراکنش ایجاد و ذخیره شد.
+                </p>
+
+                <div className="mx-auto mt-6 max-w-xl rounded-xl border border-slate-200 bg-slate-100 px-4 py-6">
+                    <p className="mb-2 text-xs text-slate-500">کد یکتای تراکنش</p>
+                    <div className="text-3xl font-mono font-bold tracking-wider text-slate-900">
+                        {uniqueCode}
+                    </div>
+                </div>
+
+                <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-3">
+                    <Button variant="outline" onClick={handleCopyCode} className="gap-2">
+                        <ClipboardCopy className="h-4 w-4" />
+                        {copied ? 'کپی شد' : 'Copy Code'}
+                    </Button>
+
+                    <Button
+                        variant="outline"
+                        onClick={handleNewTransaction}
+                        className="gap-2"
+                    >
+                        <RefreshCcw className="h-4 w-4" />
+                        New Transaction
+                    </Button>
+
+                    <Button onClick={() => navigate('/portal')} className="gap-2">
+                        <LayoutDashboard className="h-4 w-4" />
+                        Go to Dashboard
+                    </Button>
+                </div>
+            </Card>
+        );
+    }
+
     return (
-      formData.transactionType &&
-      formData.fiscalYear &&
-      formData.zoneId &&
-      formData.departmentId &&
-      formData.sectionId &&
-      formData.budgetItemId &&
-      formData.financialEventId &&
-      formData.costCenterId &&
-      formData.amount
+        <div className="space-y-6">
+            <div>
+                <h3 className="text-xl font-semibold">ثبت نهایی تراکنش</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                    در این مرحله ابتدا بودجه مسدود می‌شود و سپس تراکنش ایجاد خواهد شد.
+                </p>
+            </div>
+
+            <Card className="space-y-3 p-5">
+                <div className="flex items-center justify-between border-b pb-2 text-sm">
+                    <span className="text-muted-foreground">درخواست تامین اعتبار</span>
+                    <span className="font-mono">
+                        {formData.creditRequestCode || 'انتخاب نشده'}
+                    </span>
+                </div>
+                <div className="flex items-center justify-between border-b pb-2 text-sm">
+                    <span className="text-muted-foreground">ردیف بودجه</span>
+                    <span className="font-mono">{formData.budgetCode || '-'}</span>
+                </div>
+                <div className="flex items-center justify-between border-b pb-2 text-sm">
+                    <span className="text-muted-foreground">ذینفع</span>
+                    <span>{formData.beneficiaryName || '-'}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">مبلغ</span>
+                    <span className="font-mono-num">{formatRial(formData.amount)}</span>
+                </div>
+            </Card>
+
+            {!formData.creditRequestId && (
+                <Alert className="border-amber-200 bg-amber-50 text-amber-900">
+                    <ShieldCheck className="h-4 w-4 text-amber-700" />
+                    <AlertTitle>گیت اعتباری فعال است</AlertTitle>
+                    <AlertDescription className="text-amber-800">
+                        ابتدا باید یک درخواست تامین اعتبار تایید‌شده انتخاب شود.
+                    </AlertDescription>
+                </Alert>
+            )}
+
+            {submitError && (
+                <Alert className="border-rose-200 bg-rose-50 text-rose-900">
+                    <AlertTriangle className="h-4 w-4 text-rose-700" />
+                    <AlertTitle>{phaseTitle[submitError.phase]}</AlertTitle>
+                    <AlertDescription className="text-rose-800">
+                        {submitError.message}
+                    </AlertDescription>
+                </Alert>
+            )}
+
+            <div className="pt-2">
+                <Button
+                    onClick={handleSubmit}
+                    className="w-full bg-emerald-600 hover:bg-emerald-700"
+                    disabled={isSubmitting || !canSubmit}
+                >
+                    {isSubmitting ? (
+                        <>
+                            <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                            در حال ثبت تراکنش...
+                        </>
+                    ) : (
+                        'ثبت نهایی تراکنش'
+                    )}
+                </Button>
+            </div>
+        </div>
     );
-  };
-
-  const hasWarnings = () => {
-    if (!formData.amount || !formData.availableBudget) return false;
-    return formData.amount > formData.availableBudget;
-  };
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h3>آماده ثبت نهایی</h3>
-        <p className="text-sm text-muted-foreground mt-1">
-          تراکنش شما آماده ثبت در سامانه است
-        </p>
-      </div>
-
-      {/* Validation Status */}
-      {hasAllRequiredFields() ? (
-        <Card className="p-4 bg-green-50 border-green-200">
-          <div className="flex items-start gap-3">
-            <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
-            <div className="flex-1">
-              <h5 className="text-green-900">تمامی فیلدهای الزامی تکمیل شده است</h5>
-              <p className="text-sm text-green-700 mt-1">
-                تراکنش شما آماده ثبت و ارسال برای تایید است
-              </p>
-            </div>
-          </div>
-        </Card>
-      ) : (
-        <Card className="p-4 bg-destructive/10 border-destructive/20">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="h-5 w-5 text-destructive mt-0.5" />
-            <div className="flex-1">
-              <h5 className="text-destructive">برخی فیلدهای الزامی تکمیل نشده است</h5>
-              <p className="text-sm text-destructive/80 mt-1">
-                لطفاً به مراحل قبل برگردید و فیلدهای الزامی را تکمیل کنید
-              </p>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {/* Warnings */}
-      {hasWarnings() && (
-        <Card className="p-4 bg-amber-50 border-amber-200">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5" />
-            <div className="flex-1">
-              <h5 className="text-amber-900">هشدار</h5>
-              <p className="text-sm text-amber-700 mt-1">
-                مبلغ تراکنش ({formData.amount ? formatCurrency(formData.amount) : '-'}) بیشتر از مانده بودجه ({formData.availableBudget ? formatCurrency(formData.availableBudget) : '-'}) است. این تراکنش نیاز به تایید ویژه دارد.
-              </p>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {/* Transaction Summary Card */}
-      <Card className="p-6">
-        <h4 className="mb-4">خلاصه تراکنش</h4>
-        <div className="space-y-3">
-          <div className="flex justify-between text-sm pb-2 border-b">
-            <span className="text-muted-foreground">کد یکتا</span>
-            <span className="font-mono">{formData.uniqueCode}</span>
-          </div>
-          <div className="flex justify-between text-sm pb-2 border-b">
-            <span className="text-muted-foreground">نوع تراکنش</span>
-            <span>{formData.transactionType === 'expense' ? 'هزینه‌ای' : 'سرمایه‌ای'}</span>
-          </div>
-          <div className="flex justify-between text-sm pb-2 border-b">
-            <span className="text-muted-foreground">سال مالی</span>
-            <span>{formData.fiscalYear}</span>
-          </div>
-          <div className="flex justify-between text-sm pb-2 border-b">
-            <span className="text-muted-foreground">واحد سازمانی</span>
-            <span className="text-left">{formData.zoneName} / {formData.departmentName}</span>
-          </div>
-          <div className="flex justify-between text-sm pb-2 border-b">
-            <span className="text-muted-foreground">ردیف بودجه</span>
-            <span className="font-mono">{formData.budgetCode}</span>
-          </div>
-          <div className="flex justify-between text-sm pb-2 border-b">
-            <span className="text-muted-foreground">رویداد مالی</span>
-            <span>{formData.financialEventName}</span>
-          </div>
-          {formData.beneficiaryName && (
-            <div className="flex justify-between text-sm pb-2 border-b">
-              <span className="text-muted-foreground">ذینفع</span>
-              <span>{formData.beneficiaryName}</span>
-            </div>
-          )}
-          <div className="flex justify-between text-lg pt-2">
-            <span>مبلغ</span>
-            <span className="font-mono text-primary">
-              {formData.amount ? formatCurrency(formData.amount) : '-'}
-            </span>
-          </div>
-        </div>
-      </Card>
-
-      {/* Workflow Information */}
-      <Card className="p-4 bg-blue-50 border-blue-200">
-        <div className="flex items-start gap-3">
-          <Info className="h-5 w-5 text-blue-600 mt-0.5" />
-          <div className="flex-1 text-sm text-blue-900">
-            <h5 className="mb-2">گردش کار تایید</h5>
-            <ol className="list-decimal list-inside space-y-1 text-blue-700">
-              <li>پس از ثبت، تراکنش در وضعیت "در انتظار تایید" قرار می‌گیرد</li>
-              <li>مدیر مالی تراکنش را بررسی می‌کند</li>
-              <li>در صورت تایید، تراکنش برای پرداخت آماده می‌شود</li>
-              <li>در صورت رد، دلیل رد به شما اطلاع داده می‌شود</li>
-            </ol>
-          </div>
-        </div>
-      </Card>
-
-      {/* Final Checklist */}
-      <Card className="p-4">
-        <h5 className="mb-3">چک‌لیست نهایی</h5>
-        <div className="space-y-2 text-sm">
-          <label className="flex items-center gap-2">
-            <input type="checkbox" className="rounded" defaultChecked disabled />
-            <span>اطلاعات واحد سازمانی صحیح است</span>
-          </label>
-          <label className="flex items-center gap-2">
-            <input type="checkbox" className="rounded" defaultChecked disabled />
-            <span>ردیف بودجه مناسب انتخاب شده است</span>
-          </label>
-          <label className="flex items-center gap-2">
-            <input type="checkbox" className="rounded" defaultChecked disabled />
-            <span>مبلغ تراکنش صحیح وارد شده است</span>
-          </label>
-          <label className="flex items-center gap-2">
-            <input type="checkbox" className="rounded" defaultChecked disabled />
-            <span>کد یکتای تولید شده را بررسی کرده‌ام</span>
-          </label>
-        </div>
-      </Card>
-
-      {/* Primary Action Prompt */}
-      <div className="bg-gradient-to-r from-primary/10 to-primary/5 p-6 rounded-lg text-center border-2 border-primary/20">
-        <p className="text-lg mb-2">آماده ثبت نهایی تراکنش هستید؟</p>
-        <p className="text-sm text-muted-foreground">
-          با کلیک بر روی دکمه "ثبت نهایی تراکنش" در پایین صفحه، تراکنش شما ثبت و برای تایید ارسال می‌شود
-        </p>
-      </div>
-    </div>
-  );
 }
+
+export default WizardStep7_Submit;

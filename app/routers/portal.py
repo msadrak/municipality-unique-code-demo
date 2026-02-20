@@ -11,7 +11,23 @@ from app.routers.auth import get_current_user, get_db
 
 router = APIRouter(prefix="/portal", tags=["Portal"])
 
+def get_section_activities(db: Session, subsystem_id: int, section_id: Optional[int]):
+    """Return activities filtered by section (micro-segmentation)."""
+    query = db.query(models.SubsystemActivity).filter(
+        models.SubsystemActivity.subsystem_id == subsystem_id,
+        models.SubsystemActivity.is_active == True
+    )
+
+    if section_id:
+        query = query.join(
+            models.BudgetRow,
+            models.BudgetRow.activity_id == models.SubsystemActivity.id
+        ).filter(models.BudgetRow.org_unit_id == section_id).distinct()
+
+    return query.order_by(models.SubsystemActivity.order).all()
+
 class CreateTransactionRequest(BaseModel):
+    credit_request_id: Optional[int] = None  # Stage 1 Gateway: required for new creates
     zone_id: int
     department_id: Optional[int] = None
     section_id: Optional[int] = None
@@ -32,6 +48,67 @@ def create_transaction(data: CreateTransactionRequest, request: Request, db: Ses
     current_user = get_current_user(request, db)
     if not current_user:
         raise HTTPException(status_code=401, detail="احراز هویت الزامی است")
+    
+    # ========== STAGE 1 GATEWAY ENFORCEMENT ==========
+    # credit_request_id is required for all new transaction creations.
+    # Legacy rows (credit_request_id IS NULL) are grandfathered at DB level.
+    if not data.credit_request_id:
+        raise HTTPException(
+            status_code=409,
+            detail="درخواست تامین اعتبار تایید شده الزامی است. لطفاً ابتدا درخواست تامین اعتبار ایجاد کنید."
+        )
+    
+    cr = db.query(models.CreditRequest).filter(
+        models.CreditRequest.id == data.credit_request_id
+    ).first()
+    if not cr:
+        raise HTTPException(status_code=404, detail="درخواست تامین اعتبار یافت نشد")
+    
+    cr_status = cr.status.value if hasattr(cr.status, 'value') else cr.status
+    if cr_status != "APPROVED":
+        raise HTTPException(
+            status_code=403,
+            detail=f"درخواست تامین اعتبار در وضعیت {cr_status} قابل استفاده نیست (فقط APPROVED)"
+        )
+    
+    # Single-use enforcement: check if CR is already consumed
+    if cr.used_transaction_id is not None:
+        raise HTTPException(
+            status_code=409,
+            detail="این درخواست تامین اعتبار قبلاً مصرف شده است. لطفاً درخواست جدید ایجاد کنید."
+        )
+    
+    # Org context compatibility
+    if cr.zone_id != data.zone_id:
+        raise HTTPException(
+            status_code=422,
+            detail="منطقه تراکنش با درخواست تامین اعتبار مطابقت ندارد"
+        )
+    if cr.department_id is not None and cr.department_id != data.department_id:
+        raise HTTPException(
+            status_code=422,
+            detail="اداره تراکنش با درخواست تامین اعتبار مطابقت ندارد"
+        )
+    if cr.section_id is not None and cr.section_id != data.section_id:
+        raise HTTPException(
+            status_code=422,
+            detail="قسمت تراکنش با درخواست تامین اعتبار مطابقت ندارد"
+        )
+    
+    # Budget code match (string match for Stage 1)
+    if cr.budget_code != data.budget_code:
+        raise HTTPException(
+            status_code=422,
+            detail="کد بودجه تراکنش با درخواست تامین اعتبار مطابقت ندارد"
+        )
+    
+    # Amount ceiling
+    if data.amount > cr.amount_approved:
+        raise HTTPException(
+            status_code=422,
+            detail=f"مبلغ تراکنش ({data.amount:,.0f}) بیشتر از سقف تامین اعتبار ({cr.amount_approved:,.0f}) است"
+        )
+    # ========== END STAGE 1 GATEWAY ENFORCEMENT ==========
     
     zone = db.query(models.OrgUnit).filter(models.OrgUnit.id == data.zone_id).first()
     dept = db.query(models.OrgUnit).filter(models.OrgUnit.id == data.department_id).first() if data.department_id else None
@@ -65,8 +142,14 @@ def create_transaction(data: CreateTransactionRequest, request: Request, db: Ses
     cont_action = db.query(models.ContinuousAction).filter(models.ContinuousAction.code == data.continuous_activity_code).first()
     fin_event_ref = db.query(models.FinancialEventRef).filter(models.FinancialEventRef.code == data.financial_event_code).first()
     
-    transaction = models.Transaction(unique_code=unique_code, status="PENDING_L1", current_approval_level=0, created_by_id=current_user.id, zone_id=data.zone_id, department_id=data.department_id, section_id=data.section_id, budget_item_id=budget_item.id if budget_item else None, cost_center_id=cost_center_ref.id if cost_center_ref else None, continuous_action_id=cont_action.id if cont_action else None, financial_event_id=fin_event_ref.id if fin_event_ref else None, amount=data.amount, beneficiary_name=data.beneficiary_name, contract_number=data.contract_number, special_activity=data.special_activity, description=data.description, form_data=data.form_data, fiscal_year="1403")
+    transaction = models.Transaction(unique_code=unique_code, status="PENDING_L1", current_approval_level=0, created_by_id=current_user.id, zone_id=data.zone_id, department_id=data.department_id, section_id=data.section_id, credit_request_id=data.credit_request_id, budget_item_id=budget_item.id if budget_item else None, cost_center_id=cost_center_ref.id if cost_center_ref else None, continuous_action_id=cont_action.id if cont_action else None, financial_event_id=fin_event_ref.id if fin_event_ref else None, amount=data.amount, beneficiary_name=data.beneficiary_name, contract_number=data.contract_number, special_activity=data.special_activity, description=data.description, form_data=data.form_data, fiscal_year="1403")
     db.add(transaction)
+    db.flush()
+    
+    # Mark CR as used (single-use enforcement)
+    if data.credit_request_id and cr:
+        cr.used_transaction_id = transaction.id
+    
     db.commit()
     db.refresh(transaction)
     
@@ -104,7 +187,7 @@ def get_user_allowed_activities(request: Request, db: Session = Depends(get_db))
     
     result_subsystems = []
     for s in subsystems:
-        activities = db.query(models.SubsystemActivity).filter(models.SubsystemActivity.subsystem_id == s.id, models.SubsystemActivity.is_active == True).order_by(models.SubsystemActivity.order).all()
+        activities = get_section_activities(db, s.id, section_id)
         result_subsystems.append({"id": s.id, "code": s.code, "title": s.title, "icon": s.icon, "attachment_type": s.attachment_type, "activities": [{"id": a.id, "code": a.code, "title": a.title, "form_type": a.form_type} for a in activities]})
     
     return {"user": {"id": current_user.id, "full_name": current_user.full_name, "role": current_user.role}, "user_section": {"id": section.id if section else None, "title": section.title if section else None}, "allowed_subsystems": result_subsystems}
@@ -143,7 +226,7 @@ def get_dashboard_init(request: Request, db: Session = Depends(get_db)):
         return schemas.DashboardInitResponse(user_context=user_context, subsystem=None, allowed_activities=[], has_subsystem=False, message="سامانه‌ای برای این قسمت تعریف نشده است")
     
     subsystem_info = schemas.SubsystemInfoSchema(id=subsystem.id, code=subsystem.code, title=subsystem.title, icon=subsystem.icon, attachment_type=subsystem.attachment_type)
-    activities = db.query(models.SubsystemActivity).filter(models.SubsystemActivity.subsystem_id == subsystem.id, models.SubsystemActivity.is_active == True).order_by(models.SubsystemActivity.order).all()
+    activities = get_section_activities(db, subsystem.id, section.id if section else None)
     
     allowed_activities = []
     for activity in activities:

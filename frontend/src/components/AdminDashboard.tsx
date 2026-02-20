@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { Input } from './ui/input';
@@ -7,9 +7,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './ui/dialog';
 import { Textarea } from './ui/textarea';
-import { Building2, LogOut, Search, ChevronLeft, ChevronRight, Loader2, CheckCircle2, Clock, XCircle, Circle } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import {
+  Building2, LogOut, Search, ChevronLeft, ChevronRight, Loader2,
+  CheckCircle2, Clock, XCircle, Circle, ShieldCheck,
+  Inbox, LayoutDashboard, BarChart3, FileText, ScrollText,
+} from 'lucide-react';
 import { TransactionReviewPanel } from './TransactionReviewPanel';
+import { CreditRequestAdminPanel } from './CreditRequestAdminPanel';
+import { WorkflowVisualizer } from './admin/WorkflowVisualizer';
 import { fetchAdminTransactions, approveTransaction, rejectTransaction } from '../services/adapters';
+import { api } from '../services/api';
+import { formatRial, formatNumber } from '../lib/utils';
+
+// ==========================================
+// Types
+// ==========================================
 
 type User = {
   id: number;
@@ -19,31 +32,65 @@ type User = {
   admin_level?: number;
 };
 
-// Updated Transaction type with approval workflow statuses
 type TransactionStatus =
+  | 'DRAFT'
   | 'PENDING_L1'
   | 'PENDING_L2'
   | 'PENDING_L3'
   | 'PENDING_L4'
   | 'APPROVED'
-  | 'REJECTED';
+  | 'REJECTED'
+  | 'BOOKED';
 
-type Transaction = {
+type InboxItem = {
   id: number;
-  uniqueCode: string;
-  status: TransactionStatus;
-  currentApprovalLevel: number; // 1=Section, 2=Office, 3=Zone, 4=Finance
-  amount: number;
-  budgetCode?: string;
-  budgetDescription?: string;
-  beneficiaryName?: string;
-  createdBy?: string;
-  createdAt?: string;
-  zoneName?: string;
-  departmentName?: string;
-  sectionName?: string;
-  financialEventName?: string;
-  rejectionReason?: string;
+  entity_type: 'TRANSACTION' | 'CONTRACT';
+  unique_code?: string;
+  contract_number?: string;
+  title?: string;
+  status: string;
+  current_approval_level?: number;
+  amount?: number;
+  total_amount?: number;
+  beneficiary_name?: string;
+  contractor_name?: string;
+  zone_title?: string;
+  dept_title?: string;
+  budget_code?: string;
+  budget_description?: string;
+  created_by_name?: string;
+  created_at?: string;
+  description?: string;
+  rejection_reason?: string;
+};
+
+type StatsData = {
+  transactions: {
+    total: number;
+    pending_l1: number;
+    pending_l2: number;
+    pending_l3: number;
+    pending_l4: number;
+    approved: number;
+    rejected: number;
+    booked: number;
+    my_pending: number;
+  };
+  contracts: {
+    total: number;
+    draft: number;
+    pending_approval: number;
+    approved: number;
+    in_progress: number;
+    completed: number;
+    closed: number;
+  };
+  admin_level: number;
+};
+
+type OverviewData = {
+  transactions: InboxItem[];
+  contracts: InboxItem[];
 };
 
 type AdminDashboardProps = {
@@ -53,17 +100,21 @@ type AdminDashboardProps = {
   onNavigateToAccounting?: () => void;
 };
 
-// Map status to approval level
-const STATUS_TO_LEVEL: Record<TransactionStatus, number> = {
-  'PENDING_L1': 1,
-  'PENDING_L2': 2,
-  'PENDING_L3': 3,
-  'PENDING_L4': 4,
-  'APPROVED': 5,
-  'REJECTED': 0,
+// ==========================================
+// Status Helpers
+// ==========================================
+
+const STATUS_TO_LEVEL: Record<string, number> = {
+  DRAFT: 0,
+  PENDING_L1: 1,
+  PENDING_L2: 2,
+  PENDING_L3: 3,
+  PENDING_L4: 4,
+  APPROVED: 5,
+  BOOKED: 6,
+  REJECTED: 0,
 };
 
-// Approval steps configuration
 const APPROVAL_STEPS = [
   { level: 1, label: 'قسمت', status: 'PENDING_L1' as const },
   { level: 2, label: 'اداره', status: 'PENDING_L2' as const },
@@ -71,91 +122,25 @@ const APPROVAL_STEPS = [
   { level: 4, label: 'ذی‌حساب', status: 'PENDING_L4' as const },
 ];
 
-// ==========================================
-// ApprovalStepsCell Component
-// ==========================================
-type ApprovalStepsCellProps = {
-  status: TransactionStatus;
-  adminLevel: number;
-  onApprove: () => void;
-  onRejectClick: () => void;
-};
-
-function ApprovalStepsCell({ status, adminLevel, onApprove, onRejectClick }: ApprovalStepsCellProps) {
-  const currentLevel = STATUS_TO_LEVEL[status] || 1;
-  const isRejected = status === 'REJECTED';
-  const isApproved = status === 'APPROVED';
-
-  const getStepIcon = (stepLevel: number) => {
-    if (isRejected) {
-      return <XCircle className="h-5 w-5 text-red-500" />;
-    }
-    if (isApproved || stepLevel < currentLevel) {
-      return <CheckCircle2 className="h-5 w-5 text-green-500" />;
-    }
-    if (stepLevel === currentLevel) {
-      return <Clock className="h-5 w-5 text-amber-500 animate-pulse" />;
-    }
-    return <Circle className="h-5 w-5 text-gray-300" />;
-  };
-
-  // Admin can act if their level matches current approval level
-  const canAct = adminLevel === currentLevel && !isRejected && !isApproved;
-
-  return (
-    <div className="flex items-center gap-2">
-      <div className="flex items-center gap-1">
-        {APPROVAL_STEPS.map((step, index) => (
-          <React.Fragment key={step.level}>
-            <div
-              className="flex flex-col items-center"
-              title={step.label}
-            >
-              {getStepIcon(step.level)}
-              <span className="text-[9px] text-muted-foreground mt-0.5">{step.label}</span>
-            </div>
-            {index < APPROVAL_STEPS.length - 1 && (
-              <div className={`w-3 h-0.5 ${step.level < currentLevel || isApproved ? 'bg-green-500' : 'bg-gray-200'
-                }`} />
-            )}
-          </React.Fragment>
-        ))}
-      </div>
-      {canAct && (
-        <div className="flex gap-1 mr-3 border-r pr-3">
-          <Button
-            size="sm"
-            variant="default"
-            className="h-7 px-2 bg-green-600 hover:bg-green-700"
-            onClick={(e) => { e.stopPropagation(); onApprove(); }}
-          >
-            تایید
-          </Button>
-          <Button
-            size="sm"
-            variant="destructive"
-            className="h-7 px-2"
-            onClick={(e) => { e.stopPropagation(); onRejectClick(); }}
-          >
-            رد
-          </Button>
-        </div>
-      )}
-    </div>
-  );
+function formatCurrency(amount: number) {
+  return formatNumber(amount);
 }
 
 // ==========================================
-// RejectionModal Component
+// RejectionModal
 // ==========================================
-type RejectionModalProps = {
+
+function RejectionModal({
+  isOpen,
+  entityCode,
+  onClose,
+  onConfirm,
+}: {
   isOpen: boolean;
-  transactionCode: string;
+  entityCode: string;
   onClose: () => void;
   onConfirm: (reason: string) => void;
-};
-
-function RejectionModal({ isOpen, transactionCode, onClose, onConfirm }: RejectionModalProps) {
+}) {
   const [reason, setReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -182,9 +167,11 @@ function RejectionModal({ isOpen, transactionCode, onClose, onConfirm }: Rejecti
         <DialogHeader>
           <DialogTitle className="text-right">رد درخواست</DialogTitle>
           <DialogDescription className="text-right">
-            درخواست با کد <span className="font-mono text-primary" dir="ltr">{transactionCode}</span> رد خواهد شد.
-            <br />
-            لطفاً دلیل رد را وارد کنید تا به کاربر اطلاع داده شود.
+            درخواست با کد{' '}
+            <span className="font-mono text-primary" dir="ltr">
+              {entityCode}
+            </span>{' '}
+            رد خواهد شد.
           </DialogDescription>
         </DialogHeader>
         <div className="py-4">
@@ -221,29 +208,344 @@ function RejectionModal({ isOpen, transactionCode, onClose, onConfirm }: Rejecti
 }
 
 // ==========================================
+// StatsCards — Section 3
+// ==========================================
+
+function StatsCards({ stats, adminLevel }: { stats: StatsData | null; adminLevel: number }) {
+  if (!stats) {
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  const tx = stats.transactions;
+  const cx = stats.contracts;
+
+  return (
+    <div className="space-y-6">
+      {/* Transaction Stats */}
+      <div>
+        <h3 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+          <ScrollText className="h-4 w-4" />
+          تراکنش‌ها
+        </h3>
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+          <Card className="p-3">
+            <p className="text-xs text-muted-foreground">کل</p>
+            <p className="text-2xl mt-1">{tx.total}</p>
+          </Card>
+          <Card className="p-3 bg-amber-50 border-amber-200">
+            <p className="text-xs text-amber-800">در انتظار من</p>
+            <p className="text-2xl mt-1 text-amber-600">{tx.my_pending}</p>
+          </Card>
+          <Card className="p-3">
+            <p className="text-xs text-muted-foreground">سطح ۱</p>
+            <p className="text-xl mt-1 text-amber-500">{tx.pending_l1}</p>
+          </Card>
+          <Card className="p-3">
+            <p className="text-xs text-muted-foreground">سطح ۲</p>
+            <p className="text-xl mt-1 text-amber-500">{tx.pending_l2}</p>
+          </Card>
+          <Card className="p-3">
+            <p className="text-xs text-muted-foreground">سطح ۳</p>
+            <p className="text-xl mt-1 text-orange-500">{tx.pending_l3}</p>
+          </Card>
+          <Card className="p-3">
+            <p className="text-xs text-muted-foreground">سطح ۴</p>
+            <p className="text-xl mt-1 text-orange-600">{tx.pending_l4}</p>
+          </Card>
+          <Card className="p-3 bg-green-50 border-green-200">
+            <p className="text-xs text-green-800">تایید شده</p>
+            <p className="text-2xl mt-1 text-green-600">{tx.approved}</p>
+          </Card>
+          <Card className="p-3 bg-red-50 border-red-200">
+            <p className="text-xs text-red-800">رد شده</p>
+            <p className="text-2xl mt-1 text-red-600">{tx.rejected}</p>
+          </Card>
+        </div>
+      </div>
+
+      {/* Contract Stats */}
+      <div>
+        <h3 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+          <FileText className="h-4 w-4" />
+          قراردادها
+        </h3>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          <Card className="p-3">
+            <p className="text-xs text-muted-foreground">کل</p>
+            <p className="text-2xl mt-1">{cx.total}</p>
+          </Card>
+          <Card className="p-3">
+            <p className="text-xs text-muted-foreground">پیش‌نویس</p>
+            <p className="text-xl mt-1 text-gray-500">{cx.draft}</p>
+          </Card>
+          <Card className="p-3 bg-amber-50 border-amber-200">
+            <p className="text-xs text-amber-800">در انتظار تایید</p>
+            <p className="text-xl mt-1 text-amber-600">{cx.pending_approval}</p>
+          </Card>
+          <Card className="p-3 bg-blue-50 border-blue-200">
+            <p className="text-xs text-blue-800">در حال اجرا</p>
+            <p className="text-xl mt-1 text-blue-600">{cx.in_progress}</p>
+          </Card>
+          <Card className="p-3 bg-green-50 border-green-200">
+            <p className="text-xs text-green-800">تکمیل شده</p>
+            <p className="text-xl mt-1 text-green-600">{cx.completed}</p>
+          </Card>
+          <Card className="p-3">
+            <p className="text-xs text-muted-foreground">بسته شده</p>
+            <p className="text-xl mt-1">{cx.closed}</p>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// InboxTable — Section 1
+// ==========================================
+
+function InboxTable({
+  items,
+  loading,
+  adminLevel,
+  onApprove,
+  onRejectClick,
+  onRowClick,
+}: {
+  items: InboxItem[];
+  loading: boolean;
+  adminLevel: number;
+  onApprove: (id: number) => void;
+  onRejectClick: (item: InboxItem) => void;
+  onRowClick: (item: InboxItem) => void;
+}) {
+  if (loading) {
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (items.length === 0) {
+    return (
+      <div className="text-center py-12 text-muted-foreground">
+        <Inbox className="h-10 w-10 mx-auto mb-3 opacity-40" />
+        <p>کارتابل شما خالی است</p>
+        <p className="text-xs mt-1">هیچ موردی در انتظار تایید شما نیست</p>
+      </div>
+    );
+  }
+
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead className="text-right w-[80px]">نوع</TableHead>
+          <TableHead className="text-right">شناسه</TableHead>
+          <TableHead className="text-right">وضعیت گردش کار</TableHead>
+          <TableHead className="text-right">مبلغ (ریال)</TableHead>
+          <TableHead className="text-right">ذینفع / پیمانکار</TableHead>
+          <TableHead className="text-right">ایجادکننده</TableHead>
+          <TableHead className="text-right">تاریخ</TableHead>
+          <TableHead className="text-right w-[180px]">اقدام</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {items.map((item) => {
+          const isTx = item.entity_type === 'TRANSACTION';
+          const code = isTx ? item.unique_code : item.contract_number;
+          const amount = isTx ? item.amount : item.total_amount;
+          const name = isTx ? item.beneficiary_name : item.contractor_name;
+          const currentLevel = STATUS_TO_LEVEL[item.status] ?? 0;
+          const canAct = isTx && adminLevel === currentLevel && item.status !== 'REJECTED' && item.status !== 'APPROVED';
+
+          return (
+            <TableRow
+              key={`${item.entity_type}-${item.id}`}
+              className="cursor-pointer hover:bg-muted/50"
+              onClick={() => onRowClick(item)}
+            >
+              <TableCell>
+                <Badge variant={isTx ? 'default' : 'secondary'} className="text-[10px]">
+                  {isTx ? 'تراکنش' : 'قرارداد'}
+                </Badge>
+              </TableCell>
+              <TableCell className="font-mono text-sm" dir="ltr">
+                {code || '---'}
+              </TableCell>
+              <TableCell>
+                <WorkflowVisualizer
+                  status={item.status}
+                  entityType={item.entity_type}
+                  compact
+                />
+              </TableCell>
+              <TableCell className="font-mono-num">
+                {amount ? formatRial(amount) : '-'}
+              </TableCell>
+              <TableCell className="max-w-[150px] truncate">{name || '-'}</TableCell>
+              <TableCell>{item.created_by_name || '-'}</TableCell>
+              <TableCell className="text-sm">{item.created_at?.split(' - ')[0] || '-'}</TableCell>
+              <TableCell>
+                {canAct && (
+                  <div className="flex gap-1">
+                    <Button
+                      size="sm"
+                      className="h-7 px-2 bg-green-600 hover:bg-green-700"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onApprove(item.id);
+                      }}
+                    >
+                      تایید
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="h-7 px-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onRejectClick(item);
+                      }}
+                    >
+                      رد
+                    </Button>
+                  </div>
+                )}
+              </TableCell>
+            </TableRow>
+          );
+        })}
+      </TableBody>
+    </Table>
+  );
+}
+
+// ==========================================
+// OverviewPanel — Section 2
+// ==========================================
+
+function OverviewPanel({
+  overview,
+  loading,
+}: {
+  overview: OverviewData | null;
+  loading: boolean;
+}) {
+  if (loading || !overview) {
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  const allItems = [
+    ...overview.transactions,
+    ...overview.contracts,
+  ];
+
+  if (allItems.length === 0) {
+    return (
+      <div className="text-center py-12 text-muted-foreground">
+        <LayoutDashboard className="h-10 w-10 mx-auto mb-3 opacity-40" />
+        <p>هیچ مورد فعالی وجود ندارد</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {allItems.map((item) => {
+        const isTx = item.entity_type === 'TRANSACTION';
+        const code = isTx ? item.unique_code : item.contract_number;
+        const amount = isTx ? item.amount : item.total_amount;
+
+        return (
+          <Card
+            key={`${item.entity_type}-${item.id}`}
+            className="p-4 hover:shadow-md transition-shadow"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge variant={isTx ? 'default' : 'secondary'} className="text-[10px]">
+                    {isTx ? 'تراکنش' : 'قرارداد'}
+                  </Badge>
+                  <span className="font-mono text-sm" dir="ltr">
+                    {code || '---'}
+                  </span>
+                  {item.title && (
+                    <span className="text-sm text-muted-foreground truncate">
+                      {item.title}
+                    </span>
+                  )}
+                </div>
+                <WorkflowVisualizer
+                  status={item.status}
+                  entityType={item.entity_type}
+                />
+              </div>
+              <div className="text-left flex-shrink-0">
+                <p className="font-mono-num text-sm">
+                  {amount ? formatRial(amount) : '-'}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {isTx ? item.beneficiary_name : item.contractor_name}
+                </p>
+              </div>
+            </div>
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
+
+// ==========================================
 // Main AdminDashboard Component
 // ==========================================
-export function AdminDashboard({ user, onLogout, onNavigateToPublic, onNavigateToAccounting }: AdminDashboardProps) {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
 
-  // Rejection modal state
+type AdminMainTab = 'inbox' | 'overview' | 'stats' | 'credit-requests';
+
+export function AdminDashboard({
+  user,
+  onLogout,
+  onNavigateToPublic,
+  onNavigateToAccounting,
+}: AdminDashboardProps) {
+  const [activeTab, setActiveTab] = useState<AdminMainTab>('inbox');
+  const [loading, setLoading] = useState(false);
+
+  // Inbox state
+  const [inboxItems, setInboxItems] = useState<InboxItem[]>([]);
+  const [inboxLoading, setInboxLoading] = useState(true);
+
+  // Overview state
+  const [overview, setOverview] = useState<OverviewData | null>(null);
+  const [overviewLoading, setOverviewLoading] = useState(true);
+
+  // Stats state
+  const [stats, setStats] = useState<StatsData | null>(null);
+
+  // Review panel
+  const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
+
+  // Rejection modal
   const [rejectionModalOpen, setRejectionModalOpen] = useState(false);
-  const [transactionToReject, setTransactionToReject] = useState<Transaction | null>(null);
+  const [itemToReject, setItemToReject] = useState<InboxItem | null>(null);
 
-  // Get admin level from user
+  const [error, setError] = useState<string | null>(null);
   const adminLevel = user.admin_level || 0;
 
-  // Improved Header Role Display (5-Level Hierarchy)
   const getRoleLabel = () => {
     if (user.role === 'inspector') return 'ناظر / بازرسی';
-    if (user.role === 'admin') {
+    if (user.role === 'admin' || (user.role || '').startsWith('ADMIN_L')) {
       switch (user.admin_level) {
         case 5: return 'طراح و راهبر سیستم';
         case 4: return 'ذی‌حساب (تایید نهایی)';
@@ -256,130 +558,117 @@ export function AdminDashboard({ user, onLogout, onNavigateToPublic, onNavigateT
     return 'کاربر';
   };
 
-  // Load transactions from API - extracted as reusable function
-  const loadTransactions = async () => {
-    setLoading(true);
-    setError(null);
+  // --- Data Loaders ---
 
+  const loadInbox = useCallback(async () => {
+    setInboxLoading(true);
     try {
-      const result = await fetchAdminTransactions({
-        status: statusFilter !== 'all' ? statusFilter : undefined,
-        search: searchTerm || undefined,
-        page: currentPage
-      });
-
-      // Map to component format with defensive checks
-      const mapped: Transaction[] = (result.transactions || []).map((t: any) => {
-        // Convert old status format to new if needed
-        let status: TransactionStatus = t.status || 'PENDING_L1';
-        if (status === 'pending' as any) status = 'PENDING_L1';
-        if (status === 'approved' as any) status = 'APPROVED';
-        if (status === 'rejected' as any) status = 'REJECTED';
-
-        return {
-          id: t.id,
-          uniqueCode: t.uniqueCode || '---',
-          status,
-          currentApprovalLevel: t.currentApprovalLevel || STATUS_TO_LEVEL[status] || 1,
-          amount: t.amount || 0,
-          budgetCode: t.budgetCode || '',
-          budgetDescription: t.budgetDescription || '',
-          beneficiaryName: t.beneficiaryName || '',
-          createdBy: t.createdBy || '',
-          createdAt: t.createdAt || '',
-          zoneName: t.zoneName || '',
-          rejectionReason: t.rejectionReason,
-        };
-      });
-      setTransactions(mapped);
+      const data = await api.get<{
+        items: InboxItem[];
+        total_transactions: number;
+        total_contracts: number;
+      }>('/admin/inbox');
+      setInboxItems(data.items || []);
     } catch (err) {
-      console.error('Failed to load transactions:', err);
-      setError('خطا در بارگیری تراکنش‌ها');
+      console.error('Failed to load inbox:', err);
+      setError('خطا در بارگیری کارتابل');
+    } finally {
+      setInboxLoading(false);
+    }
+  }, []);
+
+  const loadOverview = useCallback(async () => {
+    setOverviewLoading(true);
+    try {
+      const data = await api.get<{
+        transactions: InboxItem[];
+        contracts: InboxItem[];
+      }>('/admin/overview');
+      setOverview({
+        transactions: data.transactions || [],
+        contracts: data.contracts || [],
+      });
+    } catch (err) {
+      console.error('Failed to load overview:', err);
+    } finally {
+      setOverviewLoading(false);
+    }
+  }, []);
+
+  const loadStats = useCallback(async () => {
+    try {
+      const data = await api.get<StatsData>('/admin/stats');
+      setStats(data);
+    } catch (err) {
+      console.error('Failed to load stats:', err);
+    }
+  }, []);
+
+  // Initial load
+  useEffect(() => {
+    loadInbox();
+    loadStats();
+  }, [loadInbox, loadStats]);
+
+  // Load overview when tab is activated
+  useEffect(() => {
+    if (activeTab === 'overview' && !overview) {
+      loadOverview();
+    }
+  }, [activeTab, overview, loadOverview]);
+
+  // --- Actions ---
+
+  const handleApprove = async (txId: number) => {
+    try {
+      setLoading(true);
+      await approveTransaction(txId);
+      await Promise.all([loadInbox(), loadStats()]);
+      setSelectedTransaction(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'خطا در تایید');
     } finally {
       setLoading(false);
     }
   };
 
-  // Load transactions on mount and when filters change
-  useEffect(() => {
-    loadTransactions();
-  }, [statusFilter, currentPage]);
-
-  const filteredTransactions = transactions.filter(tx => {
-    const matchesSearch =
-      tx.uniqueCode.includes(searchTerm) ||
-      tx.budgetDescription?.includes(searchTerm) ||
-      tx.beneficiaryName?.includes(searchTerm) ||
-      tx.createdBy?.includes(searchTerm);
-
-    return matchesSearch;
-  });
-
-  const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
-  const paginatedTransactions = filteredTransactions.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-
-  // Handle approve - call API and reload transactions
-  const handleApprove = async (txId: number) => {
-    try {
-      setLoading(true);
-      const result = await approveTransaction(txId);
-      console.log('Approve result:', result);
-      // Reload transactions to get fresh data from server
-      await loadTransactions();
-      // Close the review panel if open
-      setSelectedTransaction(null);
-    } catch (err) {
-      console.error('Approve failed:', err);
-      setError(err instanceof Error ? err.message : 'خطا در تایید تراکنش');
-      setLoading(false);
-    }
-  };
-
-  // Handle reject - open modal
-  const handleRejectClick = (tx: Transaction) => {
-    setTransactionToReject(tx);
+  const handleRejectClick = (item: InboxItem) => {
+    setItemToReject(item);
     setRejectionModalOpen(true);
   };
 
-  // Handle reject confirmation - call API and reload transactions
   const handleRejectConfirm = async (reason: string) => {
-    if (!transactionToReject) return;
-
+    if (!itemToReject) return;
     try {
       setLoading(true);
-      const result = await rejectTransaction(transactionToReject.id, reason);
-      console.log('Reject result:', result);
-      // Reload transactions to get fresh data from server
-      await loadTransactions();
-      // Close the review panel if open
+      await rejectTransaction(itemToReject.id, reason);
+      await Promise.all([loadInbox(), loadStats()]);
       setSelectedTransaction(null);
     } catch (err) {
-      console.error('Reject failed:', err);
-      setError(err instanceof Error ? err.message : 'خطا در رد تراکنش');
+      setError(err instanceof Error ? err.message : 'خطا در رد');
+    } finally {
       setLoading(false);
+      setItemToReject(null);
     }
-
-    setTransactionToReject(null);
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fa-IR').format(amount);
-  };
-
-  // Updated stats for new statuses
-  const stats = {
-    total: transactions.length,
-    pendingSection: transactions.filter(t => t.status === 'PENDING_L1').length,
-    pendingOffice: transactions.filter(t => t.status === 'PENDING_L2').length,
-    pendingZone: transactions.filter(t => t.status === 'PENDING_L3').length,
-    pendingFinance: transactions.filter(t => t.status === 'PENDING_L4').length,
-    approved: transactions.filter(t => t.status === 'APPROVED').length,
-    rejected: transactions.filter(t => t.status === 'REJECTED').length,
-    // Total pending at my level
-    myPending: transactions.filter(t => STATUS_TO_LEVEL[t.status] === adminLevel).length,
+  const handleRowClick = (item: InboxItem) => {
+    if (item.entity_type === 'TRANSACTION') {
+      setSelectedTransaction({
+        id: item.id,
+        uniqueCode: item.unique_code,
+        status: item.status,
+        currentApprovalLevel: item.current_approval_level,
+        amount: item.amount,
+        budgetCode: item.budget_code,
+        budgetDescription: item.budget_description,
+        beneficiaryName: item.beneficiary_name,
+        createdBy: item.created_by_name,
+        createdAt: item.created_at,
+        zoneName: item.zone_title,
+        rejectionReason: item.rejection_reason,
+      });
+    }
   };
 
   return (
@@ -393,7 +682,7 @@ export function AdminDashboard({ user, onLogout, onNavigateToPublic, onNavigateT
                 <Building2 className="h-6 w-6 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-lg">داشبورد مدیریت</h1>
+                <h1 className="text-lg font-semibold">مرکز فرماندهی مدیریت</h1>
                 <p className="text-sm text-muted-foreground">شهرداری اصفهان - معاونت مالی</p>
               </div>
             </div>
@@ -402,14 +691,18 @@ export function AdminDashboard({ user, onLogout, onNavigateToPublic, onNavigateT
               <div className="text-left">
                 <p className="text-sm font-medium">{user.fullName}</p>
                 <div className="flex items-center gap-1 justify-end">
-                  <Badge variant="outline" className="text-[10px] h-5 px-1 bg-primary/5 border-primary/20">
+                  <Badge
+                    variant="outline"
+                    className="text-[10px] h-5 px-1 bg-primary/5 border-primary/20"
+                  >
                     {getRoleLabel()}
                   </Badge>
                 </div>
               </div>
               {onNavigateToAccounting && (
                 <Button variant="outline" size="sm" onClick={onNavigateToAccounting}>
-                  📊 صندوق حسابداری
+                  <BarChart3 className="h-4 w-4 ml-1" />
+                  صندوق حسابداری
                 </Button>
               )}
               <Button variant="outline" size="sm" onClick={onLogout}>
@@ -421,159 +714,145 @@ export function AdminDashboard({ user, onLogout, onNavigateToPublic, onNavigateT
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
-        <div className="space-y-6">
-          {/* Stats Cards - Updated for approval workflow */}
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            <Card className="p-4">
-              <p className="text-sm text-muted-foreground">کل تراکنش‌ها</p>
-              <p className="text-3xl mt-2">{stats.total}</p>
-            </Card>
-            <Card className="p-4 bg-amber-50 border-amber-200">
-              <p className="text-sm text-amber-800">در انتظار من</p>
-              <p className="text-3xl mt-2 text-amber-600">{stats.myPending}</p>
-            </Card>
-            <Card className="p-4">
-              <p className="text-sm text-muted-foreground">قسمت</p>
-              <p className="text-2xl mt-2 text-amber-500">{stats.pendingSection}</p>
-            </Card>
-            <Card className="p-4">
-              <p className="text-sm text-muted-foreground">اداره</p>
-              <p className="text-2xl mt-2 text-amber-500">{stats.pendingOffice}</p>
-            </Card>
-            <Card className="p-4 bg-green-50 border-green-200">
-              <p className="text-sm text-green-800">تایید شده</p>
-              <p className="text-3xl mt-2 text-green-600">{stats.approved}</p>
-            </Card>
-            <Card className="p-4 bg-red-50 border-red-200">
-              <p className="text-sm text-red-800">رد شده</p>
-              <p className="text-3xl mt-2 text-red-600">{stats.rejected}</p>
-            </Card>
+      {/* Error Banner */}
+      {error && (
+        <div className="container mx-auto px-4 pt-4">
+          <div className="bg-red-50 border border-red-200 rounded-md p-3 flex items-center justify-between">
+            <p className="text-sm text-red-700">{error}</p>
+            <Button variant="ghost" size="sm" onClick={() => setError(null)}>
+              <XCircle className="h-4 w-4" />
+            </Button>
           </div>
-
-          {/* Filters */}
-          <Card className="p-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="relative">
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="جستجو بر اساس کد، ردیف، ذینفع یا ایجادکننده..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pr-10"
-                />
-              </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="فیلتر وضعیت" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">همه وضعیت‌ها</SelectItem>
-                  <SelectItem value="PENDING_L1">در انتظار قسمت</SelectItem>
-                  <SelectItem value="PENDING_L2">در انتظار اداره</SelectItem>
-                  <SelectItem value="PENDING_L3">در انتظار حوزه</SelectItem>
-                  <SelectItem value="PENDING_L4">در انتظار ذی‌حساب</SelectItem>
-                  <SelectItem value="APPROVED">تایید شده</SelectItem>
-                  <SelectItem value="REJECTED">رد شده</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </Card>
-
-          {/* Transactions Table with Progressive Approval */}
-          <Card>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="text-right">کد یکتا</TableHead>
-                  <TableHead className="text-right">مراحل تایید</TableHead>
-                  <TableHead className="text-right">مبلغ (ریال)</TableHead>
-                  <TableHead className="text-right">ردیف بودجه</TableHead>
-                  <TableHead className="text-right">ذینفع</TableHead>
-                  <TableHead className="text-right">ایجادکننده</TableHead>
-                  <TableHead className="text-right">تاریخ</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8">
-                      <div className="flex justify-center">
-                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : paginatedTransactions.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                      تراکنشی یافت نشد
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  paginatedTransactions.map(tx => (
-                    <TableRow
-                      key={tx.id}
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => setSelectedTransaction(tx)}
-                    >
-                      <TableCell className="font-mono text-sm" dir="ltr">{tx.uniqueCode}</TableCell>
-                      <TableCell>
-                        <ApprovalStepsCell
-                          status={tx.status}
-                          adminLevel={adminLevel}
-                          onApprove={() => handleApprove(tx.id)}
-                          onRejectClick={() => handleRejectClick(tx)}
-                        />
-                      </TableCell>
-                      <TableCell className="font-mono">{formatCurrency(tx.amount)}</TableCell>
-                      <TableCell className="font-mono text-sm">{tx.budgetCode}</TableCell>
-                      <TableCell className="max-w-[150px] truncate">{tx.beneficiaryName || '-'}</TableCell>
-                      <TableCell>{tx.createdBy || '-'}</TableCell>
-                      <TableCell className="text-sm">{tx.createdAt?.split(' - ')[0] || '-'}</TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between p-4 border-t">
-                <p className="text-sm text-muted-foreground">
-                  صفحه {currentPage} از {totalPages}
-                </p>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                    disabled={currentPage === 1}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                    disabled={currentPage === totalPages}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            )}
-          </Card>
         </div>
+      )}
+
+      {/* Quick Stats Bar */}
+      {stats && (
+        <div className="bg-card border-b">
+          <div className="container mx-auto px-4 py-2">
+            <div className="flex items-center gap-6 text-sm">
+              <span className="text-muted-foreground">خلاصه:</span>
+              <span className="flex items-center gap-1">
+                <span className="inline-block w-2 h-2 rounded-full bg-amber-400" />
+                در انتظار من:
+                <strong className="text-amber-600">{stats.transactions.my_pending}</strong>
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="inline-block w-2 h-2 rounded-full bg-amber-300" />
+                L1: {stats.transactions.pending_l1}
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="inline-block w-2 h-2 rounded-full bg-amber-400" />
+                L2: {stats.transactions.pending_l2}
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="inline-block w-2 h-2 rounded-full bg-orange-400" />
+                L3: {stats.transactions.pending_l3}
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="inline-block w-2 h-2 rounded-full bg-orange-500" />
+                L4: {stats.transactions.pending_l4}
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="inline-block w-2 h-2 rounded-full bg-green-500" />
+                تایید شده: {stats.transactions.approved}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Tabs */}
+      <main className="container mx-auto px-4 py-6">
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => setActiveTab(v as AdminMainTab)}
+          dir="rtl"
+        >
+          <TabsList className="mb-6">
+            <TabsTrigger value="inbox" className="gap-1.5">
+              <Inbox className="h-4 w-4" />
+              کارتابل من
+              {stats && stats.transactions.my_pending > 0 && (
+                <Badge className="h-5 px-1.5 text-[10px] bg-amber-500 text-white">
+                  {stats.transactions.my_pending}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="overview" className="gap-1.5">
+              <LayoutDashboard className="h-4 w-4" />
+              نمای کلی سیستم
+            </TabsTrigger>
+            <TabsTrigger value="stats" className="gap-1.5">
+              <BarChart3 className="h-4 w-4" />
+              آمار
+            </TabsTrigger>
+            <TabsTrigger value="credit-requests" className="gap-1.5">
+              <ShieldCheck className="h-4 w-4" />
+              تامین اعتبار
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Tab 1: Inbox (Cartable) */}
+          <TabsContent value="inbox">
+            <Card>
+              <div className="p-4 border-b">
+                <h2 className="text-base font-medium flex items-center gap-2">
+                  <Inbox className="h-5 w-5 text-primary" />
+                  موارد در انتظار تایید شما
+                </h2>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {adminLevel > 0
+                    ? `سطح ${adminLevel} - فقط مواردی که نیاز به تایید سطح شما دارند نمایش داده می‌شوند`
+                    : 'تمام موارد در انتظار نمایش داده می‌شوند'}
+                </p>
+              </div>
+              <InboxTable
+                items={inboxItems}
+                loading={inboxLoading}
+                adminLevel={adminLevel}
+                onApprove={handleApprove}
+                onRejectClick={handleRejectClick}
+                onRowClick={handleRowClick}
+              />
+            </Card>
+          </TabsContent>
+
+          {/* Tab 2: System Overview */}
+          <TabsContent value="overview">
+            <Card className="p-4">
+              <h2 className="text-base font-medium flex items-center gap-2 mb-4">
+                <LayoutDashboard className="h-5 w-5 text-primary" />
+                نمای کلی — کجا گیر کرده؟
+              </h2>
+              <p className="text-xs text-muted-foreground mb-4">
+                تراکنش‌ها و قراردادهای فعال به همراه وضعیت فعلی آن‌ها در گردش کار
+              </p>
+              <OverviewPanel overview={overview} loading={overviewLoading} />
+            </Card>
+          </TabsContent>
+
+          {/* Tab 3: Stats */}
+          <TabsContent value="stats">
+            <StatsCards stats={stats} adminLevel={adminLevel} />
+          </TabsContent>
+
+          {/* Tab 4: Credit Requests */}
+          <TabsContent value="credit-requests">
+            <CreditRequestAdminPanel />
+          </TabsContent>
+        </Tabs>
       </main>
 
       {/* Side Panel for Review */}
       {selectedTransaction && (
         <TransactionReviewPanel
-          transaction={selectedTransaction as any}
+          transaction={selectedTransaction}
           onClose={() => setSelectedTransaction(null)}
           onApprove={(id) => handleApprove(id)}
           onReject={(id, reason) => {
-            setTransactions(prev => prev.filter(t => t.id !== id));
+            loadInbox();
+            loadStats();
           }}
         />
       )}
@@ -581,10 +860,14 @@ export function AdminDashboard({ user, onLogout, onNavigateToPublic, onNavigateT
       {/* Rejection Modal */}
       <RejectionModal
         isOpen={rejectionModalOpen}
-        transactionCode={transactionToReject?.uniqueCode || ''}
+        entityCode={
+          itemToReject
+            ? itemToReject.unique_code || itemToReject.contract_number || ''
+            : ''
+        }
         onClose={() => {
           setRejectionModalOpen(false);
-          setTransactionToReject(null);
+          setItemToReject(null);
         }}
         onConfirm={handleRejectConfirm}
       />
