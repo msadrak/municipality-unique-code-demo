@@ -1,12 +1,47 @@
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('/fonts/Vazirmatn[wght].woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('/fonts/Vazirmatn-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('/fonts/Vazirmatn-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('/fonts/Vazirmatn-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 /* GLM-5: Vazirmatn as primary font, also used in monospace stack for Persian digit support */
 @theme inline {
   --font-sans: 'Vazirmatn', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-  --font-mono: 'Vazirmatn', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-mono: 'Vazirmatn', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 }
 
 :root {
+  /* Keep font vars in plain CSS (not only @theme) so they work without Tailwind preprocessing */
+  --font-sans: 'Vazirmatn', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --font-mono: 'Vazirmatn', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   --font-size: 16px;
   --background: oklch(0.984 0.003 247.858); /* bg-slate-50 */
   --foreground: #1a1a1a;
@@ -142,6 +177,7 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -200,6 +236,20 @@ html {
   font-size: var(--font-size);
 }
 
+html,
+body,
+#root {
+  font-family: var(--font-sans);
+}
+
+button,
+input,
+select,
+textarea,
+option {
+  font-family: inherit;
+}
+
 /* RTL support for Persian */
 [dir="rtl"] {
   direction: rtl;
@@ -208,6 +258,10 @@ html {
 
 /* Financial typography: tabular-aligned numbers with strict LTR direction */
 @layer utilities {
+  .font-sans {
+    font-family: var(--font-sans);
+  }
+
   .font-mono-num {
     font-family: var(--font-mono);
     font-feature-settings: "tnum" on, "lnum" on;

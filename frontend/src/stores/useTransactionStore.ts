@@ -17,7 +17,7 @@ interface TransactionState {
     // Actions
     fetchDashboardInit: () => Promise<void>;
     setActivity: (activity: AllowedActivity | null) => void;
-    startWizard: (activity: AllowedActivity) => void;
+    startWizard: (activity?: AllowedActivity) => void;
     closeWizard: () => void;
     reset: () => void;
 }
@@ -56,7 +56,7 @@ export const useTransactionStore = create<TransactionState>((set, get) => ({
 
     // Start wizard with an activity
     startWizard: (activity) => {
-        set({ selectedActivity: activity, showWizard: true });
+        set({ selectedActivity: activity ?? null, showWizard: true });
     },
 
     // Close wizard

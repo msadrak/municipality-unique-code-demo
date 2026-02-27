@@ -7,3 +7,4 @@ export { ContractsList } from './ContractsList';
 export { ContractDetails } from './ContractDetails';
 export { NewContract } from './NewContract';
 export { ReportsPage } from './ReportsPage';
+export { ContractorRegistration } from './ContractorRegistration';

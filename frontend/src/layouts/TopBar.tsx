@@ -1,84 +1,42 @@
 import React from 'react';
 import { useAuthStore } from '../stores/useAuthStore';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Menu, ChevronLeft } from 'lucide-react';
-import { SidebarTrigger } from '../components/ui/sidebar';
-import { Button } from '../components/ui/button';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '../components/ui/dropdown-menu';
-import { Avatar, AvatarFallback } from '../components/ui/avatar';
-import { Separator } from '../components/ui/separator';
+import { Bell } from 'lucide-react';
 
 /**
- * TopBar - Top navigation bar with sidebar trigger and user menu
+ * TopBar — Matches Stitch header design
+ * White background with border-bottom, welcome text on right, notification + avatar on left
  */
 export function TopBar() {
-    const { user, logout } = useAuthStore();
-    const navigate = useNavigate();
-
-    const handleLogout = async () => {
-        await logout();
-        navigate('/login');
-    };
-
-    const getInitials = (name: string) => {
-        if (!name) return 'U';
-        const parts = name.trim().split(' ');
-        if (parts.length >= 2) {
-            return parts[0].charAt(0) + parts[1].charAt(0);
-        }
-        return name.charAt(0);
-    };
-
-    const isAdmin = user?.role === 'admin';
+    const { user } = useAuthStore();
 
     return (
-        <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-background px-4">
-            {/* Sidebar Toggle */}
-            <SidebarTrigger className="-ms-2" />
-            <Separator orientation="vertical" className="h-6 mx-2" />
-
-            {/* Breadcrumb placeholder - minimal for Phase 1 */}
-            <nav className="flex items-center gap-1 text-sm text-muted-foreground">
-                <span>داشبورد</span>
-            </nav>
-
-            {/* Spacer */}
-            <div className="flex-1" />
-
-            {/* User Menu */}
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-                        <Avatar className="h-9 w-9">
-                            <AvatarFallback className="bg-primary text-primary-foreground">
-                                {getInitials(user?.full_name || '')}
-                            </AvatarFallback>
-                        </Avatar>
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuLabel className="font-normal">
-                        <div className="flex flex-col space-y-1">
-                            <p className="text-sm font-medium leading-none">{user?.full_name || 'کاربر'}</p>
-                            <p className="text-xs leading-none text-muted-foreground">
-                                {isAdmin ? 'مدیر سیستم' : 'کاربر'}
-                            </p>
-                        </div>
-                    </DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleLogout} className="text-destructive cursor-pointer">
-                        <LogOut className="ml-2 h-4 w-4" />
-                        خروج از سامانه
-                    </DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
+        <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+            <div className="flex flex-col">
+                <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+                    خوش آمدید، {user?.full_name || 'کاربر'}
+                </h2>
+                <div className="flex items-center gap-2 mt-1">
+                    <span className="text-slate-500 text-sm">
+                        {user?.role === 'admin' ? 'مدیر سیستم' : 'کارشناس مالی'}
+                    </span>
+                    <span className="text-slate-300 mx-1">|</span>
+                    <span className="text-slate-400 text-xs">آخرین ورود: امروز</span>
+                </div>
+            </div>
+            <div className="flex items-center gap-4">
+                {/* Notification Bell */}
+                <button className="relative p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors">
+                    <Bell className="h-5 w-5" />
+                    <span className="absolute top-2 right-2 h-2.5 w-2.5 bg-red-500 rounded-full border-2 border-white" />
+                </button>
+                {/* User Avatar */}
+                <div className="h-10 w-10 rounded-full bg-slate-200 flex items-center justify-center border border-slate-300">
+                    <span className="text-sm font-medium text-slate-600">
+                        {user?.full_name?.charAt(0) || 'U'}
+                    </span>
+                </div>
+            </div>
         </header>
     );
 }

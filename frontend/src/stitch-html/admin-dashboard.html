@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="fa"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>سامانه مالی شهرداری اصفهان - بررسی تراکنش‌ها</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100;400;700&amp;family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2463eb",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#111621",
+                        "slate-custom": "#1e293b"
+                    },
+                    fontFamily: {
+                        "display": ["Vazirmatn", "Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: "Vazirmatn", sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen flex">
+<!-- Right Sidebar -->
+<aside class="w-64 bg-slate-custom text-white flex flex-col h-screen sticky top-0 z-20 shadow-xl">
+<div class="p-6 flex items-center gap-3 border-b border-slate-700">
+<div class="size-10 rounded-lg bg-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-white">account_balance</span>
+</div>
+<div>
+<h1 class="text-lg font-bold leading-tight">شهرداری اصفهان</h1>
+<p class="text-xs text-slate-400">سامانه مدیریت مالی</p>
+</div>
+</div>
+<nav class="flex-1 px-4 py-6 space-y-2">
+<a class="flex items-center gap-3 px-4 py-3 bg-primary/20 text-primary border-r-4 border-primary rounded-l-lg transition-colors" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-medium">پورتال کاربر</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">description</span>
+<span class="font-medium">قراردادها</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">bar_chart</span>
+<span class="font-medium">گزارش‌ها</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">payments</span>
+<span class="font-medium">حسابداری</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-medium">مدیریت</span>
+</a>
+</nav>
+<div class="p-4 border-t border-slate-700">
+<div class="bg-slate-800 rounded-xl p-4 text-center">
+<p class="text-xs text-slate-400 mb-2">نسخه سامانه: ۲.۴.۰</p>
+<div class="h-1 bg-primary w-full rounded-full"></div>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col min-h-screen overflow-x-hidden">
+<!-- Top Header -->
+<header class="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-8 sticky top-0 z-10">
+<div class="flex items-center gap-4">
+<h2 class="text-xl font-bold text-slate-800 dark:text-white">داشبورد مدیریت</h2>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-3 border-l border-slate-200 dark:border-slate-700 pl-6">
+<div class="text-right">
+<p class="text-sm font-bold text-slate-800 dark:text-white">محمد احمدی</p>
+<p class="text-xs text-slate-500">مدیر مالی ارشد</p>
+</div>
+<div class="size-10 rounded-full bg-slate-200 overflow-hidden border border-primary/20">
+<img class="w-full h-full object-cover" data-alt="تصویر پروفایل کاربر محمد احمدی" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBZnFgXex0JVnXpgeKGRVDHnoXXDCbCPWgVYFF5Cyvb4goUNSkex_K_GWO0UMLj11FT3m16EOLdJgH-h_w8KdhJJKBnjHxBouhLvOzlbo5ka8a1jgwh0rvBqSOGIBTg8cG9gUcqmZLPSFm1jGpN6VyQP7rtmYbqRQ_ui0C-yA542qgloTY9fDWUg8bjUEaTFxor18JuQAZpBny2m6i09LDNWXaj3gO0UxIsXgS69NJVVjPtBUXJ22pdpIb8Cl2c8K_C2Qx0DbvmY6qN"/>
+</div>
+</div>
+<button class="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors font-bold text-sm">
+<span class="material-symbols-outlined text-lg">logout</span>
+<span>خروج</span>
+</button>
+</div>
+</header>
+<!-- Content Body -->
+<div class="p-8 space-y-8 max-w-7xl mx-auto w-full">
+<!-- Stat Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+<div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-2">
+<div class="flex justify-between items-center">
+<span class="text-slate-500 text-sm font-medium">کل تراکنش‌ها</span>
+<span class="material-symbols-outlined text-primary bg-primary/10 p-2 rounded-lg">swap_horiz</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="text-3xl font-bold">۱۵۶</span>
+<span class="text-xs text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded-full">+۵٪</span>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-2">
+<div class="flex justify-between items-center">
+<span class="text-slate-500 text-sm font-medium">در انتظار تایید</span>
+<span class="material-symbols-outlined text-amber-500 bg-amber-50 p-2 rounded-lg">pending_actions</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="text-3xl font-bold">۲۳</span>
+<span class="text-xs text-amber-600 font-bold bg-amber-50 px-2 py-0.5 rounded-full">فعال</span>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-2">
+<div class="flex justify-between items-center">
+<span class="text-slate-500 text-sm font-medium">تایید شده</span>
+<span class="material-symbols-outlined text-green-500 bg-green-50 p-2 rounded-lg">verified</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="text-3xl font-bold">۱۱۸</span>
+<span class="text-xs text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded-full">+۸٪</span>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-2">
+<div class="flex justify-between items-center">
+<span class="text-slate-500 text-sm font-medium">رد شده</span>
+<span class="material-symbols-outlined text-red-500 bg-red-50 p-2 rounded-lg">cancel</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="text-3xl font-bold">۱۵</span>
+<span class="text-xs text-red-600 font-bold bg-red-50 px-2 py-0.5 rounded-full">+۱٪</span>
+</div>
+</div>
+</div>
+<!-- Table and Filters -->
+<div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col">
+<!-- Filters -->
+<div class="p-6 border-b border-slate-200 dark:border-slate-800 flex flex-wrap gap-4 items-end">
+<div class="flex-1 min-w-[300px]">
+<label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">جستجوی تراکنش</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+<input class="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-lg pr-10 focus:ring-2 focus:ring-primary h-11 text-sm" placeholder="کد یکتا، نام متقاضی یا مبلغ..." type="text"/>
+</div>
+</div>
+<div class="w-48">
+<label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">وضعیت</label>
+<select class="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-lg focus:ring-2 focus:ring-primary h-11 text-sm">
+<option>همه وضعیت‌ها</option>
+<option>در انتظار تایید</option>
+<option>تایید شده</option>
+<option>رد شده</option>
+</select>
+</div>
+<div class="w-48">
+<label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">بازه زمانی</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">calendar_month</span>
+<input class="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-lg pr-10 focus:ring-2 focus:ring-primary h-11 text-sm" type="text" value="۱۴۰۲/۰۷/۰۱ - ۱۴۰۲/۰۷/۳۰"/>
+</div>
+</div>
+<button class="bg-primary text-white h-11 px-6 rounded-lg font-bold text-sm hover:bg-blue-700 transition-colors">اعمال فیلتر</button>
+</div>
+<!-- Data Table -->
+<div class="overflow-x-auto">
+<table class="w-full text-right">
+<thead>
+<tr class="bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">
+<th class="px-6 py-4">کد یکتا</th>
+<th class="px-6 py-4">متقاضی</th>
+<th class="px-6 py-4">مبلغ (ریال)</th>
+<th class="px-6 py-4">تاریخ</th>
+<th class="px-6 py-4">وضعیت</th>
+<th class="px-6 py-4 text-left">عملیات</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+<tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors cursor-pointer bg-blue-50/30">
+<td class="px-6 py-4 font-medium text-primary">TX-9824</td>
+<td class="px-6 py-4">شرکت مهندسی بناسازان</td>
+<td class="px-6 py-4 font-bold tabular-nums">۱,۲۴۰,۰۰۰,۰۰۰</td>
+<td class="px-6 py-4 text-sm">۱۴۰۲/۰۸/۱۲</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1 bg-amber-100 text-amber-700 px-2 py-1 rounded-md text-xs font-bold">
+<span class="size-1.5 bg-amber-500 rounded-full"></span>
+                                        در انتظار تایید
+                                    </span>
+</td>
+<td class="px-6 py-4 text-left">
+<button class="text-primary hover:underline text-sm font-bold">مشاهده جزئیات</button>
+</td>
+</tr>
+<tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+<td class="px-6 py-4 font-medium text-slate-700 dark:text-slate-300">TX-9823</td>
+<td class="px-6 py-4">اداره فضای سبز منطقه ۶</td>
+<td class="px-6 py-4 font-bold tabular-nums">۴۵۰,۰۰۰,۰۰۰</td>
+<td class="px-6 py-4 text-sm">۱۴۰۲/۰۸/۱۱</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1 bg-green-100 text-green-700 px-2 py-1 rounded-md text-xs font-bold">
+<span class="size-1.5 bg-green-500 rounded-full"></span>
+                                        تایید شده
+                                    </span>
+</td>
+<td class="px-6 py-4 text-left">
+<button class="text-primary hover:underline text-sm font-bold">مشاهده جزئیات</button>
+</td>
+</tr>
+<tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+<td class="px-6 py-4 font-medium text-slate-700 dark:text-slate-300">TX-9822</td>
+<td class="px-6 py-4">پیمانکاری راه و ترابری</td>
+<td class="px-6 py-4 font-bold tabular-nums">۳,۸۰۰,۰۰۰,۰۰۰</td>
+<td class="px-6 py-4 text-sm">۱۴۰۲/۰۸/۱۰</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1 bg-red-100 text-red-700 px-2 py-1 rounded-md text-xs font-bold">
+<span class="size-1.5 bg-red-500 rounded-full"></span>
+                                        رد شده
+                                    </span>
+</td>
+<td class="px-6 py-4 text-left">
+<button class="text-primary hover:underline text-sm font-bold">مشاهده جزئیات</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="p-4 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center text-sm text-slate-500">
+<p>نمایش ۱ تا ۱۰ از ۱۵۶ تراکنش</p>
+<div class="flex gap-2">
+<button class="size-8 rounded border border-slate-200 flex items-center justify-center hover:bg-slate-50"><span class="material-symbols-outlined text-sm">chevron_right</span></button>
+<button class="size-8 rounded bg-primary text-white flex items-center justify-center font-bold">۱</button>
+<button class="size-8 rounded border border-slate-200 flex items-center justify-center hover:bg-slate-50">۲</button>
+<button class="size-8 rounded border border-slate-200 flex items-center justify-center hover:bg-slate-50">۳</button>
+<button class="size-8 rounded border border-slate-200 flex items-center justify-center hover:bg-slate-50"><span class="material-symbols-outlined text-sm">chevron_left</span></button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Side Detail Panel (Overlay style for selected transaction) -->
+<div class="fixed inset-y-0 left-0 w-[400px] bg-white dark:bg-slate-900 shadow-2xl z-30 border-r border-slate-200 dark:border-slate-800 flex flex-col transform transition-transform duration-300 ease-in-out">
+<div class="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
+<h3 class="text-lg font-bold text-slate-800 dark:text-white">بررسی جزئیات تراکنش</h3>
+<button class="text-slate-400 hover:text-slate-600 transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div class="flex-1 overflow-y-auto p-6 space-y-6">
+<div class="grid grid-cols-2 gap-4">
+<div class="space-y-1">
+<p class="text-xs text-slate-500">کد یکتا</p>
+<p class="text-sm font-bold">TX-9824</p>
+</div>
+<div class="space-y-1">
+<p class="text-xs text-slate-500">وضعیت فعلی</p>
+<span class="text-xs font-bold text-amber-600">در انتظار تایید</span>
+</div>
+</div>
+<div class="space-y-2 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
+<div class="flex justify-between border-b border-slate-200 dark:border-slate-700 pb-2">
+<span class="text-sm text-slate-500">سازمان مربوطه:</span>
+<span class="text-sm font-medium">سازمان عمران شهرداری</span>
+</div>
+<div class="flex justify-between border-b border-slate-200 dark:border-slate-700 py-2">
+<span class="text-sm text-slate-500">اطلاعات بودجه:</span>
+<span class="text-sm font-medium">پروژه زیرگذر لاله - کد ۵۰۴</span>
+</div>
+<div class="flex justify-between pt-2">
+<span class="text-sm text-slate-500">ذینفع:</span>
+<span class="text-sm font-medium">بانک شهر (مرکزی)</span>
+</div>
+</div>
+<div class="space-y-2">
+<p class="text-sm font-bold text-slate-700 dark:text-slate-300">مستندات پیوست</p>
+<div class="flex gap-2">
+<div class="flex-1 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg p-3 text-center">
+<span class="material-symbols-outlined text-slate-400">picture_as_pdf</span>
+<p class="text-[10px] text-slate-500 mt-1">صورت وضعیت.pdf</p>
+</div>
+<div class="flex-1 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg p-3 text-center">
+<span class="material-symbols-outlined text-slate-400">image</span>
+<p class="text-[10px] text-slate-500 mt-1">تاییدیه ناظر.jpg</p>
+</div>
+</div>
+</div>
+<div class="space-y-2">
+<label class="block text-sm font-bold text-slate-700 dark:text-slate-300">دلیل رد (در صورت نیاز)</label>
+<textarea class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary p-3 text-sm resize-none" placeholder="توضیحات لازم جهت نقص مدارک یا رد تراکنش را اینجا وارد کنید..." rows="4"></textarea>
+</div>
+</div>
+<div class="p-6 border-t border-slate-200 dark:border-slate-800 grid grid-cols-2 gap-4">
+<button class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 transition-colors">
+<span class="material-symbols-outlined text-lg">close</span>
+<span>رد درخواست</span>
+</button>
+<button class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 transition-colors">
+<span class="material-symbols-outlined text-lg">check</span>
+<span>تایید نهایی</span>
+</button>
+</div>
+</div>
+</body></html>

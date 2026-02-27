@@ -1,12 +1,13 @@
 """
-Progress Statement Service - Sprint 3
-====================================
+Progress Statement Service - 4-Stage Approval Workflow
+======================================================
 
 Business rules:
 - Statements can only be created for APPROVED / IN_PROGRESS contracts
 - Over-payment prevention is enforced at creation time
-- State machine: DRAFT -> SUBMITTED -> APPROVED -> PAID
-- On PAID: blocked budget is converted to spent budget (real execution)
+- State machine: DRAFT → PENDING_L1 → PENDING_L2 → PENDING_L3 → PENDING_L4 → APPROVED
+- At any stage → REJECTED (with reason)
+- On APPROVED: a linked Transaction should be created/advanced for payment processing
 """
 
 from datetime import datetime, date
@@ -25,13 +26,40 @@ from app.services.budget_service import confirm_spend
 
 
 # ============================================================
-# State Machine
+# State Machine — 4-Stage Approval Workflow
 # ============================================================
 
 VALID_TRANSITIONS: dict[str, list[str]] = {
-    ProgressStatementStatus.DRAFT.value: [ProgressStatementStatus.SUBMITTED.value],
-    ProgressStatementStatus.SUBMITTED.value: [ProgressStatementStatus.APPROVED.value],
-    ProgressStatementStatus.APPROVED.value: [ProgressStatementStatus.PAID.value],
+    ProgressStatementStatus.DRAFT.value: [ProgressStatementStatus.PENDING_L1.value],
+    ProgressStatementStatus.PENDING_L1.value: [
+        ProgressStatementStatus.PENDING_L2.value,
+        ProgressStatementStatus.REJECTED.value,
+    ],
+    ProgressStatementStatus.PENDING_L2.value: [
+        ProgressStatementStatus.PENDING_L3.value,
+        ProgressStatementStatus.REJECTED.value,
+    ],
+    ProgressStatementStatus.PENDING_L3.value: [
+        ProgressStatementStatus.PENDING_L4.value,
+        ProgressStatementStatus.REJECTED.value,
+    ],
+    ProgressStatementStatus.PENDING_L4.value: [
+        ProgressStatementStatus.APPROVED.value,
+        ProgressStatementStatus.REJECTED.value,
+    ],
+    # APPROVED and REJECTED are terminal states for ProgressStatement.
+    # Payment is handled at the Transaction level.
+}
+
+# Maps status to approval level for current_approval_level tracking
+STATUS_TO_LEVEL: dict[str, int] = {
+    ProgressStatementStatus.DRAFT.value: 0,
+    ProgressStatementStatus.PENDING_L1.value: 1,
+    ProgressStatementStatus.PENDING_L2.value: 2,
+    ProgressStatementStatus.PENDING_L3.value: 3,
+    ProgressStatementStatus.PENDING_L4.value: 4,
+    ProgressStatementStatus.APPROVED.value: 4,
+    ProgressStatementStatus.REJECTED.value: 0,
 }
 
 
@@ -136,7 +164,7 @@ def _resolve_financial_amounts(
     Resolve gross/net values from request variants.
 
     Supported payload styles:
-    - Sprint 3 preferred: amount (net), optional gross/deductions
+    - Preferred: amount (net), optional gross/deductions
     - Backward compatible: gross_amount + deductions
     """
     if deductions < 0:
@@ -184,6 +212,12 @@ def create_statement(
     statement_type: str = "INTERIM",
     gross_amount: Optional[int] = None,
     deductions: int = 0,
+    originating_organ: Optional[str] = None,
+    template_data: Optional[dict] = None,
+    insurance_deduction: int = 0,
+    tax_deduction: int = 0,
+    advance_payment_amount: int = 0,
+    other_deductions: int = 0,
 ) -> ProgressStatement:
     """
     Create a progress statement draft with over-payment prevention.
@@ -242,11 +276,18 @@ def create_statement(
         description=description.strip(),
         period_start=period_start,
         period_end=period_end,
+        originating_organ=originating_organ,
+        template_data=template_data,
         gross_amount=resolved_gross,
         deductions=deductions,
         net_amount=resolved_net,
         cumulative_amount=committed + resolved_net,
+        insurance_deduction=insurance_deduction,
+        tax_deduction=tax_deduction,
+        advance_payment_amount=advance_payment_amount,
+        other_deductions=other_deductions,
         status=ProgressStatementStatus.DRAFT,
+        current_approval_level=0,
         submitted_by_id=user_id,
     )
     db.add(statement)
@@ -259,17 +300,42 @@ def create_statement(
 # ============================================================
 
 def submit_statement(db: Session, statement_id: int, user_id: int) -> ProgressStatement:
-    """Transition DRAFT -> SUBMITTED."""
-    return _transition(db, statement_id, ProgressStatementStatus.SUBMITTED.value, user_id)
+    """Transition DRAFT → PENDING_L1 (submit for review)."""
+    return _transition(db, statement_id, ProgressStatementStatus.PENDING_L1.value, user_id)
 
 
-def approve_statement(
-    db: Session,
-    statement_id: int,
-    user_id: int,
-    review_comment: Optional[str] = None,
-) -> ProgressStatement:
-    """Transition SUBMITTED -> APPROVED."""
+def approve_l1(db: Session, statement_id: int, user_id: int, review_comment: Optional[str] = None) -> ProgressStatement:
+    """Transition PENDING_L1 → PENDING_L2 (section/technical review passed)."""
+    statement = _transition(db, statement_id, ProgressStatementStatus.PENDING_L2.value, user_id)
+    statement.reviewed_by_id = user_id
+    statement.reviewed_at = datetime.utcnow()
+    statement.review_comment = review_comment
+    db.flush()
+    return statement
+
+
+def approve_l2(db: Session, statement_id: int, user_id: int, review_comment: Optional[str] = None) -> ProgressStatement:
+    """Transition PENDING_L2 → PENDING_L3 (department head approved)."""
+    statement = _transition(db, statement_id, ProgressStatementStatus.PENDING_L3.value, user_id)
+    statement.reviewed_by_id = user_id
+    statement.reviewed_at = datetime.utcnow()
+    statement.review_comment = review_comment
+    db.flush()
+    return statement
+
+
+def approve_l3(db: Session, statement_id: int, user_id: int, review_comment: Optional[str] = None) -> ProgressStatement:
+    """Transition PENDING_L3 → PENDING_L4 (zone/manager approved)."""
+    statement = _transition(db, statement_id, ProgressStatementStatus.PENDING_L4.value, user_id)
+    statement.reviewed_by_id = user_id
+    statement.reviewed_at = datetime.utcnow()
+    statement.review_comment = review_comment
+    db.flush()
+    return statement
+
+
+def approve_l4(db: Session, statement_id: int, user_id: int, review_comment: Optional[str] = None) -> ProgressStatement:
+    """Transition PENDING_L4 → APPROVED (finance/treasury final approval)."""
     statement = _transition(db, statement_id, ProgressStatementStatus.APPROVED.value, user_id)
     statement.reviewed_by_id = user_id
     statement.reviewed_at = datetime.utcnow()
@@ -278,9 +344,16 @@ def approve_statement(
     return statement
 
 
-def pay_statement(db: Session, statement_id: int, user_id: int) -> ProgressStatement:
+def reject_statement(
+    db: Session,
+    statement_id: int,
+    user_id: int,
+    rejection_reason: Optional[str] = None,
+) -> ProgressStatement:
     """
-    Transition APPROVED -> PAID and execute budget movement blocked -> spent.
+    Reject a statement at any pending stage → REJECTED.
+    
+    Rejection is allowed from PENDING_L1, PENDING_L2, PENDING_L3, PENDING_L4.
     """
     statement = (
         db.query(ProgressStatement)
@@ -292,59 +365,63 @@ def pay_statement(db: Session, statement_id: int, user_id: int) -> ProgressState
         raise StatementNotFoundError(statement_id)
 
     current = _status_value(statement.status)
-    if current != ProgressStatementStatus.APPROVED.value:
-        raise InvalidStatementTransitionError(
-            current,
-            ProgressStatementStatus.PAID.value,
-        )
+    allowed = VALID_TRANSITIONS.get(current, [])
+    if ProgressStatementStatus.REJECTED.value not in allowed:
+        raise InvalidStatementTransitionError(current, ProgressStatementStatus.REJECTED.value)
 
-    contract = _get_contract_for_update(db, statement.contract_id)
-    if not contract:
-        raise StatementValidationError(
-            f"Contract with ID {statement.contract_id} was not found"
-        )
-
-    contract_status = _status_value(contract.status)
-    if contract_status not in {
-        ContractStatus.APPROVED.value,
-        ContractStatus.IN_PROGRESS.value,
-    }:
-        raise StatementValidationError(
-            "Payment is only allowed when contract is APPROVED or IN_PROGRESS. "
-            f"Current status: {contract_status}"
-        )
-
-    projected_paid = (contract.paid_amount or 0) + statement.net_amount
-    if projected_paid > contract.total_amount:
-        raise OverPaymentError(
-            contract_total=contract.total_amount,
-            already_committed=contract.paid_amount or 0,
-            requested=statement.net_amount,
-        )
-
-    if not contract.budget_row_id:
-        raise StatementValidationError(
-            "Contract is missing budget_row_id and cannot execute payment"
-        )
-
-    confirm_spend(
-        db=db,
-        budget_id=contract.budget_row_id,
-        amount=statement.net_amount,
-        user_id=str(user_id),
-        reference_doc=f"Statement-{statement.statement_number}",
-        notes=f"Statement payment for contract {contract.contract_number}",
-    )
-
-    contract.paid_amount = projected_paid
-    contract.updated_at = datetime.utcnow()
-
-    statement.status = ProgressStatementStatus.PAID
+    statement.status = ProgressStatementStatus.REJECTED
+    statement.rejected_by_id = user_id
+    statement.rejected_at = datetime.utcnow()
+    statement.rejection_reason = rejection_reason
+    statement.current_approval_level = 0
     statement.updated_at = datetime.utcnow()
     statement.version = (statement.version or 1) + 1
 
     db.flush()
     return statement
+
+
+# Legacy compatibility alias
+def approve_statement(
+    db: Session,
+    statement_id: int,
+    user_id: int,
+    review_comment: Optional[str] = None,
+) -> ProgressStatement:
+    """
+    Legacy approve function — advances statement to next approval level.
+    
+    Determines the correct transition based on current status.
+    """
+    statement = (
+        db.query(ProgressStatement)
+        .filter(ProgressStatement.id == statement_id)
+        .with_for_update()
+        .first()
+    )
+    if not statement:
+        raise StatementNotFoundError(statement_id)
+
+    current = _status_value(statement.status)
+    
+    # Route to appropriate level-specific approve function
+    level_map = {
+        ProgressStatementStatus.PENDING_L1.value: approve_l1,
+        ProgressStatementStatus.PENDING_L2.value: approve_l2,
+        ProgressStatementStatus.PENDING_L3.value: approve_l3,
+        ProgressStatementStatus.PENDING_L4.value: approve_l4,
+    }
+    
+    approve_fn = level_map.get(current)
+    if not approve_fn:
+        # Find the first non-REJECTED transition
+        allowed = VALID_TRANSITIONS.get(current, [])
+        non_reject = [s for s in allowed if s != ProgressStatementStatus.REJECTED.value]
+        if not non_reject:
+            raise InvalidStatementTransitionError(current, "APPROVED")
+        raise InvalidStatementTransitionError(current, non_reject[0])
+    
+    return approve_fn(db, statement_id, user_id, review_comment)
 
 
 def _transition(
@@ -369,10 +446,11 @@ def _transition(
         raise InvalidStatementTransitionError(current, new_status)
 
     statement.status = ProgressStatementStatus(new_status)
+    statement.current_approval_level = STATUS_TO_LEVEL.get(new_status, 0)
     statement.updated_at = datetime.utcnow()
     statement.version = (statement.version or 1) + 1
 
-    if new_status == ProgressStatementStatus.SUBMITTED.value:
+    if new_status == ProgressStatementStatus.PENDING_L1.value:
         statement.submitted_at = datetime.utcnow()
 
     db.flush()
@@ -403,10 +481,10 @@ def get_statement_financial_summary(db: Session, contract_id: int) -> dict:
     total_gross = sum(s.gross_amount for s in statements)
     total_deductions = sum(s.deductions for s in statements)
     total_net = sum(s.net_amount for s in statements)
-    total_paid = sum(
+    total_approved = sum(
         s.net_amount
         for s in statements
-        if _status_value(s.status) == ProgressStatementStatus.PAID.value
+        if _status_value(s.status) == ProgressStatementStatus.APPROVED.value
     )
 
     return {
@@ -416,6 +494,6 @@ def get_statement_financial_summary(db: Session, contract_id: int) -> dict:
         "total_gross": total_gross,
         "total_deductions": total_deductions,
         "total_net_committed": total_net,
-        "total_paid": total_paid,
+        "total_approved": total_approved,
         "remaining": contract.total_amount - total_net,
     }

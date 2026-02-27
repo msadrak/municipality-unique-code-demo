@@ -1,6 +1,6 @@
 """
-Progress Statement Router - Sprint 3
-====================================
+Progress Statement Router — 4-Stage Approval Workflow
+=====================================================
 
 Endpoints:
 - POST /contracts/{id}/statements
@@ -9,7 +9,7 @@ Endpoints:
 - GET /statements/{id}
 - PUT /statements/{id}/submit
 - PUT /statements/{id}/approve
-- PUT /statements/{id}/pay
+- PUT /statements/{id}/reject
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -23,9 +23,9 @@ from app.schemas.statement import (
     StatementFinancialSummary,
     StatementListItem,
     StatementListResponse,
+    StatementReject,
     StatementResponse,
 )
-from app.services.budget_service import InvalidOperationError
 from app.services.statement_service import (
     InvalidStatementTransitionError,
     OverPaymentError,
@@ -35,7 +35,7 @@ from app.services.statement_service import (
     create_statement,
     get_contract_statements,
     get_statement_financial_summary,
-    pay_statement,
+    reject_statement,
     submit_statement,
 )
 
@@ -70,15 +70,26 @@ def _statement_to_response(statement: ProgressStatement) -> StatementResponse:
         description=statement.description,
         period_start=str(statement.period_start) if statement.period_start else None,
         period_end=str(statement.period_end) if statement.period_end else None,
+        originating_organ=statement.originating_organ,
         gross_amount=statement.gross_amount,
         deductions=statement.deductions or 0,
         net_amount=statement.net_amount,
         cumulative_amount=statement.cumulative_amount or 0,
+        previous_statement_amount=statement.previous_statement_amount or 0,
+        insurance_deduction=statement.insurance_deduction or 0,
+        tax_deduction=statement.tax_deduction or 0,
+        advance_payment_amount=statement.advance_payment_amount or 0,
+        other_deductions=statement.other_deductions or 0,
+        current_approval_level=statement.current_approval_level or 0,
+        template_data=statement.template_data,
         submitted_by_id=statement.submitted_by_id,
         reviewed_by_id=statement.reviewed_by_id,
+        rejected_by_id=statement.rejected_by_id,
         review_comment=statement.review_comment,
+        rejection_reason=statement.rejection_reason,
         submitted_at=_fmt_dt(statement.submitted_at),
         reviewed_at=_fmt_dt(statement.reviewed_at),
+        rejected_at=_fmt_dt(getattr(statement, 'rejected_at', None)),
         created_at=_fmt_dt(statement.created_at),
         updated_at=_fmt_dt(statement.updated_at),
         version=statement.version or 1,
@@ -98,6 +109,8 @@ def _statement_to_list_item(statement: ProgressStatement) -> StatementListItem:
         status=status_val,
         net_amount=statement.net_amount,
         cumulative_amount=statement.cumulative_amount or 0,
+        current_approval_level=statement.current_approval_level or 0,
+        originating_organ=statement.originating_organ,
         created_at=_fmt_dt(statement.created_at),
     )
 
@@ -124,6 +137,12 @@ def create_progress_statement(
             period_start=data.period_start,
             period_end=data.period_end,
             statement_type=data.statement_type,
+            originating_organ=data.originating_organ,
+            template_data=data.template_data,
+            insurance_deduction=data.insurance_deduction,
+            tax_deduction=data.tax_deduction,
+            advance_payment_amount=data.advance_payment_amount,
+            other_deductions=data.other_deductions,
         )
         db.commit()
         db.refresh(statement)
@@ -193,7 +212,7 @@ def submit_progress_statement(
     request: Request,
     db: Session = Depends(get_db),
 ):
-    """Submit a draft statement."""
+    """Submit a draft statement (DRAFT → PENDING_L1)."""
     user = _require_auth(request, db)
     try:
         statement = submit_statement(db, statement_id, user.id)
@@ -215,7 +234,7 @@ def approve_progress_statement(
     request: Request,
     db: Session = Depends(get_db),
 ):
-    """Approve a submitted statement."""
+    """Approve a statement (advances to next approval level)."""
     user = _require_auth(request, db)
     try:
         statement = approve_statement(
@@ -235,36 +254,28 @@ def approve_progress_statement(
         raise HTTPException(status_code=409, detail=str(exc))
 
 
-@router.put("/statements/{statement_id}/pay", response_model=StatementResponse)
-def pay_progress_statement(
+@router.put("/statements/{statement_id}/reject", response_model=StatementResponse)
+def reject_progress_statement(
     statement_id: int,
+    data: StatementReject,
     request: Request,
     db: Session = Depends(get_db),
 ):
-    """
-    Finalize payment for an approved statement.
-
-    Budget side effect:
-    - confirm_spend() converts blocked -> spent
-    """
+    """Reject a statement at any pending stage."""
     user = _require_auth(request, db)
     try:
-        statement = pay_statement(db, statement_id, user.id)
+        statement = reject_statement(
+            db=db,
+            statement_id=statement_id,
+            user_id=user.id,
+            rejection_reason=data.rejection_reason,
+        )
         db.commit()
         db.refresh(statement)
         return _statement_to_response(statement)
     except StatementNotFoundError:
         db.rollback()
         raise HTTPException(status_code=404, detail="Statement not found")
-    except StatementValidationError as exc:
-        db.rollback()
-        raise HTTPException(status_code=422, detail=str(exc))
     except InvalidStatementTransitionError as exc:
         db.rollback()
         raise HTTPException(status_code=409, detail=str(exc))
-    except InvalidOperationError as exc:
-        db.rollback()
-        raise HTTPException(status_code=409, detail=str(exc))
-    except Exception as exc:
-        db.rollback()
-        raise HTTPException(status_code=500, detail=f"Server error: {exc}")

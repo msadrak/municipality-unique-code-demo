@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="fa"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>لیست قراردادها - شهرداری اصفهان</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2463eb",
+                        "background-light": "#f6f6f8", // slate-50 equivalent
+                        "background-dark": "#0f172a", // slate-900 equivalent for sidebar
+                    },
+                    fontFamily: {
+                        "display": ["Vazirmatn", "Public Sans", "sans-serif"],
+                        "body": ["Vazirmatn", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.375rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-background-light text-slate-900 overflow-x-hidden min-h-screen flex flex-row">
+<!-- Sidebar -->
+<aside class="hidden lg:flex w-72 flex-col bg-background-dark text-white min-h-screen shrink-0 transition-all duration-300">
+<div class="p-6 flex items-center gap-4 border-b border-slate-700/50">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-12 shrink-0 border-2 border-primary/30" data-alt="Isfahan Municipality Logo Emblem" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDqY-kEVbvalMFJUDm-z-Zg3-5sDpGek4oIy_zt3skY9nWUBTZ6tDI_JZbMLHxTboF3CGJsJ83ObWYDc54JQ81l9uys35U3v8XvrXo4ILk2f01ALL6Yq82eZ5DCIEqI4LHlGO6Zyk0T7tZOnfC1velD-ShZ_D30xTpbf_KQH-jpEq8QR21wLb7VfdJr6u2zKLj5I-NxlCs4NKwLpTyLX4isyTtenYl7l-Q3fWcaTI1XAaQORzzyoKR3_bEeIWYHITXsJnXfJwofwoz0");'></div>
+<div class="flex flex-col">
+<h1 class="text-base font-bold leading-tight tracking-wide">شهرداری اصفهان</h1>
+<p class="text-slate-400 text-xs font-normal mt-1">سیستم جامع مالی</p>
+</div>
+</div>
+<nav class="flex-1 px-4 py-6 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-white transition-colors">person</span>
+<span class="text-sm font-medium">پورتال کاربر</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary text-white shadow-lg shadow-primary/20 transition-all" href="#">
+<span class="material-symbols-outlined filled">description</span>
+<span class="text-sm font-bold">قراردادها</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-white transition-colors">bar_chart</span>
+<span class="text-sm font-medium">گزارش‌ها</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-white transition-colors">payments</span>
+<span class="text-sm font-medium">حسابداری</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-colors group" href="#">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-white transition-colors">settings</span>
+<span class="text-sm font-medium">مدیریت</span>
+</a>
+</nav>
+<div class="p-4 border-t border-slate-700/50">
+<button class="flex items-center w-full gap-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-red-500/10 hover:text-red-400 transition-colors group">
+<span class="material-symbols-outlined text-slate-400 group-hover:text-red-400 transition-colors">logout</span>
+<span class="text-sm font-medium">خروج از حساب</span>
+</button>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col min-h-0 overflow-y-auto">
+<!-- Header & Filters -->
+<div class="px-8 py-8 md:px-10 md:py-10 space-y-6">
+<!-- Top Bar -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div>
+<h2 class="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">لیست قراردادها</h2>
+<p class="text-slate-500 mt-1 text-sm">مدیریت و پیگیری وضعیت قراردادهای شهرداری</p>
+</div>
+<button class="bg-primary hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg flex items-center justify-center gap-2 shadow-md shadow-blue-500/20 transition-all active:scale-95 text-sm font-bold">
+<span class="material-symbols-outlined text-[20px]">add</span>
+<span>قرارداد جدید</span>
+</button>
+</div>
+<!-- Filter Bar -->
+<div class="bg-white p-2 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-2 items-center">
+<div class="relative flex-1 w-full">
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-[20px]">search</span>
+<input class="w-full pl-4 pr-10 py-2.5 bg-transparent border-none rounded-lg focus:ring-2 focus:ring-primary/20 focus:bg-slate-50 text-sm placeholder:text-slate-400 transition-all" placeholder="جستجو در قراردادها (شماره، پیمانکار، موضوع)..." type="text"/>
+</div>
+<div class="h-8 w-[1px] bg-slate-200 hidden md:block mx-1"></div>
+<div class="flex items-center gap-2 w-full md:w-auto">
+<div class="relative w-full md:w-48">
+<select class="w-full appearance-none bg-slate-50 border border-slate-200 text-slate-700 py-2.5 pr-4 pl-10 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm font-medium cursor-pointer transition-all hover:bg-slate-100">
+<option>همه وضعیت‌ها</option>
+<option>تایید شده</option>
+<option>در حال اجرا</option>
+<option>در انتظار</option>
+<option>پیش‌نویس</option>
+</select>
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none text-[20px]">filter_list</span>
+</div>
+<button class="md:hidden bg-slate-100 p-2.5 rounded-lg text-slate-600 hover:bg-slate-200">
+<span class="material-symbols-outlined">tune</span>
+</button>
+</div>
+</div>
+<!-- Data Table -->
+<div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-right border-collapse">
+<thead>
+<tr class="bg-slate-50/50 border-b border-slate-100">
+<th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider w-32">شماره قرارداد</th>
+<th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">پیمانکار</th>
+<th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider w-1/4">موضوع</th>
+<th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">مبلغ کل</th>
+<th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">وضعیت</th>
+<th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-left">تاریخ</th>
+<th class="px-4 py-4 w-10"></th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100">
+<!-- Row 1 -->
+<tr class="hover:bg-slate-50/80 transition-colors group">
+<td class="px-6 py-4">
+<span class="font-mono text-slate-600 font-medium text-sm bg-slate-100 px-2 py-1 rounded">۱۴۰۲/۱۰۵</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">ع</div>
+<span class="text-sm font-medium text-slate-900">شرکت عمرانی سازه گستر</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="text-sm text-slate-600 line-clamp-1">احداث پارک محله‌ای منطقه ۴</span>
+</td>
+<td class="px-6 py-4">
+<span class="text-sm font-bold text-slate-900">۱۵,۰۰۰,۰۰۰,۰۰۰ <span class="text-xs font-normal text-slate-500">ریال</span></span>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-100">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                        تایید شده
+                                    </span>
+</td>
+<td class="px-6 py-4 text-left">
+<span class="text-sm text-slate-500 font-mono" dir="ltr">1402/05/10</span>
+</td>
+<td class="px-4 py-4 text-center">
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-slate-50/80 transition-colors group">
+<td class="px-6 py-4">
+<span class="font-mono text-slate-600 font-medium text-sm bg-slate-100 px-2 py-1 rounded">۱۴۰۲/۱۰۴</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold">پ</div>
+<span class="text-sm font-medium text-slate-900">گروه مهندسی پارس</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="text-sm text-slate-600 line-clamp-1">نظارت بر پروژه خط ۲ مترو</span>
+</td>
+<td class="px-6 py-4">
+<span class="text-sm font-bold text-slate-900">۸,۵۰۰,۰۰۰,۰۰۰ <span class="text-xs font-normal text-slate-500">ریال</span></span>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+<span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
+                                        در حال اجرا
+                                    </span>
+</td>
+<td class="px-6 py-4 text-left">
+<span class="text-sm text-slate-500 font-mono" dir="ltr">1402/05/08</span>
+</td>
+<td class="px-4 py-4 text-center">
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-slate-50/80 transition-colors group">
+<td class="px-6 py-4">
+<span class="font-mono text-slate-600 font-medium text-sm bg-slate-100 px-2 py-1 rounded">۱۴۰۲/۱۰۳</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-xs font-bold">خ</div>
+<span class="text-sm font-medium text-slate-900">خدمات شهری سبز</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="text-sm text-slate-600 line-clamp-1">نگهداری فضای سبز منطقه ۳</span>
+</td>
+<td class="px-6 py-4">
+<span class="text-sm font-bold text-slate-900">۴,۲۰۰,۰۰۰,۰۰۰ <span class="text-xs font-normal text-slate-500">ریال</span></span>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-100">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                        در انتظار
+                                    </span>
+</td>
+<td class="px-6 py-4 text-left">
+<span class="text-sm text-slate-500 font-mono" dir="ltr">1402/05/05</span>
+</td>
+<td class="px-4 py-4 text-center">
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-slate-50/80 transition-colors group">
+<td class="px-6 py-4">
+<span class="font-mono text-slate-600 font-medium text-sm bg-slate-100 px-2 py-1 rounded">۱۴۰۲/۱۰۲</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-xs font-bold">ف</div>
+<span class="text-sm font-medium text-slate-900">فناوری اطلاعات سپاهان</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="text-sm text-slate-600 line-clamp-1">پشتیبانی سیستم اتوماسیون اداری</span>
+</td>
+<td class="px-6 py-4">
+<span class="text-sm font-bold text-slate-900">۱,۸۰۰,۰۰۰,۰۰۰ <span class="text-xs font-normal text-slate-500">ریال</span></span>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
+<span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                                        پیش‌نویس
+                                    </span>
+</td>
+<td class="px-6 py-4 text-left">
+<span class="text-sm text-slate-500 font-mono" dir="ltr">1402/05/02</span>
+</td>
+<td class="px-4 py-4 text-center">
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 5 -->
+<tr class="hover:bg-slate-50/80 transition-colors group">
+<td class="px-6 py-4">
+<span class="font-mono text-slate-600 font-medium text-sm bg-slate-100 px-2 py-1 rounded">۱۴۰۲/۱۰۱</span>
+</td>
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-xs font-bold">ب</div>
+<span class="text-sm font-medium text-slate-900">بازرگانی امید</span>
+</div>
+</td>
+<td class="px-6 py-4">
+<span class="text-sm text-slate-600 line-clamp-1">تامین تجهیزات اداری شهرداری مرکزی</span>
+</td>
+<td class="px-6 py-4">
+<span class="text-sm font-bold text-slate-900">۳,۵۰۰,۰۰۰,۰۰۰ <span class="text-xs font-normal text-slate-500">ریال</span></span>
+</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-100">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                        تایید شده
+                                    </span>
+</td>
+<td class="px-6 py-4 text-left">
+<span class="text-sm text-slate-500 font-mono" dir="ltr">1402/04/28</span>
+</td>
+<td class="px-4 py-4 text-center">
+<button class="text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination Footer -->
+<div class="px-6 py-4 border-t border-slate-100 flex items-center justify-between bg-slate-50/50">
+<p class="text-sm text-slate-500">
+                        نمایش <span class="font-medium text-slate-900">۱</span> تا <span class="font-medium text-slate-900">۵</span> از <span class="font-medium text-slate-900">۱۲۰</span> مورد
+                    </p>
+<div class="flex gap-2">
+<button class="w-9 h-9 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-400 hover:bg-slate-50 hover:text-slate-600 disabled:opacity-50 transition-colors">
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+<button class="w-9 h-9 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors">
+<span class="material-symbols-outlined text-[18px]">chevron_left</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

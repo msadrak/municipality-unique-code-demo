@@ -6,7 +6,7 @@
   padding: 1.5rem;
   max-width: 1400px;
   margin: 0 auto;
-  font-family: 'Vazirmatn', 'Tahoma', sans-serif;
+  font-family: var(--font-sans);
 }
 
 /* Header */
@@ -157,7 +157,7 @@
 }
 
 .inbox-table .amount {
-  font-family: 'Vazirmatn', monospace;
+  font-family: var(--font-mono);
   text-align: left;
   direction: ltr;
 }

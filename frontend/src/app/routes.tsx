@@ -19,88 +19,104 @@ import {
     ContractDetails,
     NewContract,
     ReportsPage,
+    ContractorRegistration,
 } from '../pages';
 
 /**
  * Application routes configuration
  * Phase 1: Maps existing page components to URL routes via page wrappers
  */
-export const router = createBrowserRouter([
-    // Public routes (AuthLayout - no sidebar)
+export const router = createBrowserRouter(
+    [
+        // Public routes (AuthLayout - no sidebar)
+        {
+            element: <AuthLayout />,
+            children: [
+                {
+                    path: '/login',
+                    element: <LoginPage />,
+                },
+                {
+                    path: '/public',
+                    element: <PublicDashboardPage />,
+                },
+                {
+                    path: '/contractor-auth',
+                    element: <ContractorRegistration />,
+                },
+            ],
+        },
+
+        // Protected routes (AppShell - with sidebar)
+        {
+            element: (
+                <RequireAuth>
+                    <AppShell />
+                </RequireAuth>
+            ),
+            children: [
+                // User portal
+                {
+                    path: '/portal',
+                    element: <UserPortalPage />,
+                },
+
+                // Admin dashboard
+                {
+                    path: '/admin',
+                    element: <AdminDashboardPage />,
+                },
+
+                // Accounting inbox
+                {
+                    path: '/accounting',
+                    element: <AccountingPage />,
+                },
+                // Contracts dashboard
+                {
+                    path: '/contracts',
+                    element: <ContractsList />,
+                },
+                // New contract wizard (MUST come before :id to avoid matching "new" as an ID)
+                {
+                    path: '/contracts/new',
+                    element: <NewContract />,
+                },
+                // Contract detail / execution hub
+                {
+                    path: '/contracts/:id',
+                    element: <ContractDetails />,
+                },
+
+                // Executive reports dashboard
+                {
+                    path: '/reports',
+                    element: <ReportsPage />,
+                },
+            ],
+        },
+
+        // 403 Forbidden page
+        {
+            path: '/forbidden',
+            element: <ForbiddenPage />,
+        },
+
+        // Catch-all redirect to login
+        {
+            path: '*',
+            element: <Navigate to="/login" replace />,
+        },
+    ],
     {
-        element: <AuthLayout />,
-        children: [
-            {
-                path: '/login',
-                element: <LoginPage />,
-            },
-            {
-                path: '/public',
-                element: <PublicDashboardPage />,
-            },
-        ],
+        future: {
+            v7_relativeSplatPath: true,
+            v7_fetcherPersist: true,
+            v7_normalizeFormMethod: true,
+            v7_partialHydration: true,
+            v7_skipActionErrorRevalidation: true,
+        },
     },
-
-    // Protected routes (AppShell - with sidebar)
-    {
-        element: (
-            <RequireAuth>
-                <AppShell />
-            </RequireAuth>
-        ),
-        children: [
-            // User portal
-            {
-                path: '/portal',
-                element: <UserPortalPage />,
-            },
-
-            // Admin dashboard
-            {
-                path: '/admin',
-                element: <AdminDashboardPage />,
-            },
-
-            // Accounting inbox
-            {
-                path: '/accounting',
-                element: <AccountingPage />,
-            },
-            // Contracts dashboard
-            {
-                path: '/contracts',
-                element: <ContractsList />,
-            },
-            // New contract wizard (MUST come before :id to avoid matching "new" as an ID)
-            {
-                path: '/contracts/new',
-                element: <NewContract />,
-            },
-            // Contract detail / execution hub
-            {
-                path: '/contracts/:id',
-                element: <ContractDetails />,
-            },
-
-            // Executive reports dashboard
-            {
-                path: '/reports',
-                element: <ReportsPage />,
-            },
-        ],
-    },
-
-    // 403 Forbidden page
-    {
-        path: '/forbidden',
-        element: <ForbiddenPage />,
-    },
-
-    // Catch-all redirect to login
-    {
-        path: '*',
-        element: <Navigate to="/login" replace />,
-    },
-]);
+);
 
 export default router;

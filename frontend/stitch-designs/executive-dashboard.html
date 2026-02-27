@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="fa"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Isfahan Municipality Executive Dashboard</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;family=Vazirmatn:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2463eb",
+                        "background-light": "#f8fafc", /* Updated to slate-50 as requested */
+                        "background-dark": "#111621",
+                    },
+                    fontFamily: {
+                        "display": ["Vazirmatn", "Public Sans", "sans-serif"], /* Prioritize Vazirmatn for Persian */
+                        "sans": ["Vazirmatn", "Public Sans", "sans-serif"],
+                    },
+                    borderRadius: {"DEFAULT": "0.5rem", "lg": "0.75rem", "xl": "1rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar for cleaner look */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        
+        .material-symbols-outlined {
+            font-variation-settings:
+            'FILL' 0,
+            'wght' 400,
+            'GRAD' 0,
+            'opsz' 24
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display min-h-screen flex flex-col overflow-x-hidden antialiased">
+<!-- Header -->
+<header class="sticky top-0 z-50 w-full border-b border-slate-200 bg-white/80 dark:bg-background-dark/80 backdrop-blur-sm dark:border-slate-800">
+<div class="container mx-auto max-w-[1400px] px-4 md:px-6 h-16 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined">location_city</span>
+</div>
+<div class="flex flex-col">
+<h1 class="text-lg font-bold text-slate-900 dark:text-white leading-tight">شهرداری اصفهان</h1>
+<span class="text-xs font-medium text-slate-500 dark:text-slate-400">منطقه ۱۴ - سامانه مدیریت مالی</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden md:flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg px-3 py-1.5 border border-slate-200 dark:border-slate-700">
+<span class="material-symbols-outlined text-slate-500 text-[20px] ml-2">calendar_today</span>
+<span class="text-sm font-bold text-slate-700 dark:text-slate-300 pt-0.5">۱۴۰۳/۰۸/۲۴</span>
+</div>
+<button class="relative h-10 w-10 overflow-hidden rounded-full border-2 border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
+<img alt="User Profile" class="h-full w-full object-cover" data-alt="User avatar profile picture" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDUJBHF4HFHi1UwgSMRq_hbyfn63DDt4sPOKNxCcXbWBH36glnJEhLlVhUZpdYOZ4HQS5wUgB8GwueQu1R4E4bXW_2JNrTQhTZxErOxH-ZXtp5l6TFP9922gOJisURHGObR5qKlux5HprYAaGly57RfZHd-LCSA3LQRGcCWAlAD_4Kbw2JCuerCAAoARx295wHJQDJvlxyCMFuLMXzbE0T8bxql38k9J4ZJsdp1uXMiop2dmTo_8EumiFVMMEV-oyS2rghQh3VgASz2"/>
+<span class="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-green-500 ring-2 ring-white dark:ring-slate-900"></span>
+</button>
+</div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-1 container mx-auto max-w-[1400px] p-4 md:p-6 space-y-8">
+<!-- Page Title Section -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+<div>
+<h2 class="text-3xl font-black text-slate-900 dark:text-white tracking-tight">داشبورد اجرایی</h2>
+<p class="text-slate-500 dark:text-slate-400 mt-1 text-base">نمای کلی وضعیت مالی و بودجه منطقه ۱۴ در سال مالی جاری</p>
+</div>
+<div class="flex gap-2">
+<button class="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined ml-2 text-[18px]">download</span>
+                    دریافت گزارش
+                </button>
+<button class="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 transition-colors">
+<span class="material-symbols-outlined ml-2 text-[18px]">add</span>
+                    ثبت درخواست جدید
+                </button>
+</div>
+</div>
+<!-- KPI Cards Grid -->
+<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+<!-- Card 1: Total Budget -->
+<div class="group relative overflow-hidden rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
+<div class="flex items-center justify-between">
+<div>
+<p class="text-sm font-medium text-slate-500 dark:text-slate-400">بودجه کل مصوب</p>
+<h3 class="mt-2 text-2xl font-bold text-slate-900 dark:text-white">۴۵.۲ <span class="text-lg font-normal text-slate-500">میلیارد ریال</span></h3>
+</div>
+<div class="rounded-full bg-blue-50 p-3 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+</div>
+</div>
+<div class="mt-4 flex items-center text-sm">
+<span class="flex items-center text-emerald-600 dark:text-emerald-400 font-medium">
+<span class="material-symbols-outlined text-[16px] ml-1">trending_up</span>
+                        ۱۲٪
+                    </span>
+<span class="mr-2 text-slate-400 dark:text-slate-500">نسبت به سال گذشته</span>
+</div>
+</div>
+<!-- Card 2: Committed Funds -->
+<div class="group relative overflow-hidden rounded-xl border border-blue-900 bg-gradient-to-br from-slate-900 to-blue-900 p-6 shadow-md text-white">
+<div class="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none" style="background-image: radial-gradient(circle at 100% 0%, rgba(255,255,255,0.2) 0%, transparent 50%);"></div>
+<div class="flex items-center justify-between relative z-10">
+<div>
+<p class="text-sm font-medium text-blue-200">اعتبار تعهد شده</p>
+<h3 class="mt-2 text-2xl font-bold">۱۲.۸ <span class="text-lg font-normal text-blue-200">میلیارد ریال</span></h3>
+</div>
+<div class="rounded-full bg-white/10 p-3 text-white backdrop-blur-sm">
+<span class="material-symbols-outlined">lock</span>
+</div>
+</div>
+<div class="mt-4 flex items-center text-sm relative z-10">
+<span class="flex items-center text-emerald-300 font-medium">
+<span class="material-symbols-outlined text-[16px] ml-1">arrow_upward</span>
+                        ۵٪
+                    </span>
+<span class="mr-2 text-blue-300">افزایش تعهدات</span>
+</div>
+</div>
+<!-- Card 3: Executed Expenses -->
+<div class="group relative overflow-hidden rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
+<div class="flex items-center justify-between">
+<div>
+<p class="text-sm font-medium text-slate-500 dark:text-slate-400">هزینه انجام شده</p>
+<h3 class="mt-2 text-2xl font-bold text-slate-900 dark:text-white">۸.۳ <span class="text-lg font-normal text-slate-500">میلیارد ریال</span></h3>
+</div>
+<div class="rounded-full bg-emerald-50 p-3 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+<span class="material-symbols-outlined">payments</span>
+</div>
+</div>
+<div class="mt-4 flex items-center text-sm">
+<span class="flex items-center text-emerald-600 dark:text-emerald-400 font-medium">
+<span class="material-symbols-outlined text-[16px] ml-1">trending_up</span>
+                        ۸٪
+                    </span>
+<span class="mr-2 text-slate-400 dark:text-slate-500">جذب اعتبار</span>
+</div>
+</div>
+<!-- Card 4: Active Contracts -->
+<div class="group relative overflow-hidden rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:shadow-md dark:border-slate-800 dark:bg-slate-900">
+<div class="flex items-center justify-between">
+<div>
+<p class="text-sm font-medium text-slate-500 dark:text-slate-400">قراردادهای فعال</p>
+<h3 class="mt-2 text-2xl font-bold text-slate-900 dark:text-white">۲۴ <span class="text-lg font-normal text-slate-500">مورد</span></h3>
+</div>
+<div class="rounded-full bg-purple-50 p-3 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400">
+<span class="material-symbols-outlined">contract</span>
+</div>
+</div>
+<div class="mt-4 flex items-center text-sm">
+<span class="flex items-center text-purple-600 dark:text-purple-400 font-medium">
+<span class="material-symbols-outlined text-[16px] ml-1">add</span>
+                        ۲
+                    </span>
+<span class="mr-2 text-slate-400 dark:text-slate-500">قرارداد جدید این ماه</span>
+</div>
+</div>
+</div>
+<!-- Budget Progress Section -->
+<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+<div class="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+<h3 class="text-lg font-bold text-slate-900 dark:text-white">وضعیت مصرف بودجه عمرانی</h3>
+<div class="flex items-center gap-4 text-sm">
+<div class="flex items-center gap-1.5">
+<div class="h-3 w-3 rounded-full bg-emerald-500"></div>
+<span class="text-slate-600 dark:text-slate-300">مصرف قطعی</span>
+</div>
+<div class="flex items-center gap-1.5">
+<div class="h-3 w-3 rounded-full bg-amber-400"></div>
+<span class="text-slate-600 dark:text-slate-300">مسدود شده</span>
+</div>
+<div class="flex items-center gap-1.5">
+<div class="h-3 w-3 rounded-full bg-slate-200 dark:bg-slate-700"></div>
+<span class="text-slate-600 dark:text-slate-300">باقی‌مانده</span>
+</div>
+</div>
+</div>
+<div class="relative h-6 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+<div class="flex h-full w-full">
+<div class="flex h-full items-center justify-center bg-emerald-500 text-[10px] font-bold text-white transition-all duration-500" style="width: 45%">۴۵٪</div>
+<div class="flex h-full items-center justify-center bg-amber-400 text-[10px] font-bold text-slate-900 transition-all duration-500" style="width: 20%">۲۰٪</div>
+<div class="flex h-full items-center justify-center bg-slate-200 dark:bg-slate-700 text-[10px] font-bold text-slate-500 transition-all duration-500" style="width: 35%">۳۵٪</div>
+</div>
+</div>
+<div class="mt-3 flex justify-between text-xs font-medium text-slate-500 dark:text-slate-400">
+<span>۰ ریال</span>
+<span>۲۲.۵ میلیارد ریال</span>
+<span>۴۵.۲ میلیارد ریال</span>
+</div>
+</div>
+<!-- Charts Section -->
+<div class="grid gap-6 lg:grid-cols-3">
+<!-- Left Chart: Bar Chart -->
+<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:col-span-2 flex flex-col h-full">
+<div class="mb-6 flex items-center justify-between">
+<div>
+<h3 class="text-lg font-bold text-slate-900 dark:text-white">مقایسه بودجه و هزینه</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400">تفکیک بر اساس معاونت‌های اجرایی</p>
+</div>
+<button class="p-2 text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">more_horiz</span>
+</button>
+</div>
+<!-- Custom CSS Chart Implementation -->
+<div class="flex-1 flex flex-col gap-6 justify-center">
+<!-- Row 1 -->
+<div class="group">
+<div class="mb-2 flex justify-between text-sm">
+<span class="font-medium text-slate-700 dark:text-slate-300">معاونت فنی و عمرانی</span>
+<span class="text-slate-500">۸۵٪ جذب</span>
+</div>
+<div class="relative h-3 w-full rounded-full bg-slate-100 dark:bg-slate-800">
+<!-- Budget Bar (Background/Total) -->
+<div class="absolute top-0 right-0 h-full rounded-full bg-blue-100 dark:bg-blue-900/20 w-full"></div>
+<!-- Expense Bar (Foreground) -->
+<div class="absolute top-0 right-0 h-full rounded-full bg-primary" style="width: 85%"></div>
+</div>
+<div class="mt-1 flex justify-between text-xs text-slate-400">
+<span>۱۲.۴ م.ر</span>
+<span>۱۴.۵ م.ر بودجه مصوب</span>
+</div>
+</div>
+<!-- Row 2 -->
+<div class="group">
+<div class="mb-2 flex justify-between text-sm">
+<span class="font-medium text-slate-700 dark:text-slate-300">خدمات شهری</span>
+<span class="text-slate-500">۶۲٪ جذب</span>
+</div>
+<div class="relative h-3 w-full rounded-full bg-slate-100 dark:bg-slate-800">
+<div class="absolute top-0 right-0 h-full rounded-full bg-blue-100 dark:bg-blue-900/20 w-[80%]"></div>
+<div class="absolute top-0 right-0 h-full rounded-full bg-primary" style="width: 50%"></div>
+</div>
+<div class="mt-1 flex justify-between text-xs text-slate-400">
+<span>۸.۲ م.ر</span>
+<span>۱۳.۲ م.ر بودجه مصوب</span>
+</div>
+</div>
+<!-- Row 3 -->
+<div class="group">
+<div class="mb-2 flex justify-between text-sm">
+<span class="font-medium text-slate-700 dark:text-slate-300">حمل و نقل و ترافیک</span>
+<span class="text-slate-500">۴۵٪ جذب</span>
+</div>
+<div class="relative h-3 w-full rounded-full bg-slate-100 dark:bg-slate-800">
+<div class="absolute top-0 right-0 h-full rounded-full bg-blue-100 dark:bg-blue-900/20 w-[60%]"></div>
+<div class="absolute top-0 right-0 h-full rounded-full bg-primary" style="width: 27%"></div>
+</div>
+<div class="mt-1 flex justify-between text-xs text-slate-400">
+<span>۳.۵ م.ر</span>
+<span>۷.۸ م.ر بودجه مصوب</span>
+</div>
+</div>
+<!-- Row 4 -->
+<div class="group">
+<div class="mb-2 flex justify-between text-sm">
+<span class="font-medium text-slate-700 dark:text-slate-300">فرهنگی اجتماعی</span>
+<span class="text-slate-500">۹۲٪ جذب</span>
+</div>
+<div class="relative h-3 w-full rounded-full bg-slate-100 dark:bg-slate-800">
+<div class="absolute top-0 right-0 h-full rounded-full bg-blue-100 dark:bg-blue-900/20 w-[40%]"></div>
+<div class="absolute top-0 right-0 h-full rounded-full bg-primary" style="width: 36%"></div>
+</div>
+<div class="mt-1 flex justify-between text-xs text-slate-400">
+<span>۴.۱ م.ر</span>
+<span>۴.۵ م.ر بودجه مصوب</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Chart: Donut Chart -->
+<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 flex flex-col">
+<div class="mb-4">
+<h3 class="text-lg font-bold text-slate-900 dark:text-white">توزیع بودجه</h3>
+<p class="text-sm text-slate-500 dark:text-slate-400">سهم هر فصل از بودجه کل</p>
+</div>
+<div class="flex-1 flex flex-col items-center justify-center">
+<!-- CSS Conic Gradient Donut Chart -->
+<div class="relative h-48 w-48 rounded-full" style="background: conic-gradient(from 0deg, #3b82f6 0% 35%, #8b5cf6 35% 60%, #10b981 60% 85%, #f59e0b 85% 100%);">
+<!-- Inner Circle for Donut Effect -->
+<div class="absolute inset-0 m-auto h-32 w-32 rounded-full bg-white dark:bg-slate-900 flex items-center justify-center flex-col">
+<span class="text-xs text-slate-400">کل بودجه</span>
+<span class="text-lg font-bold text-slate-900 dark:text-white dir-ltr">100%</span>
+</div>
+</div>
+<!-- Legend -->
+<div class="mt-8 grid w-full grid-cols-2 gap-4">
+<div class="flex items-center gap-2">
+<div class="h-3 w-3 rounded-full bg-blue-500"></div>
+<div class="flex flex-col">
+<span class="text-xs font-medium text-slate-700 dark:text-slate-300">عمرانی</span>
+<span class="text-[10px] text-slate-500">۳۵٪</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<div class="h-3 w-3 rounded-full bg-purple-500"></div>
+<div class="flex flex-col">
+<span class="text-xs font-medium text-slate-700 dark:text-slate-300">جاری</span>
+<span class="text-[10px] text-slate-500">۲۵٪</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<div class="h-3 w-3 rounded-full bg-emerald-500"></div>
+<div class="flex flex-col">
+<span class="text-xs font-medium text-slate-700 dark:text-slate-300">خدمات</span>
+<span class="text-[10px] text-slate-500">۲۵٪</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<div class="h-3 w-3 rounded-full bg-amber-500"></div>
+<div class="flex flex-col">
+<span class="text-xs font-medium text-slate-700 dark:text-slate-300">سایر</span>
+<span class="text-[10px] text-slate-500">۱۵٪</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Recent Activity Table Section -->
+<div class="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 overflow-hidden">
+<div class="border-b border-slate-200 p-6 dark:border-slate-800">
+<h3 class="text-lg font-bold text-slate-900 dark:text-white">آخرین تراکنش‌ها و قراردادها</h3>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-sm text-right">
+<thead class="bg-slate-50 text-slate-500 dark:bg-slate-800/50 dark:text-slate-400">
+<tr>
+<th class="px-6 py-4 font-medium">عنوان قرارداد / شرح</th>
+<th class="px-6 py-4 font-medium">پیمانکار / ذینفع</th>
+<th class="px-6 py-4 font-medium">تاریخ</th>
+<th class="px-6 py-4 font-medium">مبلغ (ریال)</th>
+<th class="px-6 py-4 font-medium">وضعیت</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-4 font-medium text-slate-900 dark:text-slate-200">بهسازی پیاده‌روهای خیابان کاوه</td>
+<td class="px-6 py-4 text-slate-600 dark:text-slate-400">شرکت عمران سازه سپاهان</td>
+<td class="px-6 py-4 text-slate-600 dark:text-slate-400">۱۴۰۳/۰۸/۲۲</td>
+<td class="px-6 py-4 font-medium text-slate-900 dark:text-white">۴۵۰,۰۰۰,۰۰۰</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                    پرداخت شده
+                                </span>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-4 font-medium text-slate-900 dark:text-slate-200">خرید تجهیزات روشنایی پارک لاله</td>
+<td class="px-6 py-4 text-slate-600 dark:text-slate-400">بازرگانی نور گستر</td>
+<td class="px-6 py-4 text-slate-600 dark:text-slate-400">۱۴۰۳/۰۸/۲۰</td>
+<td class="px-6 py-4 font-medium text-slate-900 dark:text-white">۱۲۰,۰۰۰,۰۰۰</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                                    در انتظار تایید
+                                </span>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-4 font-medium text-slate-900 dark:text-slate-200">آسفالت معابر فرعی محله زینبیه</td>
+<td class="px-6 py-4 text-slate-600 dark:text-slate-400">سازمان عمران شهرداری</td>
+<td class="px-6 py-4 text-slate-600 dark:text-slate-400">۱۴۰۳/۰۸/۱۸</td>
+<td class="px-6 py-4 font-medium text-slate-900 dark:text-white">۲,۱۰۰,۰۰۰,۰۰۰</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                                    در حال اجرا
+                                </span>
+</td>
+</tr>
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+<td class="px-6 py-4 font-medium text-slate-900 dark:text-slate-200">تجهیز سالن اجتماعات منطقه</td>
+<td class="px-6 py-4 text-slate-600 dark:text-slate-400">گروه مبلمان اداری برتر</td>
+<td class="px-6 py-4 text-slate-600 dark:text-slate-400">۱۴۰۳/۰۸/۱۵</td>
+<td class="px-6 py-4 font-medium text-slate-900 dark:text-white">۸۵,۰۰۰,۰۰۰</td>
+<td class="px-6 py-4">
+<span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                    پرداخت شده
+                                </span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="mt-8 border-t border-slate-200 bg-white py-6 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-background-dark dark:text-slate-400">
+<div class="container mx-auto px-4">
+<p>© ۱۴۰۳ شهرداری اصفهان - منطقه ۱۴. تمامی حقوق محفوظ است.</p>
+<p class="mt-2 text-xs">طراحی و توسعه: واحد فناوری اطلاعات</p>
+</div>
+</footer>
+</body></html>

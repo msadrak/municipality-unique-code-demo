@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="fa"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>سامانه مالی شهرداری اصفهان - صندوق ورودی حسابداری</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2463eb",
+                        "background-light": "#f8fafc",
+                        "background-dark": "#111621",
+                    },
+                    fontFamily: {
+                        "display": ["Public Sans", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100;300;400;500;700;900&display=swap');
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
+<div class="flex min-h-screen overflow-hidden">
+<!-- Sidebar -->
+<aside class="w-64 bg-slate-900 text-slate-300 flex flex-col shrink-0 border-l border-slate-800 shadow-xl">
+<div class="p-6 border-b border-slate-800">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center text-white shrink-0">
+<span class="material-symbols-outlined text-2xl">account_balance</span>
+</div>
+<div class="flex flex-col">
+<h1 class="text-white text-sm font-bold leading-tight">شهرداری اصفهان</h1>
+<p class="text-slate-500 text-xs mt-0.5">سامانه جامع مالی ERP</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined text-xl opacity-70">dashboard</span>
+<span class="text-sm font-medium">پورتال کاربر</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined text-xl opacity-70">description</span>
+<span class="text-sm font-medium">قراردادها</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined text-xl opacity-70">analytics</span>
+<span class="text-sm font-medium">گزارش‌ها</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary text-white shadow-lg shadow-primary/20" href="#">
+<span class="material-symbols-outlined text-xl">calculate</span>
+<span class="text-sm font-medium">حسابداری</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-800 transition-colors" href="#">
+<span class="material-symbols-outlined text-xl opacity-70">settings_applications</span>
+<span class="text-sm font-medium">مدیریت سیستم</span>
+</a>
+</nav>
+<div class="p-4 border-t border-slate-800">
+<div class="bg-slate-800/50 rounded-xl p-4">
+<div class="flex items-center gap-3 mb-3">
+<div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center">
+<span class="material-symbols-outlined text-sm">support_agent</span>
+</div>
+<span class="text-xs text-slate-400">پشتیبانی فنی</span>
+</div>
+<button class="w-full py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-xs font-medium transition-colors">
+                        تماس با راهبر سیستم
+                    </button>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col min-w-0 bg-background-light dark:bg-background-dark">
+<!-- Header -->
+<header class="h-16 flex items-center justify-between px-8 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-10 shadow-sm">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">inbox</span>
+<h2 class="text-lg font-bold text-slate-800 dark:text-white">صندوق ورودی حسابداری</h2>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-4 border-l border-slate-200 dark:border-slate-800 pl-6">
+<div class="flex flex-col items-end">
+<span class="text-sm font-bold text-slate-700 dark:text-slate-200">سید علی حسینی</span>
+<span class="text-[10px] text-slate-500">کاربر ارشد مالی</span>
+</div>
+<div class="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden border border-slate-200 dark:border-slate-700">
+<img alt="پروفایل کاربر" class="w-full h-full object-cover" data-alt="تصویر آواتار کاربر مرد با ریش" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDtqRv4zt6xanu5lN7tvT6c-KYrAXlBrRP_4l6tKru0FdhZFIkOvFG7hcV8DfDbBdKw2iI9oHd7Pjx0yccXoImxdclSWS4Y_R7H7Av1TmyIyUUs_ctkTWyv3pbcmYNfnLpfSyMZJ38LmNV6T0TXhnI6Uegh0AQ_1OLjmE8aPZopBE0T_mjNOQx4eWg3wdkaaSjG1qeimEgzGjI5M6eDg8six1rVqfjO9MwmHbz4VDlUDYh3qkBfNxkbPcCmxWBE8-xgMWfwfTU1wKRp"/>
+</div>
+</div>
+<button class="text-slate-400 hover:text-red-500 transition-colors flex items-center gap-2 text-sm font-medium">
+<span>خروج</span>
+<span class="material-symbols-outlined text-xl">logout</span>
+</button>
+</div>
+</header>
+<div class="flex-1 overflow-y-auto p-8 space-y-8">
+<!-- Stat Cards -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+<div class="absolute top-0 right-0 w-1.5 h-full bg-primary/40 group-hover:bg-primary transition-colors"></div>
+<div class="flex items-center justify-between mb-4">
+<p class="text-slate-500 text-sm font-medium">تراکنش‌های جدید</p>
+<span class="material-symbols-outlined text-primary bg-primary/10 p-2 rounded-lg">add_card</span>
+</div>
+<div class="flex items-baseline gap-2">
+<h3 class="text-3xl font-bold text-slate-800 dark:text-white">۱۲</h3>
+<span class="text-xs font-bold text-primary px-2 py-0.5 bg-primary/10 rounded-full">بروزرسانی جدید</span>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+<div class="absolute top-0 right-0 w-1.5 h-full bg-amber-400/40 group-hover:bg-amber-400 transition-colors"></div>
+<div class="flex items-center justify-between mb-4">
+<p class="text-slate-500 text-sm font-medium">در حال بررسی</p>
+<span class="material-symbols-outlined text-amber-500 bg-amber-500/10 p-2 rounded-lg">pending_actions</span>
+</div>
+<div class="flex items-baseline gap-2">
+<h3 class="text-3xl font-bold text-slate-800 dark:text-white">۵</h3>
+<span class="text-xs font-bold text-amber-500 px-2 py-0.5 bg-amber-500/10 rounded-full">نیاز به تایید</span>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+<div class="absolute top-0 right-0 w-1.5 h-full bg-emerald-500/40 group-hover:bg-emerald-500 transition-colors"></div>
+<div class="flex items-center justify-between mb-4">
+<p class="text-slate-500 text-sm font-medium">ثبت شده نهایی</p>
+<span class="material-symbols-outlined text-emerald-500 bg-emerald-500/10 p-2 rounded-lg">task_alt</span>
+</div>
+<div class="flex items-baseline gap-2">
+<h3 class="text-3xl font-bold text-slate-800 dark:text-white">۸۴</h3>
+<span class="text-xs font-bold text-emerald-500 px-2 py-0.5 bg-emerald-500/10 rounded-full">تایید شده</span>
+</div>
+</div>
+</div>
+<!-- Filters & Tabs -->
+<div class="space-y-4">
+<div class="flex items-center justify-between">
+<div class="flex gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+<button class="px-6 py-2 rounded-lg bg-white dark:bg-slate-700 shadow-sm text-sm font-bold text-primary">صندوق ورودی</button>
+<button class="px-6 py-2 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">ثبت شده</button>
+<button class="px-6 py-2 rounded-lg text-sm font-medium text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">برگشت خورده</button>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative">
+<span class="material-symbols-outlined absolute right-3 top-2.5 text-slate-400 text-xl">search</span>
+<input class="w-72 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg pr-10 pl-4 py-2 text-sm focus:ring-primary focus:border-primary" placeholder="جستجو بر اساس کد یا متقاضی..." type="text"/>
+</div>
+<div class="flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2 text-sm text-slate-600 dark:text-slate-400">
+<span class="material-symbols-outlined text-xl">calendar_today</span>
+<span>۱۴۰۲/۰۸/۰۱ - ۱۴۰۲/۰۸/۳۰</span>
+</div>
+</div>
+</div>
+<!-- Table Container -->
+<div class="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+<table class="w-full text-right border-collapse">
+<thead>
+<tr class="bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
+<th class="px-6 py-4 text-sm font-bold text-slate-500">کد یکتا</th>
+<th class="px-6 py-4 text-sm font-bold text-slate-500">متقاضی</th>
+<th class="px-6 py-4 text-sm font-bold text-slate-500">معاونت</th>
+<th class="px-6 py-4 text-sm font-bold text-slate-500">مبلغ (ریال)</th>
+<th class="px-6 py-4 text-sm font-bold text-slate-500">تاریخ ارسال</th>
+<th class="px-6 py-4 text-sm font-bold text-slate-500 text-center">وضعیت</th>
+<th class="px-6 py-4 text-sm font-bold text-slate-500 text-left">عملیات</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+<!-- Row 1 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+<td class="px-6 py-4 text-sm font-medium text-slate-700 dark:text-slate-300">TR-88293</td>
+<td class="px-6 py-4 text-sm text-slate-800 dark:text-slate-200">شرکت بنا سازان سپاهان</td>
+<td class="px-6 py-4 text-sm text-slate-500">معاونت فنی و عمرانی</td>
+<td class="px-6 py-4 text-sm font-bold text-slate-800 dark:text-white">۱,۴۵۰,۰۰۰,۰۰۰</td>
+<td class="px-6 py-4 text-sm text-slate-500">۱۴۰۲/۰۸/۱۵</td>
+<td class="px-6 py-4 text-center">
+<span class="px-3 py-1 bg-primary/10 text-primary text-xs font-bold rounded-full border border-primary/20">جدید</span>
+</td>
+<td class="px-6 py-4 text-left">
+<button class="text-primary hover:text-blue-700 text-xs font-bold flex items-center gap-1.5 mr-auto">
+<span>مشاهده و ثبت</span>
+<span class="material-symbols-outlined text-lg">arrow_back</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+<td class="px-6 py-4 text-sm font-medium text-slate-700 dark:text-slate-300">TR-88285</td>
+<td class="px-6 py-4 text-sm text-slate-800 dark:text-slate-200">فروشگاه زنجیره‌ای رفاه</td>
+<td class="px-6 py-4 text-sm text-slate-500">معاونت خدمات شهری</td>
+<td class="px-6 py-4 text-sm font-bold text-slate-800 dark:text-white">۸۹۰,۰۰۰,۰۰۰</td>
+<td class="px-6 py-4 text-sm text-slate-500">۱۴۰۲/۰۸/۱۴</td>
+<td class="px-6 py-4 text-center">
+<span class="px-3 py-1 bg-amber-500/10 text-amber-600 text-xs font-bold rounded-full border border-amber-500/20">در حال بررسی</span>
+</td>
+<td class="px-6 py-4 text-left">
+<button class="text-primary hover:text-blue-700 text-xs font-bold flex items-center gap-1.5 mr-auto">
+<span>ادامه ثبت سند</span>
+<span class="material-symbols-outlined text-lg">edit_note</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+<td class="px-6 py-4 text-sm font-medium text-slate-700 dark:text-slate-300">TR-88274</td>
+<td class="px-6 py-4 text-sm text-slate-800 dark:text-slate-200">سازمان پارک‌ها و فضای سبز</td>
+<td class="px-6 py-4 text-sm text-slate-500">مدیریت هماهنگی مناطق</td>
+<td class="px-6 py-4 text-sm font-bold text-slate-800 dark:text-white">۲,۱۲۵,۰۰۰,۰۰۰</td>
+<td class="px-6 py-4 text-sm text-slate-500">۱۴۰۲/۰۸/۱۲</td>
+<td class="px-6 py-4 text-center">
+<span class="px-3 py-1 bg-primary/10 text-primary text-xs font-bold rounded-full border border-primary/20">جدید</span>
+</td>
+<td class="px-6 py-4 text-left">
+<button class="text-primary hover:text-blue-700 text-xs font-bold flex items-center gap-1.5 mr-auto">
+<span>مشاهده و ثبت</span>
+<span class="material-symbols-outlined text-lg">arrow_back</span>
+</button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+<td class="px-6 py-4 text-sm font-medium text-slate-700 dark:text-slate-300">TR-88261</td>
+<td class="px-6 py-4 text-sm text-slate-800 dark:text-slate-200">مهندسین مشاور نقش‌جهان</td>
+<td class="px-6 py-4 text-sm text-slate-500">معاونت شهرسازی</td>
+<td class="px-6 py-4 text-sm font-bold text-slate-800 dark:text-white">۴۵۰,۰۰۰,۰۰۰</td>
+<td class="px-6 py-4 text-sm text-slate-500">۱۴۰۲/۰۸/۱۱</td>
+<td class="px-6 py-4 text-center">
+<span class="px-3 py-1 bg-amber-500/10 text-amber-600 text-xs font-bold rounded-full border border-amber-500/20">در حال بررسی</span>
+</td>
+<td class="px-6 py-4 text-left">
+<button class="text-primary hover:text-blue-700 text-xs font-bold flex items-center gap-1.5 mr-auto">
+<span>ادامه ثبت سند</span>
+<span class="material-symbols-outlined text-lg">edit_note</span>
+</button>
+</td>
+</tr>
+<!-- Row 5 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+<td class="px-6 py-4 text-sm font-medium text-slate-700 dark:text-slate-300">TR-88250</td>
+<td class="px-6 py-4 text-sm text-slate-800 dark:text-slate-200">شرکت اصفهان عمران</td>
+<td class="px-6 py-4 text-sm text-slate-500">معاونت فنی و عمرانی</td>
+<td class="px-6 py-4 text-sm font-bold text-slate-800 dark:text-white">۳,۶۸۰,۰۰۰,۰۰۰</td>
+<td class="px-6 py-4 text-sm text-slate-500">۱۴۰۲/۰۸/۱۰</td>
+<td class="px-6 py-4 text-center">
+<span class="px-3 py-1 bg-primary/10 text-primary text-xs font-bold rounded-full border border-primary/20">جدید</span>
+</td>
+<td class="px-6 py-4 text-left">
+<button class="text-primary hover:text-blue-700 text-xs font-bold flex items-center gap-1.5 mr-auto">
+<span>مشاهده و ثبت</span>
+<span class="material-symbols-outlined text-lg">arrow_back</span>
+</button>
+</td>
+</tr>
+<!-- Row 6 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
+<td class="px-6 py-4 text-sm font-medium text-slate-700 dark:text-slate-300">TR-88243</td>
+<td class="px-6 py-4 text-sm text-slate-800 dark:text-slate-200">تامین قطعات خودروی شهرداری</td>
+<td class="px-6 py-4 text-sm text-slate-500">سازمان مدیریت حمل و نقل</td>
+<td class="px-6 py-4 text-sm font-bold text-slate-800 dark:text-white">۱۲۰,۵۰۰,۰۰۰</td>
+<td class="px-6 py-4 text-sm text-slate-500">۱۴۰۲/۰۸/۰۹</td>
+<td class="px-6 py-4 text-center">
+<span class="px-3 py-1 bg-primary/10 text-primary text-xs font-bold rounded-full border border-primary/20">جدید</span>
+</td>
+<td class="px-6 py-4 text-left">
+<button class="text-primary hover:text-blue-700 text-xs font-bold flex items-center gap-1.5 mr-auto">
+<span>مشاهده و ثبت</span>
+<span class="material-symbols-outlined text-lg">arrow_back</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between border-t border-slate-200 dark:border-slate-800">
+<p class="text-xs text-slate-500 font-medium">نمایش ۱ تا ۶ از ۱۲ مورد جدید</p>
+<div class="flex items-center gap-1">
+<button class="w-8 h-8 flex items-center justify-center rounded border border-slate-200 dark:border-slate-700 text-slate-400 hover:bg-white dark:hover:bg-slate-700">
+<span class="material-symbols-outlined text-lg">chevron_right</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded bg-primary text-white font-bold text-xs">۱</button>
+<button class="w-8 h-8 flex items-center justify-center rounded border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-700 text-xs">۲</button>
+<button class="w-8 h-8 flex items-center justify-center rounded border border-slate-200 dark:border-slate-700 text-slate-400 hover:bg-white dark:hover:bg-slate-700">
+<span class="material-symbols-outlined text-lg">chevron_left</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer Meta -->
+<footer class="px-8 py-4 bg-slate-50 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex justify-between items-center text-[10px] text-slate-400 uppercase tracking-wider">
+<p>© ۱۴۰۲ سامانه یکپارچه مالی شهرداری اصفهان - کلیه حقوق محفوظ است</p>
+<div class="flex gap-4 items-center">
+<span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> سیستم متصل است</span>
+<span>نسخه ۲.۴.۰</span>
+</div>
+</footer>
+</main>
+</div>
+</body></html>

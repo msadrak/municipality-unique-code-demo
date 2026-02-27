@@ -362,10 +362,34 @@ class Transaction(Base):
     گردش کار:
     DRAFT → PENDING_L1 → PENDING_L2 → PENDING_L3 → PENDING_L4 → APPROVED → BOOKED
     در هر مرحله ممکن است به REJECTED تغییر کند
+    
+    TWO-TIER IDENTIFICATION SYSTEM:
+    ================================
+    1. tracking_number: Internal routing identifier.
+       - Generated immediately upon Transaction creation.
+       - Pattern: "DRAFT-{year}-{sequence}" (e.g., "DRAFT-1403-0001")
+       - NEVER changes after creation.
+       - Used for internal tracking throughout the workflow.
+    
+    2. unique_code: Official payment code (کد یکتا).
+       - Remains NULL until the APPROVED stage is reached.
+       - Generated ONLY upon final approval (L4 → APPROVED transition).
+       - Represents an irrevocable financial commitment.
+       - Used for final payment processing and external references.
+    
+    WARNING: Do NOT auto-generate unique_code at creation time.
+    The unique_code field must remain NULL until APPROVED.
     """
     __tablename__ = "transactions"
     id = Column(Integer, primary_key=True, index=True)
-    unique_code = Column(String, unique=True, index=True)
+    
+    # --- Two-Tier Identification System ---
+    # tracking_number: assigned at creation, never changes, for internal routing
+    tracking_number = Column(String, unique=True, nullable=False, index=True)
+    
+    # unique_code: NULL until APPROVED, official payment code for external use
+    # WARNING: Must remain NULL until the APPROVED stage is reached.
+    unique_code = Column(String, unique=True, nullable=True, index=True)
     
     # وضعیت: DRAFT, PENDING_L1, PENDING_L2, PENDING_L3, PENDING_L4, APPROVED, REJECTED, BOOKED
     status = Column(String, default="DRAFT", index=True)
@@ -399,6 +423,10 @@ class Transaction(Base):
     # Stage 1 Gateway: link to approved CreditRequest (nullable for legacy rows)
     credit_request_id = Column(Integer, ForeignKey("credit_requests.id"), nullable=True, index=True)
     
+    # Golden Thread: link to source ProgressStatement
+    # One ProgressStatement can generate multiple Transactions (one-to-many)
+    progress_statement_id = Column(Integer, ForeignKey("progress_statements.id"), nullable=True, index=True)
+    
     # اطلاعات بودجه و مالی
     budget_item_id = Column(Integer, ForeignKey("budget_items.id"))
     cost_center_id = Column(Integer, ForeignKey("cost_center_refs.id"), nullable=True)
@@ -406,7 +434,9 @@ class Transaction(Base):
     financial_event_id = Column(Integer, ForeignKey("financial_event_refs.id"), nullable=True)
     
     # مشخصات تراکنش
-    amount = Column(Float)
+    # Financial amount stored in smallest currency unit (Rials) as BigInteger
+    # to avoid IEEE 754 floating-point precision errors.
+    amount = Column(BigInteger)
     beneficiary_name = Column(String)
     contract_number = Column(String, nullable=True)
     special_activity = Column(String, nullable=True)
@@ -457,6 +487,7 @@ class Transaction(Base):
     subsystem = relationship("Subsystem")
     subsystem_activity = relationship("SubsystemActivity")
     credit_request = relationship("CreditRequest", foreign_keys=[credit_request_id], backref="linked_transaction")
+    progress_statement = relationship("ProgressStatement", back_populates="transactions")
 
 
 # --- تاریخچه گردش کار ---
@@ -931,14 +962,27 @@ class ContractStatus(enum.Enum):
 
 
 class ProgressStatementStatus(enum.Enum):
-    """Progress Statement status state machine (Sprint 3)
+    """Progress Statement 4-stage approval workflow.
     
-    DRAFT → SUBMITTED → APPROVED → PAID
+    Workflow stages:
+        DRAFT      → Initial creation by staff
+        PENDING_L1 → Section/Technical review
+        PENDING_L2 → Department Head approval
+        PENDING_L3 → Zone/Manager approval
+        PENDING_L4 → Finance/Treasury processing
+        APPROVED   → Final approval (triggers unique payment code generation on Transaction)
+        REJECTED   → Rejection at any stage (terminal unless resubmitted)
+    
+    Note: Status transitions are enforced at the application layer
+    (see statement_service.VALID_TRANSITIONS), not in the model.
     """
     DRAFT = "DRAFT"
-    SUBMITTED = "SUBMITTED"
+    PENDING_L1 = "PENDING_L1"
+    PENDING_L2 = "PENDING_L2"
+    PENDING_L3 = "PENDING_L3"
+    PENDING_L4 = "PENDING_L4"
     APPROVED = "APPROVED"
-    PAID = "PAID"
+    REJECTED = "REJECTED"
 
 
 class Contractor(Base):
@@ -957,7 +1001,19 @@ class Contractor(Base):
     ceo_name = Column(String, nullable=True)  # نام مدیرعامل
     phone = Column(String, nullable=True)  # تلفن
     address = Column(String, nullable=True)  # آدرس
-    
+
+    # Contractor onboarding profile fields (public contractor-auth flow)
+    corporate_id = Column(String, nullable=True)  # شناسه ملی شرکت
+    economic_code = Column(String, nullable=True)  # شماره اقتصادی
+    postal_code = Column(String, nullable=True)  # کد پستی
+    province = Column(String, nullable=True)  # استان
+    city = Column(String, nullable=True)  # شهر
+
+    # Banking fields
+    bank_name = Column(String, nullable=True)  # نام بانک
+    account_number = Column(String, nullable=True)  # شماره حساب
+    iban = Column(String, nullable=True)  # شماره شبا
+
     # Setad integration fields
     setad_ref_id = Column(String, nullable=True, index=True)  # شناسه سامانه ستاد
     source_system = Column(String, default="MANUAL")  # MANUAL | SETAD
@@ -1075,10 +1131,37 @@ class Contract(Base):
 
 class ProgressStatement(Base):
     """
-    صورت وضعیت - Progress Statement (shell for Sprint 1, logic in Sprint 3)
+    صورت وضعیت - Progress Statement (Generalized, Department-Agnostic)
     
-    Submitted by internal staff on behalf of contractors (no contractor portal in Phase 2).
-    Each statement generates a Transaction for payment upon approval.
+    ARCHITECTURAL DESIGN — GENERALIZATION STRATEGY:
+    ================================================
+    This model serves ALL municipal organs (Civil Engineering, Urban Services,
+    Traffic & Transport, Urban Planning, Subsidiary Organizations, etc.) through
+    a single table without schema changes.
+    
+    How it works:
+      1. UNIVERSAL FINANCIAL FIELDS: gross_amount, deductions, net_amount,
+         cumulative_amount — these are present in every physical document
+         regardless of department.
+      2. UNIVERSAL REFERENCE FIELDS: contract_ref_number, credit_ref_number,
+         statement_number — present in all document types.
+      3. STRUCTURED DEDUCTION BREAKDOWN: insurance_deduction, tax_deduction,
+         advance_payment_amount, other_deductions — covers all deduction
+         categories across departments.
+      4. JSONB template_data: Department-specific variables (e.g., asphalt
+         volume for civil, IFAS capacity for water treatment, tree count for
+         green space) are stored as a JSON object. A ContractTemplate defines
+         the schema, and the frontend renders dynamic forms.
+      5. JSONB line_items: Work breakdown items specific to the statement.
+    
+    Adding a new department type = new ContractTemplate row, ZERO schema changes.
+    
+    Workflow (4-stage approval):
+      DRAFT → PENDING_L1 → PENDING_L2 → PENDING_L3 → PENDING_L4 → APPROVED
+      At any stage → REJECTED
+    
+    Upon APPROVED, a linked Transaction is created/advanced, which receives
+    the unique payment code (کد یکتا) only at the Transaction's own final approval.
     """
     __tablename__ = "progress_statements"
     
@@ -1087,50 +1170,89 @@ class ProgressStatement(Base):
     contract_id = Column(Integer, ForeignKey("contracts.id"), nullable=False, index=True)
     sequence_number = Column(Integer, nullable=False)  # شماره ترتیب (1, 2, 3, ...)
     
-    # Type: INTERIM (موقت), FINAL (قطعی), ADJUSTMENT (اصلاحی)
+    # Type: INTERIM (موقت), FINAL (قطعی), ADJUSTMENT (تعدیل), FINAL_ADJUSTMENT (تعدیل قطعی)
     statement_type = Column(String, default="INTERIM")
     
-    # Content
+    # --- Originating Organ (department-agnostic identifier) ---
+    # e.g., "معاونت عمران شهری", "معاونت خدمات شهری", "معاونت شهرسازی و معماری",
+    #       "سازمان نوسازی و بهسازی"
+    originating_organ = Column(String, nullable=True, index=True)
+    
+    # --- Content ---
     description = Column(String, nullable=True)  # شرح صورت وضعیت
-    period_start = Column(Date, nullable=True)  # تاریخ شروع دوره
-    period_end = Column(Date, nullable=True)  # تاریخ پایان دوره
+    period_start = Column(Date, nullable=True)   # تاریخ شروع دوره
+    period_end = Column(Date, nullable=True)     # تاریخ پایان دوره
     
-    # Financial
-    gross_amount = Column(BigInteger, nullable=False)  # مبلغ ناخالص
-    deductions = Column(BigInteger, default=0)  # کسورات
-    net_amount = Column(BigInteger, nullable=False)  # مبلغ خالص
-    cumulative_amount = Column(BigInteger, default=0)  # مبلغ تجمیعی
+    # --- Contract & Credit References (extracted from physical documents) ---
+    contract_ref_number = Column(String, nullable=True, index=True)  # شماره قرارداد (original)
+    contract_ref_date = Column(String, nullable=True)    # تاریخ قرارداد (Persian calendar string)
+    credit_ref_number = Column(String, nullable=True)    # شماره تامین اعتبار
+    credit_ref_amount = Column(BigInteger, nullable=True) # مبلغ تامین اعتبار (Rials)
     
-    # Status machine
+    # --- Core Financial Fields (universal across ALL departments) ---
+    # All amounts stored in smallest currency unit (Rials) as BigInteger
+    # to avoid IEEE 754 floating-point precision errors.
+    gross_amount = Column(BigInteger, nullable=False)             # مبلغ ناخالص
+    net_amount = Column(BigInteger, nullable=False)               # مبلغ خالص قابل پرداخت
+    cumulative_amount = Column(BigInteger, default=0)             # مبلغ تجمیعی تا این مرحله
+    previous_statement_amount = Column(BigInteger, default=0)     # مبلغ صورت وضعیت قبلی
+    
+    # --- Deduction Breakdown (covers all department deduction types) ---
+    deductions = Column(BigInteger, default=0)                    # کسورات کل (sum of below)
+    insurance_deduction = Column(BigInteger, default=0)           # بیمه
+    tax_deduction = Column(BigInteger, default=0)                 # مالیات
+    advance_payment_amount = Column(BigInteger, default=0)        # پیش‌پرداخت / علی‌الحساب
+    other_deductions = Column(BigInteger, default=0)              # سایر کسورات
+    
+    # --- Price Adjustment (تعدیل) ---
+    price_index_base = Column(String, nullable=True)  # شاخص مبنای تعدیل (e.g., "اسفند ماه سال ۱۴۰۳")
+    
+    # --- 4-Stage Approval Workflow ---
     status = Column(
         Enum(ProgressStatementStatus),
         default=ProgressStatementStatus.DRAFT,
         nullable=False,
         index=True
     )
+    current_approval_level = Column(Integer, default=0)  # 0=draft, 1=L1, 2=L2, 3=L3, 4=L4
     
-    # Detail data
-    line_items = Column(JSON, nullable=True)  # [{description, quantity, unit_price, total}, ...]
-    attachments = Column(JSON, nullable=True)  # [{filename, url, type}, ...]
+    # --- Department-Specific Data (JSONB for generalization) ---
+    # Department-specific variables stored as JSON. Schema defined by ContractTemplate.
+    # Examples:
+    #   Civil: {"work_volume": "5200 m³", "mobilization_cost": 1175200000}
+    #   Consulting: {"service_percentage": 50, "design_scope": "بازآفرینی"}
+    #   Water Treatment: {"ifas_capacity": "5200 m³/day", "flow_rate": "60 L/s"}
+    template_data = Column(JSON, nullable=True)
     
-    # Workflow
+    # Work breakdown items: [{description, quantity, unit_price, total}, ...]
+    line_items = Column(JSON, nullable=True)
+    
+    # Uploaded supporting documents: [{filename, url, type}, ...]
+    attachments = Column(JSON, nullable=True)
+    
+    # --- Workflow Tracking ---
     submitted_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     reviewed_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    rejected_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     review_comment = Column(String, nullable=True)
+    rejection_reason = Column(String, nullable=True)
     submitted_at = Column(DateTime, nullable=True)
     reviewed_at = Column(DateTime, nullable=True)
+    rejected_at = Column(DateTime, nullable=True)
     
-    # Metadata
+    # --- Metadata ---
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Optimistic locking
     version = Column(Integer, default=1, nullable=False)
     
-    # Relationships
+    # --- Relationships ---
     contract = relationship("Contract", back_populates="progress_statements")
     submitted_by = relationship("User", foreign_keys=[submitted_by_id])
     reviewed_by = relationship("User", foreign_keys=[reviewed_by_id])
+    rejected_by = relationship("User", foreign_keys=[rejected_by_id])
+    transactions = relationship("Transaction", back_populates="progress_statement")
 
 
 class ContractGuarantee(Base):

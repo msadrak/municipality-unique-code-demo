@@ -1,4 +1,4 @@
-import { cn } from '../ui/utils';
+import { formatAmountAbbreviated } from '../../lib/utils';
 
 interface BudgetProgressBarProps {
     totalBudget: number;
@@ -24,100 +24,69 @@ export function BudgetProgressBar({
     const blockedPercent = Math.max(0, (blockedAmount / safeTotalBudget) * 100);
     const remainingPercent = Math.max(0, 100 - spentPercent - blockedPercent);
 
+    const halfBudget = totalBudget / 2;
+
     return (
-        <div className="rounded-xl bg-white border border-slate-200 shadow-sm p-5">
-            <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-medium text-slate-700">
-                    وضعیت مصرف بودجه
+        <div className="rounded-xl bg-white border border-slate-200 shadow-sm p-6">
+            <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <h3 className="text-lg font-bold text-slate-900">
+                    وضعیت مصرف بودجه عمرانی
                 </h3>
-                <span className="text-xs text-slate-500">
-                    درصد تخصیص کل
-                </span>
+                <div className="flex items-center gap-4 text-sm">
+                    <div className="flex items-center gap-1.5">
+                        <div className="h-3 w-3 rounded-full bg-emerald-500" />
+                        <span className="text-slate-600">مصرف قطعی</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <div className="h-3 w-3 rounded-full bg-amber-400" />
+                        <span className="text-slate-600">مسدود شده</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <div className="h-3 w-3 rounded-full bg-slate-200" />
+                        <span className="text-slate-600">باقی‌مانده</span>
+                    </div>
+                </div>
             </div>
 
-            {/* Stacked bar */}
-            <div className="h-5 w-full overflow-hidden rounded-full bg-slate-100 flex" dir="ltr">
+            {/* Stacked progress bar */}
+            <div className="relative h-6 w-full overflow-hidden rounded-full bg-slate-100 flex" dir="ltr">
                 {/* Spent (Green) */}
                 {spentPercent > 0 && (
                     <div
-                        className="h-full bg-green-500 transition-all duration-500"
+                        className="flex h-full items-center justify-center bg-emerald-500 text-[10px] font-bold text-white transition-all duration-500"
                         style={{ width: `${spentPercent}%` }}
-                        title={`هزینه شده: ${formatPercent(spentPercent)}`}
-                    />
+                    >
+                        {spentPercent >= 8 && formatPercent(spentPercent)}
+                    </div>
                 )}
 
-                {/* Blocked (Amber with CSS stripes) */}
+                {/* Blocked (Amber) */}
                 {blockedPercent > 0 && (
                     <div
-                        className="h-full transition-all duration-500"
-                        style={{
-                            width: `${blockedPercent}%`,
-                            background: `repeating-linear-gradient(
-                                -45deg,
-                                #f59e0b,
-                                #f59e0b 4px,
-                                #fbbf24 4px,
-                                #fbbf24 8px
-                            )`,
-                        }}
-                        title={`مسدود شده: ${formatPercent(blockedPercent)}`}
-                    />
+                        className="flex h-full items-center justify-center bg-amber-400 text-[10px] font-bold text-slate-900 transition-all duration-500"
+                        style={{ width: `${blockedPercent}%` }}
+                    >
+                        {blockedPercent >= 8 && formatPercent(blockedPercent)}
+                    </div>
                 )}
 
-                {/* Remaining (Slate) — implied by the container bg */}
+                {/* Remaining (Slate) */}
+                {remainingPercent > 0 && (
+                    <div
+                        className="flex h-full items-center justify-center bg-slate-200 text-[10px] font-bold text-slate-500 transition-all duration-500"
+                        style={{ width: `${remainingPercent}%` }}
+                    >
+                        {remainingPercent >= 8 && formatPercent(remainingPercent)}
+                    </div>
+                )}
             </div>
 
-            {/* Legend */}
-            <div className="flex flex-wrap items-center gap-5 mt-3">
-                <LegendItem
-                    color="bg-green-500"
-                    label="هزینه شده"
-                    percent={formatPercent(spentPercent)}
-                />
-                <LegendItem
-                    color="bg-amber-400"
-                    label="مسدود شده"
-                    percent={formatPercent(blockedPercent)}
-                    striped
-                />
-                <LegendItem
-                    color="bg-slate-200"
-                    label="باقیمانده"
-                    percent={formatPercent(remainingPercent)}
-                />
+            {/* Min / Mid / Max labels */}
+            <div className="mt-3 flex justify-between text-xs font-medium text-slate-500">
+                <span>۰ ریال</span>
+                <span>{formatAmountAbbreviated(halfBudget)}</span>
+                <span>{formatAmountAbbreviated(totalBudget)}</span>
             </div>
-        </div>
-    );
-}
-
-interface LegendItemProps {
-    color: string;
-    label: string;
-    percent: string;
-    striped?: boolean;
-}
-
-function LegendItem({ color, label, percent, striped }: LegendItemProps) {
-    return (
-        <div className="flex items-center gap-1.5 text-xs text-slate-600">
-            <span
-                className={cn('inline-block h-3 w-3 rounded-sm', !striped && color)}
-                style={
-                    striped
-                        ? {
-                            background: `repeating-linear-gradient(
-                                  -45deg,
-                                  #f59e0b,
-                                  #f59e0b 2px,
-                                  #fbbf24 2px,
-                                  #fbbf24 4px
-                              )`,
-                        }
-                        : undefined
-                }
-            />
-            <span className="font-medium">{label}</span>
-            <span className="font-mono text-slate-500">{percent}</span>
         </div>
     );
 }

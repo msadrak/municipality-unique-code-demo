@@ -1,0 +1,13 @@
+name: GLM-5 Config
+version: 1.0.0
+schema: v1
+
+models:
+  - name: GLM-5
+    provider: openai
+    model: zai-org/GLM-5-FP8
+    apiBase: https://api.us-west-2.modal.direct/v1
+    apiKey: modalresearch_AscehaOhDJJ-VCoX3xf-51d3zjtmoNl48sq6k7_NXHc
+
+# Optional: disable default MCP servers to avoid noise
+mcpServers: []

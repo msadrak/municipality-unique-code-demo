@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { RouterProvider } from 'react-router-dom';
+import { Toaster } from 'sonner';
 import { router } from './app/routes';
 import { useAuthStore } from './stores/useAuthStore';
 import './components/Accounting/AccountingInbox.css';
@@ -16,5 +17,10 @@ export default function App() {
     restoreSession();
   }, [restoreSession]);
 
-  return <RouterProvider router={router} />;
+  return (
+    <>
+      <RouterProvider router={router} future={{ v7_startTransition: true }} />
+      <Toaster position="top-center" richColors />
+    </>
+  );
 }

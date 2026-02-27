@@ -1,58 +1,46 @@
 import React from 'react';
 import { useAuthStore } from '../stores/useAuthStore';
 import {
-    LayoutDashboard,
+    Home,
     FileText,
-    CreditCard,
-    CheckSquare,
-    Calculator,
-    Users,
-    LogOut,
     BarChart3,
+    Wallet,
+    Settings,
+    LogOut,
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import {
-    Sidebar,
-    SidebarContent,
-    SidebarGroup,
-    SidebarGroupLabel,
-    SidebarGroupContent,
-    SidebarMenu,
-    SidebarMenuItem,
-    SidebarMenuButton,
-    SidebarHeader,
-    SidebarFooter,
-    SidebarSeparator,
-} from '../components/ui/sidebar';
-import { Button } from '../components/ui/button';
 
 interface NavItem {
     title: string;
     icon: React.ElementType;
     path: string;
-    adminOnly?: boolean;
 }
 
+/**
+ * Navigation items matching the Stitch design
+ * Sidebar shows: پورتال کاربر / قراردادها / گزارش‌ها / حسابداری (admin) / مالی (user) / مدیریت
+ */
 const userNavItems: NavItem[] = [
-    { title: 'داشبورد', icon: LayoutDashboard, path: '/portal' },
-    { title: 'تراکنش‌های من', icon: FileText, path: '/portal' },
+    { title: 'پورتال کاربر', icon: Home, path: '/portal' },
     { title: 'قراردادها', icon: FileText, path: '/contracts' },
-    { title: 'درخواست اعتبار', icon: CreditCard, path: '/portal' },
+    { title: 'گزارش‌ها', icon: BarChart3, path: '/reports' },
+    { title: 'مالی', icon: Wallet, path: '/accounting' },
 ];
 
 const adminNavItems: NavItem[] = [
-    { title: 'داشبورد مدیریت', icon: LayoutDashboard, path: '/admin' },
-    { title: 'گزارش مدیریتی', icon: BarChart3, path: '/reports' },
+    { title: 'پورتال کاربر', icon: Home, path: '/portal' },
     { title: 'قراردادها', icon: FileText, path: '/contracts' },
-    { title: 'تأییدیه‌ها', icon: CheckSquare, path: '/admin' },
-    { title: 'درخواست‌های اعتبار', icon: CreditCard, path: '/admin' },
-    { title: 'حسابداری', icon: Calculator, path: '/accounting' },
-    { title: 'مدیریت کاربران', icon: Users, path: '/admin', adminOnly: true },
+    { title: 'گزارش‌ها', icon: BarChart3, path: '/reports' },
+    { title: 'حسابداری', icon: Wallet, path: '/accounting' },
+    { title: 'مدیریت', icon: Settings, path: '/admin' },
 ];
 
 /**
- * SideNav - Sidebar navigation component
- * Uses shadcn Sidebar with side="right" for RTL layout
+ * SideNav — Dark right-aligned sidebar matching Stitch design
+ * - Dark slate-900 background
+ * - Municipality logo + title at top
+ * - Navigation links with active state
+ * - Settings + Logout at bottom
  */
 export function SideNav() {
     const { user, logout } = useAuthStore();
@@ -71,75 +59,79 @@ export function SideNav() {
         navigate(path);
     };
 
+    const isActive = (path: string) => location.pathname === path;
+
     return (
-        <Sidebar
-            side="right"
-            collapsible="icon"
-            className="fixed top-0 right-0 z-50 h-full border-l border-slate-200"
-        >
-            <SidebarHeader className="border-b border-sidebar-border">
-                <div className="flex items-center gap-2 px-2 py-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                        <LayoutDashboard className="h-4 w-4" />
+        <aside className="w-72 flex-shrink-0 bg-slate-900 text-white flex flex-col justify-between p-6 min-h-screen">
+            <div className="flex flex-col gap-8">
+                {/* Logo / Branding */}
+                <div className="flex items-center gap-4 px-2">
+                    <div className="h-12 w-12 rounded-full bg-blue-600/20 flex items-center justify-center border-2 border-blue-600/30">
+                        <Home className="h-6 w-6 text-blue-400" />
                     </div>
-                    <div className="flex flex-col group-data-[collapsible=icon]:hidden">
-                        <span className="text-sm font-semibold">سامانه مالی</span>
-                        <span className="text-xs text-muted-foreground">شهرداری اصفهان</span>
+                    <div className="flex flex-col">
+                        <h1 className="text-base font-bold leading-tight text-white">شهرداری منطقه ۱۴</h1>
+                        <p className="text-slate-400 text-sm">اصفهان</p>
                     </div>
                 </div>
-            </SidebarHeader>
 
-            <SidebarContent>
-                <SidebarGroup>
-                    <SidebarGroupLabel>
-                        {isAdmin ? 'پنل مدیریت' : 'پورتال کاربر'}
-                    </SidebarGroupLabel>
-                    <SidebarGroupContent>
-                        <SidebarMenu>
-                            {navItems.map((item) => (
-                                <SidebarMenuItem key={item.path + item.title}>
-                                    <SidebarMenuButton
-                                        isActive={location.pathname === item.path}
-                                        onClick={() => handleNavigate(item.path)}
-                                        tooltip={item.title}
-                                    >
-                                        <item.icon className="h-4 w-4" />
-                                        <span>{item.title}</span>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            ))}
-                        </SidebarMenu>
-                    </SidebarGroupContent>
-                </SidebarGroup>
-            </SidebarContent>
+                {/* Navigation */}
+                <nav className="flex flex-col gap-2">
+                    {navItems.map((item) => {
+                        const active = isActive(item.path);
+                        return (
+                            <button
+                                key={item.path + item.title}
+                                onClick={() => handleNavigate(item.path)}
+                                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-right w-full ${active
+                                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+                                        : 'text-slate-400 hover:text-white hover:bg-white/10'
+                                    }`}
+                            >
+                                <item.icon className="h-5 w-5" />
+                                <span className="text-sm font-medium">{item.title}</span>
+                            </button>
+                        );
+                    })}
+                </nav>
+            </div>
 
-            <SidebarFooter className="border-t border-sidebar-border">
-                <div className="flex items-center justify-between px-2 py-3 group-data-[collapsible=icon]:justify-center">
-                    <div className="flex items-center gap-2 group-data-[collapsible=icon]:hidden">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-                            <span className="text-sm font-medium">
-                                {user?.full_name?.charAt(0) || 'U'}
-                            </span>
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-sm font-medium">{user?.full_name || 'کاربر'}</span>
-                            <span className="text-xs text-muted-foreground">
-                                {isAdmin ? 'مدیر' : 'کاربر'}
-                            </span>
-                        </div>
+            {/* Sidebar Footer */}
+            <div className="flex flex-col gap-4 mt-8 pt-6 border-t border-slate-800">
+                {/* User Info */}
+                <div className="flex items-center gap-3 px-2">
+                    <div className="h-9 w-9 rounded-full bg-slate-700 flex items-center justify-center">
+                        <span className="text-sm font-medium text-slate-300">
+                            {user?.full_name?.charAt(0) || 'U'}
+                        </span>
                     </div>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={handleLogout}
-                        className="h-8 w-8"
-                        title="خروج"
-                    >
-                        <LogOut className="h-4 w-4" />
-                    </Button>
+                    <div className="flex flex-col">
+                        <span className="text-sm font-medium text-white">{user?.full_name || 'کاربر'}</span>
+                        <span className="text-xs text-slate-500">
+                            {isAdmin ? 'مدیر سیستم' : 'کارشناس مالی'}
+                        </span>
+                    </div>
                 </div>
-            </SidebarFooter>
-        </Sidebar>
+
+                {/* Settings */}
+                <button
+                    onClick={() => navigate('/admin')}
+                    className="flex items-center gap-3 px-4 py-2 text-slate-400 hover:text-white transition-colors"
+                >
+                    <Settings className="h-5 w-5" />
+                    <span className="text-sm">تنظیمات</span>
+                </button>
+
+                {/* Logout */}
+                <button
+                    onClick={handleLogout}
+                    className="flex items-center gap-3 px-4 py-2 text-red-400 hover:text-red-300 transition-colors"
+                >
+                    <LogOut className="h-5 w-5" />
+                    <span className="text-sm">خروج</span>
+                </button>
+            </div>
+        </aside>
     );
 }
 

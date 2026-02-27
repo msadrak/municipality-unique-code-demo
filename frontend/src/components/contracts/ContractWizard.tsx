@@ -400,10 +400,10 @@ export function ContractWizard({
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2>مرحله {currentStep + 1} از {STEPS.length}</h2>
-              <p className="text-sm text-muted-foreground">{STEPS[currentStep].title}</p>
+              <h2 className="leading-snug">مرحله {currentStep + 1} از {STEPS.length}</h2>
+              <p className="text-sm leading-tight text-muted-foreground">{STEPS[currentStep].title}</p>
             </div>
-            <div className="text-left text-sm text-muted-foreground">
+            <div className="text-left text-sm leading-tight text-muted-foreground">
               {Math.round(progress)}% تکمیل شده
             </div>
           </div>
@@ -416,7 +416,7 @@ export function ContractWizard({
           <React.Fragment key={step.number}>
             <div className="flex flex-col items-center gap-1 flex-1">
               <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm transition-colors ${step.number === currentStep
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm leading-none transition-colors ${step.number === currentStep
                   ? 'bg-primary text-primary-foreground'
                   : step.number < currentStep
                     ? 'bg-green-600 text-white'
@@ -425,7 +425,7 @@ export function ContractWizard({
               >
                 {step.number < currentStep ? '✓' : step.number + 1}
               </div>
-              <p className={`text-xs text-center hidden md:block ${step.number === currentStep ? 'text-foreground' : 'text-muted-foreground'
+              <p className={`text-xs leading-tight text-center hidden md:block ${step.number === currentStep ? 'text-foreground' : 'text-muted-foreground'
                 }`}>
                 {step.title}
               </p>

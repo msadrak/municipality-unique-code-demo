@@ -4,9 +4,9 @@ Pydantic Schemas for Contractor CRUD (Phase 2)
 
 Covers: creation, response, list views, and Setad lookup results.
 """
+from typing import List, Optional
+
 from pydantic import BaseModel, Field
-from typing import Optional, List
-from datetime import datetime
 
 
 # ============================================================
@@ -14,20 +14,31 @@ from datetime import datetime
 # ============================================================
 
 class ContractorCreate(BaseModel):
-    """POST /contractors — create a new contractor record."""
-    national_id: str = Field(..., min_length=1, description="کد ملی / شناسه ملی")
-    company_name: str = Field(..., min_length=1, description="نام شرکت")
-    registration_number: Optional[str] = Field(None, description="شماره ثبت")
-    ceo_name: Optional[str] = Field(None, description="نام مدیرعامل")
-    phone: Optional[str] = Field(None, description="تلفن")
-    address: Optional[str] = Field(None, description="آدرس")
-    setad_ref_id: Optional[str] = Field(None, description="شناسه سامانه ستاد")
+    """POST /contractors - create a new contractor record."""
+    national_id: str = Field(..., min_length=1, description="National ID")
+    company_name: str = Field(..., min_length=1, description="Company name")
+    registration_number: Optional[str] = Field(None, description="Registration number")
+    ceo_name: Optional[str] = Field(None, description="CEO name")
+    phone: Optional[str] = Field(None, description="Phone number")
+    address: Optional[str] = Field(None, description="Address")
+
+    # Contractor onboarding fields
+    corporate_id: Optional[str] = Field(None, description="Corporate national ID")
+    economic_code: Optional[str] = Field(None, description="Economic code")
+    postal_code: Optional[str] = Field(None, description="Postal code")
+    province: Optional[str] = Field(None, description="Province")
+    city: Optional[str] = Field(None, description="City")
+    bank_name: Optional[str] = Field(None, description="Bank name")
+    account_number: Optional[str] = Field(None, description="Bank account number")
+    iban: Optional[str] = Field(None, description="IBAN")
+
+    setad_ref_id: Optional[str] = Field(None, description="Setad reference ID")
     source_system: str = Field("MANUAL", description="MANUAL | SETAD")
 
 
 class ContractorSetadFetch(BaseModel):
-    """POST /contractors/fetch-from-setad — lookup contractor by national ID."""
-    national_id: str = Field(..., min_length=1, description="کد ملی برای جستجو در ستاد")
+    """POST /contractors/fetch-from-setad - lookup contractor by national ID."""
+    national_id: str = Field(..., min_length=1, description="National ID")
 
 
 # ============================================================
@@ -43,6 +54,17 @@ class ContractorResponse(BaseModel):
     ceo_name: Optional[str] = None
     phone: Optional[str] = None
     address: Optional[str] = None
+
+    # Contractor onboarding fields
+    corporate_id: Optional[str] = None
+    economic_code: Optional[str] = None
+    postal_code: Optional[str] = None
+    province: Optional[str] = None
+    city: Optional[str] = None
+    bank_name: Optional[str] = None
+    account_number: Optional[str] = None
+    iban: Optional[str] = None
+
     setad_ref_id: Optional[str] = None
     source_system: str
     is_verified: bool
@@ -66,7 +88,7 @@ class ContractorListItem(BaseModel):
 
 
 class ContractorListResponse(BaseModel):
-    """GET /contractors — paginated list."""
+    """GET /contractors - paginated list."""
     items: List[ContractorListItem]
     total: int
     page: int

@@ -71,6 +71,10 @@ export function LoginPage() {
     navigate('/public');
   };
 
+  const handleNavigateToContractorAuth = () => {
+    navigate('/contractor-auth');
+  };
+
   const handleSelectManagement = () => {
     setShowRoleSelection(false);
     navigate(managementTarget, { replace: true });
@@ -95,6 +99,7 @@ export function LoginPage() {
     <LoginComponent
       onLogin={handleLogin}
       onNavigateToPublic={handleNavigateToPublic}
+      onNavigateToContractorAuth={handleNavigateToContractorAuth}
     />
   );
 }

@@ -672,47 +672,7 @@ export function AdminDashboard({
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-card border-b border-border">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="bg-primary p-2 rounded">
-                <Building2 className="h-6 w-6 text-primary-foreground" />
-              </div>
-              <div>
-                <h1 className="text-lg font-semibold">مرکز فرماندهی مدیریت</h1>
-                <p className="text-sm text-muted-foreground">شهرداری اصفهان - معاونت مالی</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="text-left">
-                <p className="text-sm font-medium">{user.fullName}</p>
-                <div className="flex items-center gap-1 justify-end">
-                  <Badge
-                    variant="outline"
-                    className="text-[10px] h-5 px-1 bg-primary/5 border-primary/20"
-                  >
-                    {getRoleLabel()}
-                  </Badge>
-                </div>
-              </div>
-              {onNavigateToAccounting && (
-                <Button variant="outline" size="sm" onClick={onNavigateToAccounting}>
-                  <BarChart3 className="h-4 w-4 ml-1" />
-                  صندوق حسابداری
-                </Button>
-              )}
-              <Button variant="outline" size="sm" onClick={onLogout}>
-                <LogOut className="h-4 w-4 ml-2" />
-                خروج
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="space-y-0">
 
       {/* Error Banner */}
       {error && (

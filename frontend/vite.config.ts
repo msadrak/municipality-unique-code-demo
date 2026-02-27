@@ -66,10 +66,17 @@ export default defineConfig({
       '/portal': {
         target: 'http://localhost:8000',
         changeOrigin: true,
+        bypass(req) {
+          // Let browser page navigations fall through to React SPA
+          if (req.headers.accept?.includes('text/html')) return req.url;
+        },
       },
       '/admin': {
         target: 'http://localhost:8000',
         changeOrigin: true,
+        bypass(req) {
+          if (req.headers.accept?.includes('text/html')) return req.url;
+        },
       },
       '/transactions': {
         target: 'http://localhost:8000',
@@ -138,6 +145,9 @@ export default defineConfig({
       '/contracts': {
         target: 'http://localhost:8000',
         changeOrigin: true,
+        bypass(req) {
+          if (req.headers.accept?.includes('text/html')) return req.url;
+        },
       },
       '/statements': {
         target: 'http://localhost:8000',

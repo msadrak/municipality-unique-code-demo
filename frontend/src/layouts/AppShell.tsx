@@ -1,25 +1,26 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import { SidebarProvider, SidebarInset } from '../components/ui/sidebar';
 import { SideNav } from './SideNav';
 import { TopBar } from './TopBar';
 
 /**
- * AppShell - Main application layout with sidebar and topbar
- * Wraps authenticated pages with consistent navigation
+ * AppShell — Main layout matching Stitch design
+ * Right sidebar (dark) + main content area with top header
+ * Uses flex layout: sidebar on right (RTL), content fills remaining space
  */
 export function AppShell() {
     return (
-        <div dir="rtl" className="min-h-screen">
-            <SidebarProvider defaultOpen={true}>
-                <SideNav />
-                <SidebarInset className="transition-[margin] duration-200 ease-linear peer-data-[state=expanded]:mr-64 peer-data-[state=collapsed]:mr-12">
-                    <TopBar />
-                    <main className="flex-1 overflow-auto">
-                        <Outlet />
-                    </main>
-                </SidebarInset>
-            </SidebarProvider>
+        <div dir="rtl" className="flex min-h-screen bg-slate-50">
+            {/* Dark sidebar on the right (RTL start) */}
+            <SideNav />
+            {/* Main content area */}
+            <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+                <TopBar />
+                {/* Scrollable content */}
+                <div className="flex-1 overflow-auto p-6 lg:p-10">
+                    <Outlet />
+                </div>
+            </main>
         </div>
     );
 }

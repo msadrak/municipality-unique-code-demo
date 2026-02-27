@@ -88,7 +88,7 @@ def get_executive_summary(db: Session = Depends(get_db)):
     paid_statements_total = db.query(
         func.coalesce(func.sum(ProgressStatement.net_amount), 0)
     ).filter(
-        ProgressStatement.status == ProgressStatementStatus.PAID
+        ProgressStatement.status == ProgressStatementStatus.APPROVED
     ).scalar()
     paid_statements_total = int(paid_statements_total) if paid_statements_total else 0
 
