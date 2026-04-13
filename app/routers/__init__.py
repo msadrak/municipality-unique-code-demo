@@ -20,6 +20,7 @@ Router Modules:
 - contracts: Contract Lifecycle Wizard (Sprint 2)
 - statements: Progress Statement Lifecycle (Sprint 3)
 - reports: Executive Dashboard aggregation (Sprint 4)
+- attendance: Regional attendance upload and workflow
 """
 
 from .budget import router as budget_router
@@ -39,6 +40,8 @@ from .templates import router as templates_router
 from .contracts import router as contracts_router
 from .statements import router as statements_router
 from .reports import router as reports_router
+from .funding_workflow import router as funding_router
+from .attendance import router as attendance_router
 
 __all__ = [
     "budget_router", "rbac_router", "auth_router", "admin_router",
@@ -46,6 +49,6 @@ __all__ = [
     "test_mode_router", "accounts_router", "accounting_router",
     "treasury_integration_router", "credit_requests_router",
     "contractors_router", "templates_router", "contracts_router",
-    "statements_router", "reports_router",
+    "statements_router", "reports_router", "funding_router",
+    "attendance_router",
 ]
-

@@ -39,7 +39,6 @@ import {
   createStatement,
   submitStatement,
   approveStatement,
-  payStatement,
   transitionContractStatus,
   type ContractResponse,
   type StatementListItem,
@@ -412,8 +411,8 @@ function StatementsSection({
         await approveStatement(actionDialog.statementId);
         toast.success(`صورت وضعیت ${actionDialog.statementNumber} تایید شد`);
       } else if (actionDialog.type === 'pay') {
-        await payStatement(actionDialog.statementId);
-        toast.success(`پرداخت صورت وضعیت ${actionDialog.statementNumber} انجام شد`);
+        // TODO: Implement payment endpoint (PUT /statements/{id}/pay)
+        toast.info('عملیات پرداخت هنوز پیاده‌سازی نشده است');
       }
       setActionDialog(null);
       onRefresh();

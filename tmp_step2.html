@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="fa">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>سامانه مالی شهرداری - ایجاد </title>
+    <!-- Material Symbols -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <!-- Fonts: Manrope (Theme Default) & Vazirmatn (User Request) -->
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700&amp;family=Vazirmatn:wght@400;500;700;900&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Vazirmatn", "Manrope", "sans-serif"],
+                        "body": ["Vazirmatn", "Manrope", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "2xl": "2rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+    <style>
+        /* Custom scrollbar for cleaner look */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+
+<body
+    class="bg-background-light dark:bg-background-dark min-h-screen font-display text-slate-900 dark:text-slate-100 flex flex-col overflow-x-hidden">
+    <!-- Top Navigation -->
+    <header
+        class="sticky top-0 z-50 w-full bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 py-4 shadow-sm">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <div class="flex items-center justify-center size-10 rounded-xl bg-primary/10 text-primary">
+                    <span class="material-symbols-outlined text-[28px]">account_balance</span>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-slate-900 dark:text-white leading-tight">سامانه مالی شهرداری</h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">مدیریت قراردادها و پیمان‌ها</p>
+                </div>
+            </div>
+            <nav class="hidden md:flex items-center gap-8">
+                <a class="text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-colors text-sm font-medium"
+                    href="#">داشبورد</a>
+                <a class="text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-colors text-sm font-medium"
+                    href="#">پروژه‌ها</a>
+                <a class="text-primary font-bold text-sm" href="#">قراردادها</a>
+                <a class="text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-colors text-sm font-medium"
+                    href="#">تنظیمات</a>
+            </nav>
+            <div class="flex items-center gap-4">
+                <button
+                    class="flex items-center justify-center size-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors">
+                    <span class="material-symbols-outlined">notifications</span>
+                </button>
+                <div class="h-10 w-10 rounded-full bg-cover bg-center ring-2 ring-white dark:ring-slate-800 shadow-sm"
+                    data-alt="User profile picture showing a smiling man"
+                    style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCsSJOD7Lq7LF-sxWnkCm0WlZAePfZvL2G9rbTenLVX_zC2ei23MeI1XQJz0Z5Q2Qo_R0RGNtS0Gw7NX4AimF0rxAwh1SA-8PTQbZfZmHm0QYUTE81Mm2hX4ABl_lqe1ScXZCBZUGnHHSeAc76j7gvkbiTn-kCmco_qPRsfZ98m4IazIHWFZX02xREjDie5QN0jOCmOO9nIRfYKw5cGPqVTqC8UEqPqnGVIo6i6GhE0N0DwJdSxe2JTt8C6YepXeUt--iqrrEBZQeU');">
+                </div>
+            </div>
+        </div>
+    </header>
+    <main class="flex-grow w-full max-w-5xl mx-auto p-6 md:p-10">
+        <!-- Stepper -->
+        <div class="mb-10 w-full">
+            <div class="flex items-center justify-between relative">
+                <!-- Line background -->
+                <div class="absolute top-1/2 left-0 right-0 h-1 bg-slate-200 dark:bg-slate-700 -z-10 rounded-full">
+                </div>
+                <!-- Progress Line -->
+                <div class="absolute top-1/2 right-0 h-1 bg-green-500 -z-0 rounded-full transition-all duration-500"
+                    style="width: 33%"></div>
+                <!-- Step 1: Completed -->
+                <div class="flex flex-col items-center gap-2 group cursor-pointer">
+                    <div
+                        class="size-10 rounded-full bg-green-500 text-white flex items-center justify-center shadow-md ring-4 ring-background-light dark:ring-background-dark">
+                        <span class="material-symbols-outlined text-[20px]">check</span>
+                    </div>
+                    <span class="text-xs font-bold text-green-600 dark:text-green-400 whitespace-nowrap">اطلاعات
+                        پایه</span>
+                </div>
+                <!-- Step 2: Active -->
+                <div class="flex flex-col items-center gap-2">
+                    <div
+                        class="size-10 rounded-full bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/30 ring-4 ring-background-light dark:ring-background-dark relative">
+                        <span class="text-base font-bold">۲</span>
+                        <span class="absolute -top-1 -right-1 flex h-3 w-3">
+                            <span
+                                class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+                        </span>
+                    </div>
+                    <span class="text-xs font-bold text-primary whitespace-nowrap">مبالغ کلان</span>
+                </div>
+                <!-- Step 3: Pending -->
+                <div class="flex flex-col items-center gap-2 opacity-50">
+                    <div
+                        class="size-10 rounded-full bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 text-slate-400 flex items-center justify-center ring-4 ring-background-light dark:ring-background-dark">
+                        <span class="text-base font-bold">۳</span>
+                    </div>
+                    <span
+                        class="text-xs font-medium text-slate-500 dark:text-slate-400 whitespace-nowrap">پیوست‌ها</span>
+                </div>
+                <!-- Step 4: Pending -->
+                <div class="flex flex-col items-center gap-2 opacity-50">
+                    <div
+                        class="size-10 rounded-full bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 text-slate-400 flex items-center justify-center ring-4 ring-background-light dark:ring-background-dark">
+                        <span class="text-base font-bold">۴</span>
+                    </div>
+                    <span
+                        class="text-xs font-medium text-slate-500 dark:text-slate-400 whitespace-nowrap">بازبینی</span>
+                </div>
+            </div>
+        </div>
+        <!-- Main Card -->
+        <div
+            class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <!-- Card Header -->
+            <div
+                class="px-8 py-6 border-b border-slate-100 dark:border-slate-700/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-900 dark:text-white mb-1">مرحله ۲: مبالغ کلان</h2>
+                    <p class="text-slate-500 dark:text-slate-400 text-sm">لطفاً مبالغ مالی اصلی را با دقت وارد کنید.</p>
+                </div>
+                <div
+                    class="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
+                    <span class="material-symbols-outlined text-[20px]">info</span>
+                    <span>مبالغ به ریال وارد شود</span>
+                </div>
+            </div>
+            <!-- Card Body -->
+            <div class="p-8 grid grid-cols-1 gap-8">
+                <!-- Input 1: Gross Amount -->
+                <div class="group">
+                    <label class="block text-slate-700 dark:text-slate-200 text-sm font-bold mb-3" for="gross-amount">
+                        مبلغ ناخالص کارکرد (ریال)
+                    </label>
+                    <div class="relative flex items-center">
+                        <input
+                            class="w-full h-14 pr-4 pl-12 rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-lg font-mono focus:ring-2 focus:ring-primary focus:border-primary transition-all shadow-sm placeholder-slate-400"
+                            id="gross-amount" placeholder="0" type="text" value="۳۴,۸۷۰,۱۲۵,۱۵۷" />
+                        <div
+                            class="absolute left-4 text-slate-400 dark:text-slate-500 pointer-events-none flex items-center">
+                            <span class="material-symbols-outlined">attach_money</span>
+                        </div>
+                    </div>
+                    <div
+                        class="mt-2 flex items-center gap-2 text-slate-500 dark:text-slate-400 text-xs font-medium pr-1">
+                        <span class="material-symbols-outlined text-[16px] text-green-500">check_circle</span>
+                        <span>معادل ۳,۴۸۷ میلیون تومان</span>
+                    </div>
+                </div>
+                <!-- Input 2: Deductions -->
+                <div class="group">
+                    <label class="block text-slate-700 dark:text-slate-200 text-sm font-bold mb-3" for="deductions">
+                        کسورات پایه (ریال)
+                    </label>
+                    <div class="relative flex items-center">
+                        <input
+                            class="w-full h-14 pr-4 pl-12 rounded-xl bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-lg font-mono focus:ring-2 focus:ring-red-500/50 focus:border-red-500 transition-all shadow-sm placeholder-slate-400"
+                            id="deductions" placeholder="0" type="text" value="۲,۵۰۰,۰۰۰,۰۰۰" />
+                        <div
+                            class="absolute left-4 text-slate-400 dark:text-slate-500 pointer-events-none flex items-center">
+                            <span class="material-symbols-outlined">money_off</span>
+                        </div>
+                    </div>
+                    <div
+                        class="mt-2 flex items-center gap-2 text-slate-500 dark:text-slate-400 text-xs font-medium pr-1">
+                        <span class="material-symbols-outlined text-[16px] text-green-500">check_circle</span>
+                        <span>معادل ۲۵۰ میلیون تومان</span>
+                    </div>
+                </div>
+                <!-- Summary Box -->
+                <div
+                    class="bg-gradient-to-l from-primary/5 to-primary/10 dark:from-primary/10 dark:to-primary/20 rounded-xl p-6 border border-primary/20 flex flex-col sm:flex-row items-center justify-between gap-4 mt-4">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-white dark:bg-slate-800 p-2 rounded-lg text-primary shadow-sm">
+                            <span class="material-symbols-outlined">calculate</span>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-sm text-slate-600 dark:text-slate-300 font-medium">مبلغ خالص
+                                (محاسبه‌شده)</span>
+                            <span class="text-xs text-slate-400 dark:text-slate-500">مبلغ نهایی پرداختی به
+                                پیمانکار</span>
+                        </div>
+                    </div>
+                    <div class="text-2xl font-black text-primary dark:text-blue-400 tracking-tight font-mono">
+                        ۳۲,۳۷۰,۱۲۵,۱۵۷ <span
+                            class="text-sm font-bold text-slate-500 dark:text-slate-400 align-middle mr-1">ریال</span>
+                    </div>
+                </div>
+            </div>
+            <!-- Card Footer / Actions -->
+            <div
+                class="px-8 py-6 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-100 dark:border-slate-700/50 flex flex-col-reverse sm:flex-row items-center justify-between gap-4">
+                <button
+                    class="w-full sm:w-auto px-6 h-12 rounded-xl border border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800 font-bold transition-all flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined rotate-180">arrow_back</span>
+                    مرحله قبل
+                </button>
+                <div class="flex gap-4 w-full sm:w-auto">
+                    <button
+                        class="w-full sm:w-auto px-8 h-12 rounded-xl bg-primary hover:bg-blue-600 text-white shadow-lg shadow-blue-500/30 font-bold transition-all flex items-center justify-center gap-2 group">
+                        مرحله بعد
+                        <span
+                            class="material-symbols-outlined group-hover:-translate-x-1 transition-transform rotate-180">arrow_forward</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- Helper Links -->
+        <div class="mt-8 text-center">
+            <a class="text-sm text-slate-400 hover:text-primary transition-colors inline-flex items-center gap-1"
+                href="#">
+                <span class="material-symbols-outlined text-[16px]">help</span>
+                راهنمای محاسبه کسورات
+            </a>
+        </div>
+    </main>
+</body>
+
+</html>

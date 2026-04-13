@@ -14,6 +14,59 @@ interface RequestOptions extends RequestInit {
     params?: Record<string, string | number | undefined>;
 }
 
+function formatValidationMessage(detail: unknown): string | null {
+    if (typeof detail === 'string') {
+        return detail;
+    }
+
+    if (Array.isArray(detail)) {
+        const fieldLabels: Record<string, string> = {
+            letter_date: 'تاریخ نامه',
+            receiver_title: 'گیرنده',
+            sender_title: 'فرستنده',
+            subject: 'موضوع',
+            body_text: 'متن نامه',
+            cc_list: 'رونوشت',
+            attachment_count: 'تعداد پیوست',
+            amount: 'مبلغ',
+            request_type: 'نوع درخواست',
+            action: 'عملیات',
+            comment: 'توضیح',
+        };
+
+        const messages = detail
+            .map((item) => {
+                if (!item || typeof item !== 'object') return null;
+                const candidate = item as Record<string, unknown>;
+                const rawLoc = Array.isArray(candidate.loc) ? candidate.loc : [];
+                const fieldKey = rawLoc.find(
+                    (part) => typeof part === 'string' && part !== 'body',
+                ) as string | undefined;
+                const fieldLabel = fieldKey ? fieldLabels[fieldKey] || fieldKey : null;
+                const rawMessage = candidate.msg || candidate.message || candidate.type;
+                if (!rawMessage) return null;
+                return fieldLabel ? `${fieldLabel}: ${String(rawMessage)}` : String(rawMessage);
+            })
+            .filter(Boolean);
+
+        return messages.length ? messages.join(' | ') : null;
+    }
+
+    if (detail && typeof detail === 'object') {
+        const candidate = detail as Record<string, unknown>;
+        if (typeof candidate.detail === 'string') {
+            return candidate.detail;
+        }
+        try {
+            return JSON.stringify(candidate);
+        } catch {
+            return null;
+        }
+    }
+
+    return null;
+}
+
 async function request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
     const { params, ...init } = options;
 
@@ -32,13 +85,16 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
         }
     }
 
+    const isFormData = typeof FormData !== 'undefined' && init.body instanceof FormData;
+    const headers = new Headers(init.headers ?? {});
+    if (!isFormData && !headers.has('Content-Type')) {
+        headers.set('Content-Type', 'application/json');
+    }
+
     const response = await fetch(url, {
         ...init,
         credentials: 'include',  // Important for session cookies
-        headers: {
-            'Content-Type': 'application/json',
-            ...init.headers,
-        },
+        headers,
     });
 
     if (!response.ok) {
@@ -55,11 +111,17 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
         // Handle 403 Forbidden
         if (response.status === 403) {
             const error = await response.json().catch(() => ({ detail: 'دسترسی غیرمجاز' }));
-            throw new ForbiddenError(error.detail || 'شما دسترسی به این بخش را ندارید');
+            throw new ForbiddenError(
+                formatValidationMessage(error.detail) || 'شما دسترسی به این بخش را ندارید',
+            );
         }
 
         const error = await response.json().catch(() => ({ detail: 'خطای سرور' }));
-        throw new Error(error.detail || `HTTP error ${response.status}`);
+        throw new Error(
+            formatValidationMessage(error.detail) ||
+            formatValidationMessage(error) ||
+            `HTTP error ${response.status}`,
+        );
     }
 
     // Handle empty responses
@@ -79,9 +141,22 @@ export const api = {
             body: data ? JSON.stringify(data) : undefined,
         }),
 
+    postForm: <T>(endpoint: string, data: FormData) =>
+        request<T>(endpoint, {
+            method: 'POST',
+            body: data,
+        }),
+
     put: <T>(endpoint: string, data?: unknown) =>
         request<T>(endpoint, {
             method: 'PUT',
+            body: data ? JSON.stringify(data) : undefined,
+        }),
+
+    patch: <T>(endpoint: string, data?: unknown, params?: Record<string, string | number | undefined>) =>
+        request<T>(endpoint, {
+            method: 'PATCH',
+            params,
             body: data ? JSON.stringify(data) : undefined,
         }),
 

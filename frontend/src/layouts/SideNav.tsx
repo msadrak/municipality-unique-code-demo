@@ -7,6 +7,7 @@ import {
     Wallet,
     Settings,
     LogOut,
+    Inbox,
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -16,23 +17,50 @@ interface NavItem {
     path: string;
 }
 
+interface NavSection {
+    title?: string;
+    items: NavItem[];
+}
+
 /**
  * Navigation items matching the Stitch design
  * Sidebar shows: پورتال کاربر / قراردادها / گزارش‌ها / حسابداری (admin) / مالی (user) / مدیریت
  */
-const userNavItems: NavItem[] = [
-    { title: 'پورتال کاربر', icon: Home, path: '/portal' },
-    { title: 'قراردادها', icon: FileText, path: '/contracts' },
-    { title: 'گزارش‌ها', icon: BarChart3, path: '/reports' },
-    { title: 'مالی', icon: Wallet, path: '/accounting' },
+const hrFundingNavItems: NavItem[] = [
+    { title: 'ثبت درخواست تامین اعتبار', icon: Wallet, path: '/hr/funding/new' },
+    { title: 'درخواست‌های من', icon: FileText, path: '/hr/funding/my-requests' },
+    { title: 'کارتابل مدیران', icon: Inbox, path: '/hr/funding/inbox' },
 ];
 
-const adminNavItems: NavItem[] = [
-    { title: 'پورتال کاربر', icon: Home, path: '/portal' },
-    { title: 'قراردادها', icon: FileText, path: '/contracts' },
-    { title: 'گزارش‌ها', icon: BarChart3, path: '/reports' },
-    { title: 'حسابداری', icon: Wallet, path: '/accounting' },
-    { title: 'مدیریت', icon: Settings, path: '/admin' },
+const userNavSections: NavSection[] = [
+    {
+        items: [
+            { title: 'پورتال کاربر', icon: Home, path: '/portal' },
+            { title: 'قراردادها', icon: FileText, path: '/contracts' },
+            { title: 'گزارش‌ها', icon: BarChart3, path: '/reports' },
+            { title: 'مالی', icon: Wallet, path: '/accounting' },
+        ],
+    },
+    {
+        title: 'منابع انسانی',
+        items: hrFundingNavItems,
+    },
+];
+
+const adminNavSections: NavSection[] = [
+    {
+        items: [
+            { title: 'پورتال کاربر', icon: Home, path: '/portal' },
+            { title: 'قراردادها', icon: FileText, path: '/contracts' },
+            { title: 'گزارش‌ها', icon: BarChart3, path: '/reports' },
+            { title: 'حسابداری', icon: Wallet, path: '/accounting' },
+            { title: 'مدیریت', icon: Settings, path: '/admin' },
+        ],
+    },
+    {
+        title: 'منابع انسانی',
+        items: hrFundingNavItems,
+    },
 ];
 
 /**
@@ -48,7 +76,7 @@ export function SideNav() {
     const location = useLocation();
 
     const isAdmin = user?.role === 'admin';
-    const navItems = isAdmin ? adminNavItems : userNavItems;
+    const navSections = isAdmin ? adminNavSections : userNavSections;
 
     const handleLogout = async () => {
         await logout();
@@ -59,7 +87,8 @@ export function SideNav() {
         navigate(path);
     };
 
-    const isActive = (path: string) => location.pathname === path;
+    const isActive = (path: string) =>
+        location.pathname === path || location.pathname.startsWith(`${path}/`);
 
     return (
         <aside className="w-72 flex-shrink-0 bg-slate-900 text-white flex flex-col justify-between p-6 min-h-screen">
@@ -70,29 +99,39 @@ export function SideNav() {
                         <Home className="h-6 w-6 text-blue-400" />
                     </div>
                     <div className="flex flex-col">
-                        <h1 className="text-base font-bold leading-tight text-white">شهرداری منطقه ۱۴</h1>
-                        <p className="text-slate-400 text-sm">اصفهان</p>
+                        <h1 className="text-base font-bold leading-tight text-white">منابع انسانی</h1>
+                        <p className="text-slate-400 text-sm">شهرداری مرکزی</p>
                     </div>
                 </div>
 
                 {/* Navigation */}
-                <nav className="flex flex-col gap-2">
-                    {navItems.map((item) => {
-                        const active = isActive(item.path);
-                        return (
-                            <button
-                                key={item.path + item.title}
-                                onClick={() => handleNavigate(item.path)}
-                                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-right w-full ${active
-                                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
-                                        : 'text-slate-400 hover:text-white hover:bg-white/10'
-                                    }`}
-                            >
-                                <item.icon className="h-5 w-5" />
-                                <span className="text-sm font-medium">{item.title}</span>
-                            </button>
-                        );
-                    })}
+                <nav className="flex flex-col gap-6">
+                    {navSections.map((section, sectionIndex) => (
+                        <div key={section.title ?? `section-${sectionIndex}`} className="flex flex-col gap-2">
+                            {section.title ? (
+                                <div className="px-4 text-[11px] font-bold tracking-wide text-slate-500">
+                                    {section.title}
+                                </div>
+                            ) : null}
+
+                            {section.items.map((item) => {
+                                const active = isActive(item.path);
+                                return (
+                                    <button
+                                        key={item.path + item.title}
+                                        onClick={() => handleNavigate(item.path)}
+                                        className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-right w-full ${active
+                                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20'
+                                                : 'text-slate-400 hover:text-white hover:bg-white/10'
+                                            }`}
+                                    >
+                                        <item.icon className="h-5 w-5" />
+                                        <span className="text-sm font-medium">{item.title}</span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    ))}
                 </nav>
             </div>
 

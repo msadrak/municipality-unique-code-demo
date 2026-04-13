@@ -1,4 +1,4 @@
-"""
+﻿"""
 Seed script: Create/Update test users with proper Argon2 password hashes.
 
 This script is IDEMPOTENT:
@@ -33,6 +33,42 @@ TEST_USERS = [
         "full_name": "مدیر سیستم",
         "role": "admin",
     },
+    {
+        "username": "gm_hc",
+        "password": "hr123456",
+        "full_name": "مدیرکل سرمایه انسانی",
+        "role": "GM_HC",
+    },
+    {
+        "username": "vp_planning",
+        "password": "hr123456",
+        "full_name": "معاون برنامه‌ریزی",
+        "role": "VP_PLANNING",
+    },
+    {
+        "username": "vp_finance",
+        "password": "hr123456",
+        "full_name": "معاون مالی",
+        "role": "VP_FINANCE",
+    },
+    {
+        "username": "welfare_dept",
+        "password": "hr123456",
+        "full_name": "کارشناس اداره رفاه",
+        "role": "WELFARE_DEPT",
+    },
+    {
+        "username": "finance_unit",
+        "password": "hr123456",
+        "full_name": "کارشناس واحد مالی",
+        "role": "FINANCE_UNIT",
+    },
+    {
+        "username": "isfahan_card",
+        "password": "hr123456",
+        "full_name": "اپراتور اصفهان کارت",
+        "role": "ISFAHAN_CARD",
+    },
 ]
 
 
@@ -40,43 +76,31 @@ def seed_users():
     print("=" * 60)
     print("SEED USERS - Argon2 Password Hashing")
     print("=" * 60)
-    
+
     db = SessionLocal()
-    
+
     try:
-        # Get default org units for users
         zone = db.query(OrgUnit).filter(OrgUnit.org_type == "zone").first()
         section = db.query(OrgUnit).filter(OrgUnit.org_type == "section").first()
-        
+
         for user_data in TEST_USERS:
             username = user_data["username"]
             password = user_data["password"]
-            
-            # Check if user exists
             existing = db.query(User).filter(User.username == username).first()
-            
-            # Generate fresh Argon2 hash
             new_hash = hash_password(password)
-            
+
             if existing:
-                # UPDATE: Fix existing user with fresh Argon2 hash
-                print(f"🔄 Updating user: {username}")
-                print(f"   Old hash type: {'Argon2' if existing.password_hash.startswith('$argon2') else 'Legacy/SHA256'}")
+                print(f"Updating user: {username}")
                 existing.password_hash = new_hash
                 existing.full_name = user_data["full_name"]
                 existing.role = user_data["role"]
                 existing.is_active = True
-                
-                # Update org units if available
                 if zone:
                     existing.default_zone_id = zone.id
                 if section:
                     existing.default_section_id = section.id
-                    
-                print(f"   ✅ Password updated to Argon2")
             else:
-                # CREATE: New user with Argon2 hash
-                print(f"➕ Creating user: {username}")
+                print(f"Creating user: {username}")
                 new_user = User(
                     username=username,
                     password_hash=new_hash,
@@ -87,23 +111,21 @@ def seed_users():
                     default_section_id=section.id if section else None,
                 )
                 db.add(new_user)
-                print(f"   ✅ User created with Argon2 hash")
-        
+
         db.commit()
         print("\n" + "=" * 60)
-        print("✅ All users seeded successfully!")
-        print(f"   Zone assigned: {zone.title if zone else 'None'}")
-        print(f"   Section assigned: {section.title if section else 'None'}")
+        print("All users seeded successfully!")
+        print(f"Zone assigned: {zone.title if zone else 'None'}")
+        print(f"Section assigned: {section.title if section else 'None'}")
         print("=" * 60)
-        
-        # Show login credentials
-        print("\n📋 Login Credentials:")
+
+        print("\nLogin Credentials:")
         for u in TEST_USERS:
-            print(f"   Username: {u['username']} | Password: {u['password']} | Role: {u['role']}")
-        
+            print(f"Username: {u['username']} | Password: {u['password']} | Role: {u['role']}")
+
     except Exception as e:
         db.rollback()
-        print(f"❌ Error: {e}")
+        print(f"Error: {e}")
         raise
     finally:
         db.close()

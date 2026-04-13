@@ -17,7 +17,7 @@ Routers:
 - rbac: Role-based access control (existing)
 - accounting: Accounting posting module (NEW)
 """
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
@@ -25,9 +25,11 @@ from fastapi.exceptions import ResponseValidationError
 import os
 import hashlib
 import logging
+from sqlalchemy import inspect, text
+import jdatetime
 
 from app import models
-from app.database import SessionLocal, engine
+from app.database import SessionLocal, engine, get_db
 
 # Configure logging for response validation errors
 logger = logging.getLogger(__name__)
@@ -37,20 +39,169 @@ from app.routers import (
     test_mode_router, accounts_router, accounting_router,
     treasury_integration_router, credit_requests_router,
     contractors_router, templates_router, contracts_router,
-    statements_router, reports_router,
+    statements_router, reports_router, funding_router, attendance_router,
 )
 from pydantic import BaseModel
 
 # --- FastAPI App ---
 app = FastAPI(title="Municipality Action Portal")
 
-# --- Database Initialization (lazy - on startup) ---
+
+def ensure_hr_funding_schema() -> None:
+    """Patch the standalone HR funding schema for local/demo databases."""
+    inspector = inspect(engine)
+    if not inspector.has_table("hr_funding_requests"):
+        return
+
+    existing_columns = {col["name"] for col in inspector.get_columns("hr_funding_requests")}
+    timestamp_type = "TIMESTAMP" if engine.dialect.name == "postgresql" else "DATETIME"
+    required_columns = {
+        "letter_number": "VARCHAR(64)",
+        "letter_date": "VARCHAR(16)",
+        "receiver_title": "VARCHAR(256)",
+        "sender_title": "VARCHAR(256)",
+        "subject": "VARCHAR(512)",
+        "body_text": "TEXT",
+        "cc_list": "TEXT",
+        "attachment_count": "INTEGER DEFAULT 0",
+        "request_type": "VARCHAR(64)",
+        "budget_code": "VARCHAR(64)",
+        "budget_year": "INTEGER",
+        "charge_letter_number": "VARCHAR(64)",
+        "charge_letter_date": timestamp_type,
+    }
+
+    with engine.begin() as conn:
+        for column_name, ddl_type in required_columns.items():
+            if column_name not in existing_columns:
+                conn.exec_driver_sql(
+                    f"ALTER TABLE hr_funding_requests ADD COLUMN {column_name} {ddl_type}"
+                )
+        if engine.dialect.name == "postgresql":
+            conn.exec_driver_sql(
+                "ALTER TABLE hr_funding_requests ALTER COLUMN amount DROP NOT NULL"
+            )
+        today_persian = jdatetime.date.today().strftime("%Y/%m/%d")
+        conn.execute(
+            text(
+                """
+                UPDATE hr_funding_requests
+                SET
+                    letter_number = COALESCE(letter_number, charge_letter_number),
+                    letter_date = COALESCE(letter_date, :today_persian),
+                    receiver_title = COALESCE(receiver_title, 'گیرنده تعیین نشده'),
+                    sender_title = COALESCE(sender_title, 'فرستنده تعیین نشده'),
+                    subject = COALESCE(subject, title, tracking_number),
+                    body_text = COALESCE(body_text, description, title, ''),
+                    cc_list = COALESCE(cc_list, NULL),
+                    attachment_count = COALESCE(attachment_count, 0),
+                    request_type = COALESCE(request_type, 'voucher_charge'),
+                    description = COALESCE(description, body_text, subject, title)
+                WHERE
+                    letter_number IS NULL OR
+                    letter_date IS NULL OR
+                    receiver_title IS NULL OR
+                    sender_title IS NULL OR
+                    subject IS NULL OR
+                    body_text IS NULL OR
+                    attachment_count IS NULL OR
+                    request_type IS NULL OR
+                    description IS NULL
+                """
+            ),
+            {"today_persian": today_persian},
+        )
+
+    models.FundingWorkflowLog.__table__.create(bind=engine, checkfirst=True)
+
+
+def ensure_attendance_schema() -> None:
+    """Patch attendance tables for local/demo databases with legacy schemas."""
+    timestamp_type = "TIMESTAMP" if engine.dialect.name == "postgresql" else "DATETIME"
+
+    # Ensure all attendance tables exist first.
+    models.RegionalAttendanceSheet.__table__.create(bind=engine, checkfirst=True)
+    models.AttendanceRecord.__table__.create(bind=engine, checkfirst=True)
+    models.ContractorStatement.__table__.create(bind=engine, checkfirst=True)
+    models.ContractorStatementItem.__table__.create(bind=engine, checkfirst=True)
+
+    required_columns: dict[str, dict[str, str]] = {
+        "regional_attendance_sheets": {
+            "year": "INTEGER",
+            "month": "INTEGER",
+            "region": "VARCHAR(128)",
+            "creator_approved_at": timestamp_type,
+            "company_rep_approved_at": timestamp_type,
+            "security_approved_at": timestamp_type,
+            "gm_approved_at": timestamp_type,
+            "rejection_reason": "TEXT",
+            "declared_total_amount": "NUMERIC(18, 2)",
+        },
+        "attendance_records": {
+            "location": "VARCHAR(255)",
+            "father_name": "VARCHAR(255)",
+            "national_id": "VARCHAR(32)",
+            "marital_status": "VARCHAR(64)",
+            "children_count": "INTEGER",
+            "start_date": "VARCHAR(64)",
+            "average_per_capita": "NUMERIC(18, 2)",
+            "min_paid_hours": "NUMERIC(12, 2)",
+            "max_paid_hours": "NUMERIC(12, 2)",
+            "monthly_performance_days": "NUMERIC(12, 2)",
+            "monthly_absence_days": "NUMERIC(12, 2)",
+            "overtime_replacement": "NUMERIC(12, 2)",
+            "overtime_hours": "NUMERIC(12, 2)",
+            "total_average_per_capita": "NUMERIC(18, 2)",
+            "total_overtime_given": "NUMERIC(18, 2)",
+            "performance_balance": "TEXT",
+        },
+        "contractor_statements": {
+            "sheet_id": "INTEGER",
+            "year": "INTEGER",
+            "month": "INTEGER",
+            "region_name": "VARCHAR(128)",
+            "declared_total_amount": "NUMERIC(18, 2)",
+            "created_at": timestamp_type,
+        },
+        "contractor_statement_items": {
+            "statement_id": "INTEGER",
+            "sheet_id": "INTEGER",
+            "row_number": "INTEGER",
+            "national_id": "VARCHAR(32)",
+            "full_name": "VARCHAR(255)",
+            "gross_amount": "NUMERIC(18, 2)",
+            "tax_deduction": "NUMERIC(18, 2)",
+            "insurance_deduction": "NUMERIC(18, 2)",
+            "net_payable_amount": "NUMERIC(18, 2)",
+        },
+    }
+
+    with engine.begin() as conn:
+        for table_name, table_columns in required_columns.items():
+            if not inspect(engine).has_table(table_name):
+                continue
+            existing = {col["name"] for col in inspect(engine).get_columns(table_name)}
+            for column_name, ddl_type in table_columns.items():
+                if column_name in existing:
+                    continue
+                conn.exec_driver_sql(
+                    f"ALTER TABLE {table_name} ADD COLUMN {column_name} {ddl_type}"
+                )
+
+# --- Database Initialization (safety net — Alembic is the primary migration tool) ---
 @app.on_event("startup")
 async def startup_event():
-    """Initialize database tables on server startup"""
+    """Ensure database tables exist on startup.
+
+    NOTE: In production, schema changes are managed by Alembic migrations.
+    This create_all call is a no-op when tables already exist and serves
+    only as a safety net for fresh databases.
+    """
     try:
         models.Base.metadata.create_all(bind=engine)
-        logger.info("Database tables initialized successfully")
+        ensure_hr_funding_schema()
+        ensure_attendance_schema()
+        logger.info("Database tables verified / created successfully")
     except Exception as e:
         logger.warning(f"Database initialization failed (PostgreSQL may not be running): {e}")
         logger.warning("Server will continue, but database operations may fail until PostgreSQL is available")
@@ -73,6 +224,8 @@ app.include_router(templates_router)
 app.include_router(contracts_router)
 app.include_router(statements_router)
 app.include_router(reports_router, tags=["Reports"])
+app.include_router(funding_router)
+app.include_router(attendance_router)
 
 # --- CORS Configuration ---
 allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8000,http://localhost:5173").split(",")
@@ -135,12 +288,7 @@ class PortalSubmit(BaseModel):
     financial_event: str = "000"
     date: str
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+# get_db is imported from app.database
 
 
 @app.post("/portal/submit")
@@ -234,3 +382,8 @@ def root():
     except FileNotFoundError:
         return RedirectResponse(url="/login")
 
+
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon():
+    """Return empty favicon to avoid browser 404 noise in dev."""
+    return Response(status_code=204)

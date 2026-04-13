@@ -4,7 +4,8 @@ export interface User {
     id: number;
     username: string;
     full_name: string;
-    role: 'user' | 'admin';
+    role: string;
+    admin_level?: number;
     zone_id?: number;
     dept_id?: number;
     section_id?: number;

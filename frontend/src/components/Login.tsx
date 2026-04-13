@@ -9,7 +9,7 @@ type UserData = {
   id: number;
   username: string;
   fullName: string;
-  role: 'user' | 'admin';
+  role: string;
 };
 
 type LoginProps = {
@@ -83,7 +83,7 @@ export function Login({ onLogin, onNavigateToPublic, onNavigateToContractorAuth 
               سامانه مالی شهرداری
             </h1>
             <h2 className="text-slate-500 font-medium text-sm">
-              منطقه ۱۴ اصفهان
+              منابع انسانی شهرداری مرکزی
             </h2>
           </div>
 

@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="fa">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>ایجاد - مرحله ۳: اطلاعات اختصاصی</title>
+    <!-- Google Fonts: Vazirmatn for Persian support + Public Sans as requested by theme config -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100..900&amp;family=Public_Sans:wght@100..900&amp;display=swap"
+        rel="stylesheet" />
+    <!-- Material Symbols -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <!-- Theme Configuration -->
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#135bec",
+                        "background-light": "#f8fafc", /* Adjusted slightly to match user request */
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Vazirmatn", "Public Sans", "sans-serif"] /* Prioritizing Vazirmatn for RTL */
+                    },
+                    borderRadius: { "DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "2xl": "1.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+</head>
+
+<body
+    class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen flex flex-col overflow-x-hidden transition-colors duration-200">
+    <!-- Top Navigation Bar -->
+    <header class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-50">
+        <div class="max-w-[1280px] mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <div class="size-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
+                    <span class="material-symbols-outlined text-2xl">account_balance</span>
+                </div>
+                <div>
+                    <h1 class="text-slate-900 dark:text-white text-lg font-bold leading-tight">سامانه جامع مالی شهرداری
+                    </h1>
+                    <span class="text-slate-500 dark:text-slate-400 text-xs font-normal">نسخه ۳.۴.۰</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-6">
+                <!-- User Profile -->
+                <div class="flex items-center gap-3 pl-4 border-l border-slate-200 dark:border-slate-700">
+                    <div class="text-left hidden md:block">
+                        <p class="text-sm font-bold text-slate-900 dark:text-white">امیر محمدی</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">معاونت مالی</p>
+                    </div>
+                    <div class="size-10 rounded-full bg-slate-200 dark:bg-slate-700 bg-center bg-cover border-2 border-white dark:border-slate-800 shadow-sm"
+                        data-alt="User profile picture"
+                        style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBTxqn2WaIyMqUg5MxP10ZPCRaLrjkB2pRKNsTmLpID5buN1VkkpzUOX0mTWl1SAu4QT8uyo9kqyUGxUR0nbp16uxy2Uj2KPC_YyV9DfM7aJv3JlaI1Ph6pSe-kW0VMc0az4psc0WgGhe00kXfJ4UJUVawb36M_X2kiMWxvFvCIMu27UqCGhS9hrtEnpI7VwKreJDCvlzvoIqk1yU2Sg0zc2snk33ZLeDApSoDqb2sQsfhOhCCRvbv6kCmIKvrDrE2HqNRsGDGKSyg');">
+                    </div>
+                </div>
+                <button
+                    class="flex items-center gap-2 text-slate-600 dark:text-slate-300 hover:text-red-600 dark:hover:text-red-400 transition-colors">
+                    <span class="material-symbols-outlined text-xl">logout</span>
+                    <span class="text-sm font-medium hidden sm:block">خروج</span>
+                </button>
+            </div>
+        </div>
+    </header>
+    <!-- Main Content Area -->
+    <main class="flex-grow w-full max-w-[960px] mx-auto px-4 py-8 md:py-12">
+        <!-- Stepper -->
+        <div class="mb-10">
+            <div class="flex items-center justify-between relative">
+                <!-- Progress Bar Background -->
+                <div
+                    class="absolute top-1/2 right-0 left-0 h-1 bg-slate-200 dark:bg-slate-700 -z-10 -translate-y-1/2 rounded-full">
+                </div>
+                <!-- Active Progress -->
+                <div class="absolute top-1/2 right-0 h-1 bg-green-500 -z-10 -translate-y-1/2 rounded-full transition-all duration-500"
+                    style="width: 66%;"></div>
+                <!-- Step 1: Completed -->
+                <div class="flex flex-col items-center gap-2 group cursor-pointer">
+                    <div
+                        class="size-10 rounded-full bg-green-500 text-white flex items-center justify-center shadow-md shadow-green-500/20 ring-4 ring-white dark:ring-background-dark">
+                        <span class="material-symbols-outlined text-xl">check</span>
+                    </div>
+                    <span class="text-sm font-bold text-green-600 dark:text-green-400">اطلاعات پایه</span>
+                </div>
+                <!-- Step 2: Completed -->
+                <div class="flex flex-col items-center gap-2 group cursor-pointer">
+                    <div
+                        class="size-10 rounded-full bg-green-500 text-white flex items-center justify-center shadow-md shadow-green-500/20 ring-4 ring-white dark:ring-background-dark">
+                        <span class="material-symbols-outlined text-xl">check</span>
+                    </div>
+                    <span class="text-sm font-bold text-green-600 dark:text-green-400">مبالغ کلان</span>
+                </div>
+                <!-- Step 3: Active -->
+                <div class="flex flex-col items-center gap-2">
+                    <div
+                        class="size-10 rounded-full bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/30 ring-4 ring-white dark:ring-background-dark scale-110">
+                        <span class="text-base font-bold">۳</span>
+                    </div>
+                    <span class="text-sm font-bold text-primary dark:text-blue-400">اطلاعات اختصاصی</span>
+                </div>
+                <!-- Step 4: Pending -->
+                <div class="flex flex-col items-center gap-2">
+                    <div
+                        class="size-10 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 flex items-center justify-center ring-4 ring-white dark:ring-background-dark">
+                        <span class="text-base font-bold">۴</span>
+                    </div>
+                    <span class="text-sm font-medium text-slate-400 dark:text-slate-600">تایید نهایی</span>
+                </div>
+            </div>
+        </div>
+        <!-- Form Card -->
+        <div
+            class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <!-- Header Section -->
+            <div class="p-6 md:p-8 border-b border-slate-100 dark:border-slate-700">
+                <div class="flex items-start gap-4">
+                    <div
+                        class="hidden md:flex size-14 bg-primary/10 rounded-xl items-center justify-center text-primary shrink-0">
+                        <span class="material-symbols-outlined text-3xl">folder_special</span>
+                    </div>
+                    <div class="flex-1">
+                        <h2 class="text-xl md:text-2xl font-bold text-slate-900 dark:text-white mb-2">مرحله ۳: اطلاعات
+                            اختصاصی</h2>
+                        <p class="text-slate-500 dark:text-slate-400 text-base leading-relaxed">
+                            داده‌های مختص حوزه تخصصی را وارد کنید (JSONB template_data). این اطلاعات برای گزارش‌گیری
+                            دقیق ضروری هستند.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <!-- Info Banner -->
+            <div class="px-6 md:px-8 pt-6">
+                <div
+                    class="flex items-start gap-3 p-4 bg-sky-50 dark:bg-sky-900/20 border border-sky-100 dark:border-sky-800 rounded-xl text-sky-800 dark:text-sky-200">
+                    <span class="material-symbols-outlined shrink-0 text-sky-600 dark:text-sky-400">info</span>
+                    <p class="text-sm font-medium leading-6">این بخش بسته به حوزه تخصصی هر معاونت و نوع قرارداد انتخاب
+                        شده در مرحله اول، فیلدهای متفاوتی را نمایش می‌دهد. لطفاً تمام موارد الزامی را تکمیل کنید.</p>
+                </div>
+            </div>
+            <!-- Form Content -->
+            <div class="p-6 md:p-8 flex flex-col gap-8">
+                <!-- Dynamic Field 1 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="flex flex-col gap-2">
+                        <label class="text-sm font-bold text-slate-700 dark:text-slate-300" for="tracking_code">
+                            کد رهگیری سامانه تخصصی <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <input
+                                class="w-full h-12 rounded-xl border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-4 focus:border-primary focus:ring-primary dark:focus:border-primary dark:focus:ring-primary shadow-sm text-left placeholder:text-right"
+                                dir="ltr" id="tracking_code" placeholder="مثال: FIN-1403-882" type="text" />
+                            <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none text-slate-400">
+                                <span class="material-symbols-outlined text-lg">qr_code</span>
+                            </div>
+                        </div>
+                        <p class="text-xs text-slate-500 dark:text-slate-500">کد دریافتی از سامانه شهرسازی یا سامانه
+                            جامع معاملات</p>
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <label class="text-sm font-bold text-slate-700 dark:text-slate-300" for="project_manager">
+                            نام مدیر پروژه ناظر
+                        </label>
+                        <input
+                            class="w-full h-12 rounded-xl border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white px-4 focus:border-primary focus:ring-primary dark:focus:border-primary dark:focus:ring-primary shadow-sm"
+                            id="project_manager" placeholder="نام و نام خانوادگی را وارد کنید..." type="text" />
+                    </div>
+                </div>
+                <!-- Textarea -->
+                <div class="flex flex-col gap-2">
+                    <label class="text-sm font-bold text-slate-700 dark:text-slate-300" for="tech_desc">
+                        توضیحات فنی <span class="text-red-500">*</span>
+                    </label>
+                    <textarea
+                        class="w-full rounded-xl border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white p-4 focus:border-primary focus:ring-primary dark:focus:border-primary dark:focus:ring-primary shadow-sm resize-none"
+                        id="tech_desc"
+                        placeholder="توضیحات فنی مربوط به پیشرفت فیزیکی و مشکلات اجرایی را در این بخش وارد کنید..."
+                        rows="4"></textarea>
+                </div>
+                <!-- Add Custom Field Button -->
+                <button
+                    class="group flex items-center justify-center gap-2 w-full py-4 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl hover:border-primary hover:bg-primary/5 dark:hover:border-primary dark:hover:bg-primary/10 transition-all duration-200"
+                    type="button">
+                    <span
+                        class="material-symbols-outlined text-slate-500 dark:text-slate-400 group-hover:text-primary transition-colors">add_circle</span>
+                    <span
+                        class="text-sm font-bold text-slate-600 dark:text-slate-300 group-hover:text-primary transition-colors">افزودن
+                        فیلد اختصاصی</span>
+                </button>
+            </div>
+            <!-- Footer / Navigation -->
+            <div
+                class="bg-slate-50 dark:bg-slate-800/50 p-6 md:p-8 flex items-center justify-between border-t border-slate-200 dark:border-slate-700">
+                <!-- Previous Button (Right in RTL) -->
+                <button
+                    class="flex items-center gap-2 px-6 py-3 rounded-xl text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                    <span class="material-symbols-outlined text-xl rotate-180">arrow_forward</span>
+                    <span>مرحله قبل</span>
+                </button>
+                <!-- Next Button (Left in RTL) -->
+                <button
+                    class="flex items-center gap-2 px-8 py-3 rounded-xl bg-primary text-white font-bold shadow-lg shadow-primary/30 hover:bg-blue-600 hover:shadow-primary/40 active:scale-95 transition-all">
+                    <span>ثبت و ادامه</span>
+                    <span class="material-symbols-outlined text-xl rotate-180">arrow_back</span>
+                </button>
+            </div>
+        </div>
+        <!-- Helper Links -->
+        <div class="mt-8 flex justify-center gap-6 text-sm text-slate-500 dark:text-slate-400">
+            <a class="hover:text-primary transition-colors" href="#">راهنمای کاربری</a>
+            <span>•</span>
+            <a class="hover:text-primary transition-colors" href="#">تماس با پشتیبانی</a>
+            <span>•</span>
+            <a class="hover:text-primary transition-colors" href="#">گزارش خطا</a>
+        </div>
+    </main>
+</body>
+
+</html>

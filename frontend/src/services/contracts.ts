@@ -165,8 +165,10 @@ export async function transitionContractStatus(
 }
 
 // ============================================================
-// Progress Statement Types & API (Sprint 3)
+// Progress Statement Types & API
 // ============================================================
+
+export type StatementTypeEnum = 'INTERIM' | 'FINAL' | 'ADJUSTMENT' | 'FINAL_ADJUSTMENT';
 
 export interface StatementListItem {
   id: number;
@@ -175,13 +177,24 @@ export interface StatementListItem {
   status: string;
   net_amount: number;
   cumulative_amount: number;
+  current_approval_level: number;
+  originating_organ?: string | null;
   created_at?: string | null;
+
+  // Contract context (populated by pending-statements endpoint)
+  contract_number?: string | null;
+  contract_title?: string | null;
 }
 
 export interface StatementListResponse {
   items: StatementListItem[];
   total: number;
   contract_id: number;
+}
+
+export interface PendingStatementListResponse {
+  items: StatementListItem[];
+  total: number;
 }
 
 export interface StatementResponse {
@@ -191,32 +204,84 @@ export interface StatementResponse {
   sequence_number: number;
   statement_type: string;
   status: string;
+
+  // Content
   description?: string | null;
   period_start?: string | null;
   period_end?: string | null;
+  originating_organ?: string | null;
+
+  // Financial
   gross_amount: number;
   deductions: number;
   net_amount: number;
   cumulative_amount: number;
+  previous_statement_amount: number;
+
+  // Deduction breakdown
+  insurance_deduction: number;
+  tax_deduction: number;
+  advance_payment_amount: number;
+  other_deductions: number;
+
+  // Approval
+  current_approval_level: number;
+
+  // Department-specific data
+  template_data?: Record<string, unknown> | null;
+
+  // Workflow
   submitted_by_id?: number | null;
   reviewed_by_id?: number | null;
+  rejected_by_id?: number | null;
   review_comment?: string | null;
+  rejection_reason?: string | null;
   submitted_at?: string | null;
   reviewed_at?: string | null;
+  rejected_at?: string | null;
+
+  // Audit
   created_at?: string | null;
   updated_at?: string | null;
   version: number;
 }
 
 export interface StatementCreateRequest {
+  // Financial — provide EITHER amount (net) or gross_amount
   amount?: number;
   gross_amount?: number;
   deductions?: number;
+
+  // Required content
   description: string;
+
+  // Optional metadata
   period_start?: string;
   period_end?: string;
-  statement_type?: string;
+  statement_type?: StatementTypeEnum;
+  originating_organ?: string;
+
+  // Deduction breakdown
+  insurance_deduction?: number;
+  tax_deduction?: number;
+  advance_payment_amount?: number;
+  other_deductions?: number;
+
+  // Department-specific data (JSONB)
+  template_data?: Record<string, unknown>;
 }
+
+// ============================================================
+// Manager Inbox — Pending Statements (global)
+// ============================================================
+
+export async function fetchPendingStatements(): Promise<PendingStatementListResponse> {
+  return api.get<PendingStatementListResponse>('/statements/pending');
+}
+
+// ============================================================
+// Contract-Scoped Statement API
+// ============================================================
 
 export async function fetchStatements(contractId: number): Promise<StatementListResponse> {
   return api.get<StatementListResponse>(`/contracts/${contractId}/statements`);
@@ -242,6 +307,11 @@ export async function approveStatement(
   });
 }
 
-export async function payStatement(statementId: number): Promise<StatementResponse> {
-  return api.put<StatementResponse>(`/statements/${statementId}/pay`);
+export async function rejectStatement(
+  statementId: number,
+  rejectionReason?: string,
+): Promise<StatementResponse> {
+  return api.put<StatementResponse>(`/statements/${statementId}/reject`, {
+    rejection_reason: rejectionReason ?? null,
+  });
 }

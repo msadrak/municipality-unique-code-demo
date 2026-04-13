@@ -7,9 +7,11 @@ Business rules:
 - Over-payment prevention is enforced at creation time
 - State machine: DRAFT → PENDING_L1 → PENDING_L2 → PENDING_L3 → PENDING_L4 → APPROVED
 - At any stage → REJECTED (with reason)
-- On APPROVED: a linked Transaction should be created/advanced for payment processing
+- On APPROVED: a linked Transaction is auto-created for payment processing
 """
 
+import uuid
+import logging
 from datetime import datetime, date
 from typing import Optional, List
 
@@ -21,7 +23,10 @@ from app.models import (
     ContractStatus,
     ProgressStatement,
     ProgressStatementStatus,
+    Transaction,
 )
+
+logger = logging.getLogger(__name__)
 from app.services.budget_service import confirm_spend
 
 
@@ -126,6 +131,29 @@ def _status_value(raw_status) -> str:
 def _generate_statement_number(contract: Contract, sequence: int) -> str:
     """Generate statement number: PS-{contract_number}-{NN}."""
     return f"PS-{contract.contract_number}-{sequence:02d}"
+
+
+def _generate_tracking_number() -> str:
+    """
+    Generate a unique tracking number for a new Transaction.
+
+    Pattern: TRX-{4-digit-year}-{8-char-uuid}
+    Example: TRX-1403-a1b2c3d4
+
+    The year is derived from the current date via the Persian (Jalali)
+    calendar.  We compute it arithmetically to avoid an external dependency
+    on ``jdatetime``.
+    """
+    # Simple Jalali year approximation (accurate within the fiscal year)
+    now = datetime.utcnow()
+    # Persian year starts ~March 21.  Before that, subtract 622; after, 621.
+    if (now.month, now.day) < (3, 21):
+        persian_year = now.year - 622
+    else:
+        persian_year = now.year - 621
+
+    short_id = uuid.uuid4().hex[:8]
+    return f"TRX-{persian_year}-{short_id}"
 
 
 def _get_contract_for_update(db: Session, contract_id: int) -> Optional[Contract]:
@@ -335,12 +363,73 @@ def approve_l3(db: Session, statement_id: int, user_id: int, review_comment: Opt
 
 
 def approve_l4(db: Session, statement_id: int, user_id: int, review_comment: Optional[str] = None) -> ProgressStatement:
-    """Transition PENDING_L4 → APPROVED (finance/treasury final approval)."""
+    """
+    Transition PENDING_L4 → APPROVED (finance/treasury final approval).
+
+    Side-effect: auto-creates a linked Transaction in DRAFT status.
+    The Transaction receives a tracking_number immediately;
+    unique_code remains NULL until the Transaction itself is approved.
+    Both writes are flushed in the same unit-of-work so the caller's
+    db.commit() saves them atomically.
+    """
     statement = _transition(db, statement_id, ProgressStatementStatus.APPROVED.value, user_id)
     statement.reviewed_by_id = user_id
     statement.reviewed_at = datetime.utcnow()
     statement.review_comment = review_comment
+    db.flush()  # ensure statement.id is available for FK
+
+    # --- Golden Thread: auto-create linked Transaction ---
+    contract = (
+        db.query(Contract)
+        .filter(Contract.id == statement.contract_id)
+        .first()
+    )
+
+    tracking_number = _generate_tracking_number()
+
+    transaction = Transaction(
+        tracking_number=tracking_number,
+        unique_code=None,  # explicitly NULL until Transaction reaches APPROVED
+        status="DRAFT",
+        current_approval_level=0,
+
+        # Entity linkage
+        progress_statement_id=statement.id,
+
+        # Financial mapping — net payable amount
+        amount=statement.net_amount,
+
+        # Inherit context from the parent contract
+        contract_number=contract.contract_number if contract else None,
+        beneficiary_name=(
+            contract.template_data.get("beneficiary_name", "")
+            if contract and isinstance(contract.template_data, dict)
+            else ""
+        ),
+        description=(
+            f"تراکنش ایجاد شده از صورت‌وضعیت {statement.statement_number}"
+        ),
+
+        # Org-unit inheritance (from contract if available)
+        zone_id=getattr(contract, "org_unit_id", None) if contract else None,
+
+        # Audit
+        created_by_id=user_id,
+        fiscal_year=str(datetime.utcnow().year - 621
+                        if (datetime.utcnow().month, datetime.utcnow().day) >= (3, 21)
+                        else datetime.utcnow().year - 622),
+    )
+    db.add(transaction)
     db.flush()
+
+    logger.info(
+        "Auto-created Transaction %s (id=%d) from ProgressStatement %s (id=%d), "
+        "amount=%s, unique_code=NULL",
+        tracking_number, transaction.id,
+        statement.statement_number, statement.id,
+        statement.net_amount,
+    )
+
     return statement
 
 

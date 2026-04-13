@@ -1,9 +1,10 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, Date, DateTime, Boolean, Enum, JSON, CheckConstraint, BigInteger, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, Date, DateTime, Boolean, Enum, JSON, CheckConstraint, BigInteger, UniqueConstraint, Text
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship, backref
 from app.database import Base
 from datetime import datetime
 import enum
+import jdatetime
 
 
 # --- Enums ---
@@ -307,6 +308,8 @@ class User(Base):
     default_section_id = Column(Integer, ForeignKey("org_units.id"), nullable=True)
     
     is_active = Column(Boolean, default=True)
+    failed_attempts = Column(Integer, default=0, nullable=True)
+    locked_until = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     
     # Relationships
@@ -1283,3 +1286,136 @@ class ContractGuarantee(Base):
     
     # Relationship
     contract = relationship("Contract", back_populates="guarantees")
+
+# ============================================
+# HR Funding Module (Standalone Process)
+# ============================================
+
+
+def _current_persian_date() -> str:
+    return jdatetime.date.today().strftime("%Y/%m/%d")
+
+class FundingStatus(str, enum.Enum):
+    """HR funding workflow states.
+
+    Legacy states are kept for backward compatibility with pre-workflow data.
+    New requests start at PENDING_VP_PLANNING.
+    """
+
+    PENDING_VP_PLANNING = "PENDING_VP_PLANNING"
+    PENDING_VP_FINANCE_REVIEW = "PENDING_VP_FINANCE_REVIEW"
+    BUDGET_WELFARE_DEPT = "BUDGET_WELFARE_DEPT"
+    BUDGET_GM_HC = "BUDGET_GM_HC"
+    BUDGET_FINANCE_UNIT = "BUDGET_FINANCE_UNIT"
+    BUDGET_VP_FINANCE = "BUDGET_VP_FINANCE"
+    CHARGE_LETTER_REGISTERED = "CHARGE_LETTER_REGISTERED"
+    PENDING_FINAL_CHARGE = "PENDING_FINAL_CHARGE"
+    FINAL_APPROVED = "FINAL_APPROVED"
+    CHARGING_IN_PROGRESS = "CHARGING_IN_PROGRESS"
+    COMPLETED = "COMPLETED"
+    REJECTED = "REJECTED"
+
+    # Legacy statuses from the earlier isolated funding flow.
+    DRAFT = "DRAFT"
+    PENDING_VP_FINANCE_INITIAL = "PENDING_VP_FINANCE_INITIAL"
+    PENDING_BUDGET_ALLOCATION = "PENDING_BUDGET_ALLOCATION"
+    PENDING_VP_FINANCE_FINAL = "PENDING_VP_FINANCE_FINAL"
+    APPROVED_FOR_CHARGE = "APPROVED_FOR_CHARGE"
+
+
+class UserRole(str, enum.Enum):
+    GM_HC = "GM_HC"
+    VP_PLANNING = "VP_PLANNING"
+    VP_FINANCE = "VP_FINANCE"
+    WELFARE_DEPT = "WELFARE_DEPT"
+    FINANCE_UNIT = "FINANCE_UNIT"
+    GM_FINANCE = "GM_FINANCE"
+    ISFAHAN_CARD = "ISFAHAN_CARD"
+    ADMIN = "ADMIN"
+
+
+# Backward-compatible alias used by older imports.
+FundingRequestStatus = FundingStatus
+
+class FundingRequest(Base):
+    """
+    مدل اصلی برای ماژول منابع انسانی
+    کاملاً ایزوله از ProgressStatement و Contracts
+    """
+    __tablename__ = "hr_funding_requests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    tracking_number = Column(String, unique=True, index=True, nullable=False) # e.g., HR-1403-001
+
+    # Official letter fields
+    letter_number = Column(String(64), nullable=True)
+    letter_date = Column(String(16), default=_current_persian_date, nullable=False)
+    receiver_title = Column(String(256), nullable=False)
+    sender_title = Column(String(256), nullable=False)
+    subject = Column(String(512), nullable=False)
+    body_text = Column(Text, nullable=False)
+    cc_list = Column(Text, nullable=True)
+    attachment_count = Column(Integer, default=0, nullable=False)
+
+    # Legacy aliases kept for compatibility with older UI/reporting paths.
+    title = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+
+    # Request metadata
+    amount = Column(BigInteger, nullable=True) # Rials
+    request_type = Column(String(64), nullable=True)
+    status = Column(
+        Enum(FundingStatus),
+        default=FundingStatus.PENDING_VP_PLANNING,
+        nullable=False, 
+        index=True
+    )
+
+    # Budget tracking
+    budget_code = Column(String(64), nullable=True, index=True)
+    budget_year = Column(Integer, nullable=True)
+
+    # Charge letter tracking
+    charge_letter_number = Column(String(64), nullable=True)
+    charge_letter_date = Column(DateTime, nullable=True)
+    
+    # ارتباط با کاربر ثبت‌کننده
+    created_by_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    # Relationships
+    created_by = relationship("User", foreign_keys=[created_by_id], backref="funding_requests")
+    logs = relationship(
+        "FundingWorkflowLog",
+        back_populates="request",
+        order_by="FundingWorkflowLog.timestamp",
+        cascade="all, delete-orphan",
+    )
+
+
+class FundingWorkflowLog(Base):
+    __tablename__ = "hr_funding_workflow_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    request_id = Column(Integer, ForeignKey("hr_funding_requests.id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    from_status = Column(Enum(FundingStatus), nullable=False)
+    to_status = Column(Enum(FundingStatus), nullable=False)
+    action = Column(String(64), nullable=False)
+    comment = Column(Text, nullable=True)
+    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+    request = relationship("FundingRequest", back_populates="logs")
+    user = relationship("User")
+
+    @property
+    def actor_name(self):
+        return self.user.full_name if self.user else None
+
+    @property
+    def actor_role(self):
+        return self.user.role if self.user else None
+

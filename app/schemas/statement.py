@@ -128,6 +128,10 @@ class StatementListItem(BaseModel):
     originating_organ: Optional[str] = None
     created_at: Optional[str] = None
 
+    # Optional contract context (populated by pending-statements endpoint)
+    contract_number: Optional[str] = None
+    contract_title: Optional[str] = None
+
 
 class StatementListResponse(BaseModel):
     """GET /contracts/{id}/statements - list response."""
@@ -135,6 +139,13 @@ class StatementListResponse(BaseModel):
     items: List[StatementListItem]
     total: int
     contract_id: int
+
+
+class PendingStatementListResponse(BaseModel):
+    """GET /statements/pending - all pending statements across contracts."""
+
+    items: List[StatementListItem]
+    total: int
 
 
 class StatementFinancialSummary(BaseModel):

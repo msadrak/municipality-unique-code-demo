@@ -15,9 +15,10 @@ Endpoints:
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
-from app.models import ProgressStatement, ProgressStatementStatus
+from app.models import Contract, ProgressStatement, ProgressStatementStatus
 from app.routers.auth import get_current_user, get_db
 from app.schemas.statement import (
+    PendingStatementListResponse,
     StatementApprove,
     StatementCreate,
     StatementFinancialSummary,
@@ -113,6 +114,47 @@ def _statement_to_list_item(statement: ProgressStatement) -> StatementListItem:
         originating_organ=statement.originating_organ,
         created_at=_fmt_dt(statement.created_at),
     )
+
+
+# ----------------------------------------------------------------
+# Global pending-statements inbox (read-only)
+# ----------------------------------------------------------------
+
+@router.get("/statements/pending", response_model=PendingStatementListResponse)
+def list_pending_statements(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """List all statements in a PENDING_Lx stage across all contracts.
+
+    Used by the Manager Inbox (کارتابل مدیران) to give approvers a
+    single view of every statement awaiting their action.
+    """
+    _require_auth(request, db)
+
+    pending_statuses = [
+        ProgressStatementStatus.PENDING_L1,
+        ProgressStatementStatus.PENDING_L2,
+        ProgressStatementStatus.PENDING_L3,
+        ProgressStatementStatus.PENDING_L4,
+    ]
+
+    rows = (
+        db.query(ProgressStatement, Contract)
+        .join(Contract, ProgressStatement.contract_id == Contract.id)
+        .filter(ProgressStatement.status.in_(pending_statuses))
+        .order_by(ProgressStatement.created_at.desc())
+        .all()
+    )
+
+    items = []
+    for stmt, contract in rows:
+        item = _statement_to_list_item(stmt)
+        item.contract_number = contract.contract_number
+        item.contract_title = contract.title
+        items.append(item)
+
+    return PendingStatementListResponse(items=items, total=len(items))
 
 
 @router.post("/contracts/{contract_id}/statements", response_model=StatementResponse)

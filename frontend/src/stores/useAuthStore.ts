@@ -90,6 +90,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 export const selectUser = (state: AuthState) => state.user;
 export const selectIsAuthenticated = (state: AuthState) => state.isAuthenticated;
 export const selectIsLoading = (state: AuthState) => state.isLoading;
-export const selectIsAdmin = (state: AuthState) => state.user?.role === 'admin';
+export const selectIsAdmin = (state: AuthState) =>
+  state.user?.role === 'admin' ||
+  state.user?.role === 'ADMIN' ||
+  Boolean(state.user?.role?.startsWith('ADMIN_L'));
 
 export default useAuthStore;

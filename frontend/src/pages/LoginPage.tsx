@@ -2,10 +2,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Login as LoginComponent } from '../components/Login';
 import { RoleSelectionDialog } from '../components/auth/RoleSelectionDialog';
+import { getDefaultHomePath } from '../components/funding/workflow';
 import { useAuthStore } from '../stores/useAuthStore';
 
 const MANAGEMENT_HOME = '/admin';
-const PORTAL_HOME = '/portal';
 
 /** Roles that are allowed to see the workspace-selection dialog */
 const ADMIN_ROLES = new Set([
@@ -30,7 +30,7 @@ export function LoginPage() {
   const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
 
   const managementTarget = useMemo(() => {
-    if (!from || from === '/login' || from === '/public' || from === PORTAL_HOME) {
+    if (!from || from === '/login' || from === '/public' || from === '/portal') {
       return MANAGEMENT_HOME;
     }
     return from;
@@ -47,7 +47,7 @@ export function LoginPage() {
       return;
     }
 
-    navigate(from || PORTAL_HOME, { replace: true });
+    navigate(from || getDefaultHomePath(user.role), { replace: true });
   }, [isAuthenticated, user, navigate, from]);
 
   const handleLogin = () => {
@@ -63,7 +63,16 @@ export function LoginPage() {
         return;
       }
 
-      navigate(from || PORTAL_HOME, { replace: true });
+      const role = (state.user.role || '').toUpperCase();
+      const target = from || getDefaultHomePath(state.user.role);
+
+      if (role === 'OPERATOR' && (!from || from === '/portal' || from === '/admin')) {
+        navigate('/attendance/inbox', { replace: true });
+      } else if (role === 'SECURITY_DIRECTOR' && (!from || from === '/portal' || from === '/admin')) {
+        navigate('/security/aggregation', { replace: true });
+      } else {
+        navigate(target, { replace: true });
+      }
     });
   };
 
@@ -82,7 +91,7 @@ export function LoginPage() {
 
   const handleSelectPortal = () => {
     setShowRoleSelection(false);
-    navigate(PORTAL_HOME, { replace: true });
+    navigate('/portal', { replace: true });
   };
 
   if (showRoleSelection && user) {

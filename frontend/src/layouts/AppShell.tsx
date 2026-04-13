@@ -1,7 +1,7 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-import { SideNav } from './SideNav';
-import { TopBar } from './TopBar';
+import { SideNavV2 } from './SideNavV2';
+import { TopBarV2 } from './TopBarV2';
 
 /**
  * AppShell — Main layout matching Stitch design
@@ -10,12 +10,12 @@ import { TopBar } from './TopBar';
  */
 export function AppShell() {
     return (
-        <div dir="rtl" className="flex min-h-screen bg-slate-50">
+        <div dir="rtl" className="flex min-h-screen bg-[var(--vault-bg)] text-[var(--vault-on-surface)]">
             {/* Dark sidebar on the right (RTL start) */}
-            <SideNav />
+            <SideNavV2 />
             {/* Main content area */}
             <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-                <TopBar />
+                <TopBarV2 />
                 {/* Scrollable content */}
                 <div className="flex-1 overflow-auto p-6 lg:p-10">
                     <Outlet />

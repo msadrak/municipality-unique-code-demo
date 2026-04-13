@@ -1,16 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { Label } from '../ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import React, { useEffect, useState } from 'react';
+import { FileText, Loader2, Target } from 'lucide-react';
+
+import { FINANCIAL_EVENTS } from '../../lib/financialEvents';
+import { FigmaCostCenter } from '../../services/adapters';
 import { TransactionFormData } from '../TransactionWizard';
-import { FileText, Target, Activity, Loader2 } from 'lucide-react';
+import { Label } from '../ui/label';
 import {
-  fetchFinancialEvents,
-  fetchCostCentersForOrg,
-  fetchContinuousActionsForOrg,
-  FigmaFinancialEvent,
-  FigmaCostCenter,
-  FigmaContinuousAction
-} from '../../services/adapters';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../ui/select';
 
 type Props = {
   formData: TransactionFormData;
@@ -18,43 +19,24 @@ type Props = {
 };
 
 export function WizardStep4_FinancialEvent({ formData, updateFormData }: Props) {
-  const [financialEvents, setFinancialEvents] = useState<FigmaFinancialEvent[]>([]);
   const [costCenters, setCostCenters] = useState<FigmaCostCenter[]>([]);
-  const [continuousActions, setContinuousActions] = useState<FigmaContinuousAction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Load data on mount and when org context changes
-  // Cost centers and continuous actions use org-filtered APIs from Hesabdary Information.xlsx
-  // Load data on mount and when org context changes
-  // Cost centers use org-filtered APIs from Hesabdary Information.xlsx
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
       setError(null);
 
       try {
-        // MOCK: Financial events (hardcoded for now as per user request)
-        const mockEvents: FigmaFinancialEvent[] = [
-          { id: 1, code: '101', name: 'خرید متوسط' },
-          { id: 2, code: '102', name: 'ترک تشریفات' }
-        ];
-        setFinancialEvents(mockEvents);
-
-        // Cost centers use org-filtered endpoints
-        // MOCK: Hardcoded data to unblock wizard flow
-        const MOCK_COST_CENTERS = [
+        // MOCK: Hardcoded data to unblock wizard flow.
+        const mockCostCenters: FigmaCostCenter[] = [
           { id: 1, code: '201', name: 'مرکز هزینه ستاد مرکزی' },
           { id: 2, code: '202', name: 'مرکز هزینه منطقه ۱ - امور شهری' },
-          { id: 3, code: '203', name: 'مرکز هزینه منطقه ۱ - عمرانی' }
+          { id: 3, code: '203', name: 'مرکز هزینه منطقه ۱ - عمرانی' },
         ];
 
-        // Filter mock data if needed, or just set all (for demo)
-        setCostCenters(MOCK_COST_CENTERS as FigmaCostCenter[]);
-
-        // Continuous Actions removed as per request
-        setContinuousActions([]);
-
+        setCostCenters(mockCostCenters);
       } catch (err) {
         console.error('Failed to load data:', err);
         setError('خطا در بارگیری اطلاعات');
@@ -66,37 +48,26 @@ export function WizardStep4_FinancialEvent({ formData, updateFormData }: Props) 
     loadData();
   }, [formData.zoneId, formData.departmentId, formData.sectionId]);
 
-  const handleFinancialEventChange = (eventId: string) => {
-    const event = financialEvents.find(e => e.id === parseInt(eventId));
-    if (event) {
-      updateFormData({
-        financialEventId: event.id,
-        financialEventCode: event.code,
-        financialEventName: event.name,
-      });
-    }
+  const handleFinancialEventChange = (eventValue: string) => {
+    const event = FINANCIAL_EVENTS.find((item) => item.value === eventValue);
+    if (!event) return;
+
+    updateFormData({
+      financialEventId: undefined,
+      financialEventCode: event.value,
+      financialEventName: event.label,
+    });
   };
 
   const handleCostCenterChange = (centerId: string) => {
-    const center = costCenters.find(c => c.id === parseInt(centerId));
-    if (center) {
-      updateFormData({
-        costCenterId: center.id,
-        costCenterCode: center.code,
-        costCenterName: center.name,
-      });
-    }
-  };
+    const center = costCenters.find((item) => item.id === Number.parseInt(centerId, 10));
+    if (!center) return;
 
-  const handleContinuousActionChange = (actionId: string) => {
-    const action = continuousActions.find(a => a.id === parseInt(actionId));
-    if (action) {
-      updateFormData({
-        continuousActionId: action.id,
-        continuousActionCode: action.code,
-        continuousActionName: action.name,
-      });
-    }
+    updateFormData({
+      costCenterId: center.id,
+      costCenterCode: center.code,
+      costCenterName: center.name,
+    });
   };
 
   if (loading) {
@@ -109,70 +80,58 @@ export function WizardStep4_FinancialEvent({ formData, updateFormData }: Props) 
   }
 
   if (error) {
-    return (
-      <div className="text-center py-12 text-red-600">
-        {error}
-      </div>
-    );
+    return <div className="py-12 text-center text-red-600">{error}</div>;
   }
 
   return (
     <div className="space-y-6">
       <div>
         <h3>رویداد مالی و مرکز هزینه</h3>
-        <p className="text-sm text-muted-foreground mt-1">
-          اطلاعات دسته‌بندی مالی تراکنش را مشخص کنید
+        <p className="mt-1 text-sm text-muted-foreground">
+          اطلاعات دسته بندی مالی تراکنش را مشخص کنید.
         </p>
       </div>
 
-      {/* Financial Event - Required */}
       <div className="space-y-3">
         <Label htmlFor="financialEvent">
           رویداد مالی <span className="text-destructive">*</span>
         </Label>
         <div className="relative">
-          <FileText className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
-          <Select
-            value={formData.financialEventId?.toString()}
-            onValueChange={handleFinancialEventChange}
-          >
+          <FileText className="absolute right-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Select value={formData.financialEventCode} onValueChange={handleFinancialEventChange}>
             <SelectTrigger id="financialEvent" className="pr-10">
               <SelectValue placeholder="انتخاب رویداد مالی" />
             </SelectTrigger>
             <SelectContent>
-              {financialEvents.map(event => (
-                <SelectItem key={event.id} value={event.id.toString()}>
-                  {event.name} (کد: {event.code})
+              {FINANCIAL_EVENTS.map((event) => (
+                <SelectItem key={event.value} value={event.value}>
+                  {event.label}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
-        <p className="text-xs text-muted-foreground">
-          نوع عملیات مالی که در حال انجام است
-        </p>
+        <p className="text-xs text-muted-foreground">نوع عملیات مالی که در حال انجام است.</p>
       </div>
 
-      {/* Cost Center - Required (from Hesabdary Information.xlsx) */}
       <div className="space-y-3">
         <Label htmlFor="costCenter">
           مرکز هزینه <span className="text-destructive">*</span>
         </Label>
         <div className="relative">
-          <Target className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
-          <Select
-            value={formData.costCenterId?.toString()}
-            onValueChange={handleCostCenterChange}
-          >
+          <Target className="absolute right-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Select value={formData.costCenterId?.toString()} onValueChange={handleCostCenterChange}>
             <SelectTrigger id="costCenter" className="pr-10">
-              <SelectValue placeholder={
-                costCenters.length === 0
-                  ? "مرکز هزینه‌ای برای این واحد یافت نشد"
-                  : "انتخاب مرکز هزینه"
-              } />
+              <SelectValue
+                placeholder={
+                  costCenters.length === 0
+                    ? 'مرکز هزینه‌ای برای این واحد یافت نشد'
+                    : 'انتخاب مرکز هزینه'
+                }
+              />
             </SelectTrigger>
             <SelectContent>
-              {costCenters.map(center => (
+              {costCenters.map((center) => (
                 <SelectItem key={center.id} value={center.id.toString()}>
                   {center.name}
                 </SelectItem>
@@ -181,16 +140,13 @@ export function WizardStep4_FinancialEvent({ formData, updateFormData }: Props) 
           </Select>
         </div>
         <p className="text-xs text-muted-foreground">
-          مرکز مسئول تحقق این هزینه (از فایل اطلاعات حسابداری)
+          مرکز مسئول تحقق این هزینه (از فایل اطلاعات حسابداری).
         </p>
       </div>
 
-      {/* Continuous Action Removed per request */}
-
-      {/* Summary */}
-      {formData.financialEventId && formData.costCenterId && (
-        <div className="bg-accent p-4 rounded-lg border border-border space-y-2">
-          <p className="text-sm text-muted-foreground">دسته‌بندی مالی:</p>
+      {formData.financialEventCode && formData.costCenterId && (
+        <div className="space-y-2 rounded-lg border border-border bg-accent p-4">
+          <p className="text-sm text-muted-foreground">دسته بندی مالی:</p>
           <div className="space-y-1 text-sm">
             <p>
               <span className="text-muted-foreground">رویداد مالی:</span>{' '}
@@ -200,16 +156,9 @@ export function WizardStep4_FinancialEvent({ formData, updateFormData }: Props) 
               <span className="text-muted-foreground">مرکز هزینه:</span>{' '}
               {formData.costCenterName}
             </p>
-            {formData.continuousActionName && (
-              <p>
-                <span className="text-muted-foreground">اقدام مستمر:</span>{' '}
-                {formData.continuousActionName}
-              </p>
-            )}
           </div>
         </div>
       )}
     </div>
   );
 }
-

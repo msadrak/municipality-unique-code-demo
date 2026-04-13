@@ -19,7 +19,7 @@ type User = {
   id: number;
   username: string;
   fullName: string;
-  role: 'user' | 'admin';
+  role: string;
 };
 
 type UserPortalProps = {

@@ -10,6 +10,7 @@ from app.auth_utils import hash_password
 
 def seed():
     print("Starting database seeding...")
+    models.Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     
     # Check if we already have users

@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+
+<html dir="rtl" lang="fa">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>ایجاد - مرحله ۱: اطلاعات پایه</title>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100..900&amp;display=swap" rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#135bec",
+                        "background-light": "#f8fafc",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        display: ["Vazirmatn", "Manrope", "sans-serif"],
+                        body: ["Vazirmatn", "Manrope", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.5rem",
+                        lg: "1rem",
+                        xl: "1.5rem",
+                        "2xl": "2rem",
+                        full: "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-background-light text-slate-900 min-h-screen flex flex-col overflow-x-hidden">
+    <!-- Top Navigation Bar -->
+    <header
+        class="flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 bg-white px-10 py-4 shadow-sm">
+        <div class="flex items-center gap-4 text-slate-900">
+            <div class="size-10 flex items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <span class="material-symbols-outlined text-2xl">account_balance</span>
+            </div>
+            <h2 class="text-slate-900 text-xl font-bold leading-tight tracking-[-0.015em]">سامانه مالی شهرداری</h2>
+        </div>
+        <div class="flex flex-1 justify-end gap-6 items-center">
+            <div class="flex items-center gap-3">
+                <div class="text-right hidden sm:block">
+                    <p class="text-sm font-bold text-slate-900">علی محمدی</p>
+                    <p class="text-xs text-slate-500">کارشناس مالی</p>
+                </div>
+                <div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border-2 border-slate-100"
+                    data-alt="User profile picture placeholder"
+                    style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBP3Uroj2Nh8QCda_HeXuOqSNcASUJOYHtE9GNPp4D0VhRyuo3rxfZ5FHeDyKGE4MEY19IOwr9_S26Ulze_Z1pPFCd_sUUYUZ4R0MMbW3WkarMIPut_DgwA_g832vFDVh5MOWfeNNgU_qpjL6UbYGpUYP9JuWUC4c3cvubodJLUPEBH-m-ch7JidPyR6X2oG4Qd8fpg8mRvAxpZgRbjQEiGE0PNa0S413mqffmwQnua6hgIv7rb9_5VdunPao0glAC1UTEEtEBzvK0");'>
+                </div>
+            </div>
+            <button
+                class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-10 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold transition-colors">
+                <span class="truncate ml-2">خروج</span>
+                <span class="material-symbols-outlined text-[18px]">logout</span>
+            </button>
+        </div>
+    </header>
+    <main class="flex-1 flex flex-col items-center py-10 px-4 sm:px-10">
+        <div class="w-full max-w-5xl flex flex-col gap-8">
+            <!-- Breadcrumbs / Stepper -->
+            <div class="w-full">
+                <div class="flex items-center justify-between w-full mb-8 relative">
+                    <!-- Progress Line -->
+                    <div class="absolute top-1/2 left-0 right-0 h-1 bg-slate-200 -z-10 -translate-y-1/2 rounded-full">
+                    </div>
+                    <!-- Steps -->
+                    <div class="flex flex-col items-center gap-2 bg-background-light px-2 z-10">
+                        <div
+                            class="size-10 rounded-full bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/30 border-4 border-background-light">
+                            <span class="material-symbols-outlined text-[20px]">assignment</span>
+                        </div>
+                        <span class="text-primary text-sm font-bold">اطلاعات پایه</span>
+                    </div>
+                    <div class="flex flex-col items-center gap-2 bg-background-light px-2 z-10 opacity-50">
+                        <div
+                            class="size-10 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center border-4 border-background-light">
+                            <span class="material-symbols-outlined text-[20px]">payments</span>
+                        </div>
+                        <span class="text-slate-500 text-sm font-medium">مبالغ کلان</span>
+                    </div>
+                    <div class="flex flex-col items-center gap-2 bg-background-light px-2 z-10 opacity-50">
+                        <div
+                            class="size-10 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center border-4 border-background-light">
+                            <span class="material-symbols-outlined text-[20px]">folder_special</span>
+                        </div>
+                        <span class="text-slate-500 text-sm font-medium">اطلاعات اختصاصی</span>
+                    </div>
+                    <div class="flex flex-col items-center gap-2 bg-background-light px-2 z-10 opacity-50">
+                        <div
+                            class="size-10 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center border-4 border-background-light">
+                            <span class="material-symbols-outlined text-[20px]">visibility</span>
+                        </div>
+                        <span class="text-slate-500 text-sm font-medium">پیش‌نمایش</span>
+                    </div>
+                </div>
+            </div>
+            <!-- Main Card -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                <!-- Header with abstract visual -->
+                <div class="relative h-32 bg-gradient-to-l from-primary/10 to-primary/5 p-6 flex items-center">
+                    <div class="absolute left-0 top-0 h-full w-full opacity-10"
+                        data-alt="Subtle geometric pattern background"
+                        style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCZF382YKMjgiTscIyxdtaTZmtiWWXALv6J93KSH63erNRTGHeSpxeANa7W3asNw2UPUNZzBuzaUpAdf61m3akyLXVreN9zVuU9eJTKroIfdA6ctyWK0P_mtVS6XFR23DYhEdRnoIX0NLPWZGEyZYQ03tX1IPEi6uk03WcR7qUFZdTawKY9G1A3uAyHoxGq5sHk4GCgMI3bcfB7G1Mo1shFMalgLxcQ-dxdfInLBWHc2k1WWoZgmjU-gyJipz0l6-vNr3u3dNTXO2o");'>
+                    </div>
+                    <div class="relative z-10">
+                        <h1 class="text-2xl font-bold text-slate-900 mb-2">مرحله ۱: اطلاعات پایه</h1>
+                        <p class="text-slate-500">لطفاً نوع و مشخصات اولیه صورت‌وضعیت را وارد نمایید.</p>
+                    </div>
+                </div>
+                <div class="p-8 flex flex-col gap-8">
+                    <!-- Type Selection Section -->
+                    <section>
+                        <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                            <span class="w-1 h-6 bg-primary rounded-full"></span>
+                            نوع صورت‌وضعیت
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <!-- Option 1: Temporary -->
+                            <label class="cursor-pointer group relative">
+                                <input checked="" class="peer sr-only" name="statement_type" type="radio"
+                                    value="temp" />
+                                <div
+                                    class="flex flex-col items-center justify-center gap-4 rounded-xl border-2 border-slate-200 bg-white p-6 transition-all hover:border-blue-300 hover:bg-blue-50 peer-checked:border-primary peer-checked:bg-blue-50/50 peer-checked:shadow-md">
+                                    <div
+                                        class="size-14 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center transition-colors peer-checked:bg-primary peer-checked:text-white">
+                                        <span class="material-symbols-outlined text-3xl">schedule</span>
+                                    </div>
+                                    <div class="text-center">
+                                        <h4 class="text-lg font-bold text-slate-900">موقت</h4>
+                                        <p class="text-sm text-slate-500 mt-1">صورت‌وضعیت علی‌الحساب</p>
+                                    </div>
+                                    <div
+                                        class="absolute top-4 right-4 text-primary opacity-0 transition-opacity peer-checked:opacity-100">
+                                        <span class="material-symbols-outlined">check_circle</span>
+                                    </div>
+                                </div>
+                            </label>
+                            <!-- Option 2: Final -->
+                            <label class="cursor-pointer group relative">
+                                <input class="peer sr-only" name="statement_type" type="radio" value="final" />
+                                <div
+                                    class="flex flex-col items-center justify-center gap-4 rounded-xl border-2 border-slate-200 bg-white p-6 transition-all hover:border-emerald-300 hover:bg-emerald-50 peer-checked:border-emerald-500 peer-checked:bg-emerald-50/50 peer-checked:shadow-md">
+                                    <div
+                                        class="size-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center transition-colors peer-checked:bg-emerald-500 peer-checked:text-white">
+                                        <span class="material-symbols-outlined text-3xl">verified</span>
+                                    </div>
+                                    <div class="text-center">
+                                        <h4 class="text-lg font-bold text-slate-900">قطعی</h4>
+                                        <p class="text-sm text-slate-500 mt-1">صورت‌وضعیت نهایی پروژه</p>
+                                    </div>
+                                    <div
+                                        class="absolute top-4 right-4 text-emerald-500 opacity-0 transition-opacity peer-checked:opacity-100">
+                                        <span class="material-symbols-outlined">check_circle</span>
+                                    </div>
+                                </div>
+                            </label>
+                            <!-- Option 3: Adjustment -->
+                            <label class="cursor-pointer group relative">
+                                <input class="peer sr-only" name="statement_type" type="radio" value="adjust" />
+                                <div
+                                    class="flex flex-col items-center justify-center gap-4 rounded-xl border-2 border-slate-200 bg-white p-6 transition-all hover:border-amber-300 hover:bg-amber-50 peer-checked:border-amber-500 peer-checked:bg-amber-50/50 peer-checked:shadow-md">
+                                    <div
+                                        class="size-14 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center transition-colors peer-checked:bg-amber-500 peer-checked:text-white">
+                                        <span class="material-symbols-outlined text-3xl">sync_alt</span>
+                                    </div>
+                                    <div class="text-center">
+                                        <h4 class="text-lg font-bold text-slate-900">تعدیل</h4>
+                                        <p class="text-sm text-slate-500 mt-1">محاسبه مابه‌التفاوت نرخ</p>
+                                    </div>
+                                    <div
+                                        class="absolute top-4 right-4 text-amber-500 opacity-0 transition-opacity peer-checked:opacity-100">
+                                        <span class="material-symbols-outlined">check_circle</span>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </section>
+                    <div class="h-px bg-slate-100 w-full my-2"></div>
+                    <!-- Input Fields Section -->
+                    <section>
+                        <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                            <span class="w-1 h-6 bg-primary rounded-full"></span>
+                            مشخصات سند
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Statement Number -->
+                            <div class="flex flex-col gap-2">
+                                <label class="text-sm font-semibold text-slate-700" for="statement_number">شماره
+                                    صورت‌وضعیت</label>
+                                <div class="relative">
+                                    <div
+                                        class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-400">
+                                        <span class="material-symbols-outlined">tag</span>
+                                    </div>
+                                    <input
+                                        class="form-input block w-full rounded-lg border-slate-200 bg-slate-50 pr-10 focus:border-primary focus:ring-primary sm:text-sm h-12"
+                                        id="statement_number" placeholder="مثال: 1402/001" type="text" />
+                                </div>
+                                <p class="text-xs text-slate-400">شماره باید یکتا باشد.</p>
+                            </div>
+                            <!-- Date Picker -->
+                            <div class="flex flex-col gap-2">
+                                <label class="text-sm font-semibold text-slate-700" for="statement_date">تاریخ
+                                    صورت‌وضعیت</label>
+                                <div class="relative">
+                                    <div
+                                        class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-slate-400">
+                                        <span class="material-symbols-outlined">calendar_today</span>
+                                    </div>
+                                    <input
+                                        class="form-input block w-full rounded-lg border-slate-200 bg-slate-50 pr-10 focus:border-primary focus:ring-primary sm:text-sm h-12"
+                                        id="statement_date" placeholder="1402/01/01" type="text" />
+                                </div>
+                                <p class="text-xs text-slate-400">تاریخ پایان دوره کارکرد را وارد کنید.</p>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+                <!-- Footer Actions -->
+                <div class="bg-slate-50 px-8 py-5 border-t border-slate-100 flex items-center justify-between">
+                    <button
+                        class="text-slate-500 font-medium hover:text-slate-700 transition-colors px-4 py-2 rounded-lg hover:bg-slate-100">
+                        انصراف
+                    </button>
+                    <button
+                        class="flex items-center gap-2 bg-primary hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-xl shadow-lg shadow-primary/30 transition-all hover:scale-[1.02]">
+                        <span>مرحله بعد</span>
+                        <span class="material-symbols-outlined text-[20px] rotate-180">arrow_right_alt</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+
+</html>

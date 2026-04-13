@@ -93,6 +93,25 @@ from .statement import (
     StatementFinancialSummary,
 )
 
+# HR Funding Request schemas
+from .funding_workflow import (
+    FundingRequestCreate,
+    FundingRequestUpdate,
+    FundingRequestResponse,
+    AdvanceRequest,
+    FundingWorkflowLogResponse,
+)
+from .attendance import (
+    AttendanceAggregationItem,
+    AttendanceAggregationOut,
+    AttendanceReconciliationOut,
+    AttendanceRecordOut,
+    AttendanceSheetOut,
+    SheetMetaSummary,
+    WorkflowStatusLabel,
+    WorkflowTransitionRequest,
+)
+
 __all__ = [
     # Budget schemas
     "BudgetStatus",
@@ -160,5 +179,19 @@ __all__ = [
     "StatementListItem",
     "StatementListResponse",
     "StatementFinancialSummary",
+    # HR Funding Request schemas
+    "FundingRequestCreate",
+    "FundingRequestUpdate",
+    "FundingRequestResponse",
+    "AdvanceRequest",
+    "FundingWorkflowLogResponse",
+    "AttendanceAggregationItem",
+    "AttendanceAggregationOut",
+    "AttendanceReconciliationOut",
+    "AttendanceRecordOut",
+    "AttendanceSheetOut",
+    "SheetMetaSummary",
+    "WorkflowStatusLabel",
+    "WorkflowTransitionRequest",
 ]
 
