@@ -1,134 +1,122 @@
-﻿"""
-Seed script: Create/Update test users with proper Argon2 password hashes.
-
-This script is IDEMPOTENT:
-- If users exist, updates their passwords with fresh Argon2 hashes
-- If users don't exist, creates them
-
-Usage:
-    python seed_users.py
-"""
+from __future__ import annotations
 
 import sys
-sys.path.insert(0, '.')
+from pathlib import Path
 
+from sqlalchemy import inspect
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from app.core.security import get_password_hash
 from app.database import SessionLocal, engine
-from app.models import Base, User, OrgUnit
-from app.auth_utils import hash_password
+from app.models import Base, User, UserRole
+from app.utils.constants import AUTHORIZED_REGIONS
 
-# Ensure tables exist
-Base.metadata.create_all(bind=engine)
-
-# Test users to seed
-TEST_USERS = [
-    {
-        "username": "test_user",
-        "password": "user123",
-        "full_name": "کاربر آزمایشی",
-        "role": "user",
-    },
-    {
-        "username": "admin",
-        "password": "admin123",
-        "full_name": "مدیر سیستم",
-        "role": "admin",
-    },
-    {
-        "username": "gm_hc",
-        "password": "hr123456",
-        "full_name": "مدیرکل سرمایه انسانی",
-        "role": "GM_HC",
-    },
-    {
-        "username": "vp_planning",
-        "password": "hr123456",
-        "full_name": "معاون برنامه‌ریزی",
-        "role": "VP_PLANNING",
-    },
-    {
-        "username": "vp_finance",
-        "password": "hr123456",
-        "full_name": "معاون مالی",
-        "role": "VP_FINANCE",
-    },
-    {
-        "username": "welfare_dept",
-        "password": "hr123456",
-        "full_name": "کارشناس اداره رفاه",
-        "role": "WELFARE_DEPT",
-    },
-    {
-        "username": "finance_unit",
-        "password": "hr123456",
-        "full_name": "کارشناس واحد مالی",
-        "role": "FINANCE_UNIT",
-    },
-    {
-        "username": "isfahan_card",
-        "password": "hr123456",
-        "full_name": "اپراتور اصفهان کارت",
-        "role": "ISFAHAN_CARD",
-    },
-]
+DEFAULT_PASSWORD = "123456"
 
 
-def seed_users():
-    print("=" * 60)
-    print("SEED USERS - Argon2 Password Hashing")
-    print("=" * 60)
+def ensure_user_schema() -> None:
+    Base.metadata.create_all(bind=engine)
+
+    inspector = inspect(engine)
+    if not inspector.has_table("users"):
+        return
+
+    existing_columns = {column["name"] for column in inspector.get_columns("users")}
+    if "region_name" in existing_columns:
+        return
+
+    with engine.begin() as connection:
+        connection.exec_driver_sql("ALTER TABLE users ADD COLUMN region_name VARCHAR(128)")
+
+
+def build_seed_payload() -> list[dict[str, str | None]]:
+    region_users = [
+        {
+            "username": region_name,
+            "full_name": region_name,
+            "role": UserRole.REGION_USER.value,
+            "region_name": region_name,
+        }
+        for region_name in AUTHORIZED_REGIONS
+    ]
+
+    special_users = [
+        {
+            "username": "niroumand",
+            "full_name": "نیرومند",
+            "role": UserRole.SECURITY_AGGREGATOR.value,
+            "region_name": None,
+        },
+        {
+            "username": "contractor",
+            "full_name": "پیمانکار",
+            "role": UserRole.CONTRACTOR.value,
+            "region_name": None,
+        },
+        {
+            "username": "bahadori",
+            "full_name": "بهادری",
+            "role": UserRole.SECURITY_DIRECTOR.value,
+            "region_name": None,
+        },
+    ]
+
+    return [*region_users, *special_users]
+
+
+def seed_users() -> None:
+    ensure_user_schema()
+
+    seed_payload = build_seed_payload()
+    created_count = 0
+    skipped_count = 0
 
     db = SessionLocal()
-
     try:
-        zone = db.query(OrgUnit).filter(OrgUnit.org_type == "zone").first()
-        section = db.query(OrgUnit).filter(OrgUnit.org_type == "section").first()
+        for item in seed_payload:
+            username = str(item["username"]).strip()
+            existing_user = db.query(User).filter(User.username == username).first()
+            if existing_user:
+                existing_user.hashed_password = get_password_hash(DEFAULT_PASSWORD)
+                existing_user.full_name = item["full_name"]
+                existing_user.role = str(item["role"])
+                existing_user.region_name = item["region_name"]
+                existing_user.is_active = True
+                print(f"UPDATE  {username}")
+                continue
 
-        for user_data in TEST_USERS:
-            username = user_data["username"]
-            password = user_data["password"]
-            existing = db.query(User).filter(User.username == username).first()
-            new_hash = hash_password(password)
-
-            if existing:
-                print(f"Updating user: {username}")
-                existing.password_hash = new_hash
-                existing.full_name = user_data["full_name"]
-                existing.role = user_data["role"]
-                existing.is_active = True
-                if zone:
-                    existing.default_zone_id = zone.id
-                if section:
-                    existing.default_section_id = section.id
-            else:
-                print(f"Creating user: {username}")
-                new_user = User(
+            db.add(
+                User(
                     username=username,
-                    password_hash=new_hash,
-                    full_name=user_data["full_name"],
-                    role=user_data["role"],
+                    hashed_password=get_password_hash(DEFAULT_PASSWORD),
+                    full_name=item["full_name"],
+                    role=str(item["role"]),
+                    region_name=item["region_name"],
                     is_active=True,
-                    default_zone_id=zone.id if zone else None,
-                    default_section_id=section.id if section else None,
+                    failed_attempts=0,
                 )
-                db.add(new_user)
+            )
+            created_count += 1
+            print(f"CREATE  {username}")
 
         db.commit()
-        print("\n" + "=" * 60)
-        print("All users seeded successfully!")
-        print(f"Zone assigned: {zone.title if zone else 'None'}")
-        print(f"Section assigned: {section.title if section else 'None'}")
-        print("=" * 60)
-
-        print("\nLogin Credentials:")
-        for u in TEST_USERS:
-            print(f"Username: {u['username']} | Password: {u['password']} | Role: {u['role']}")
-
-    except Exception as e:
+    except Exception:
         db.rollback()
-        print(f"Error: {e}")
         raise
     finally:
         db.close()
+
+    print("-" * 72)
+    print(f"Created: {created_count}")
+    print(f"Skipped: {skipped_count}")
+    print(f"Total target users: {len(seed_payload)}")
+    print(f"Default password: {DEFAULT_PASSWORD}")
 
 
 if __name__ == "__main__":
