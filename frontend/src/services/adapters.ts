@@ -127,7 +127,7 @@ export function adaptTransaction(backend: any): FigmaTransaction {
 
     return {
         id: backend.id,
-        uniqueCode: backend.unique_code || '',
+        uniqueCode: backend.unique_code || backend.tracking_number || '',
         beneficiaryName: backend.beneficiary_name || '',
         amount: backend.amount || 0,
         status: status,

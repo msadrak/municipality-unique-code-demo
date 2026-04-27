@@ -180,7 +180,7 @@ export default function SecurityAggregationDashboard() {
             <select
               value={statusFilter}
               onChange={(event) => setStatusFilter(event.target.value)}
-              className="flex h-10 min-w-0 rounded-md border border-input bg-transparent px-3 py-2 text-sm text-right shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              className="flex h-10 min-w-0 rounded-md border border-input bg-white px-3 py-2 text-sm text-right text-slate-900 shadow-xs outline-none transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
             >
               <option value="">همه وضعیت‌ها</option>
               <option value="DRAFT">پیش‌نویس</option>

@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   FileText,
   List,
@@ -31,6 +32,7 @@ type UserPortalProps = {
 type View = 'wizard' | 'my-transactions' | 'credit-requests';
 
 export function UserPortal({ user, onLogout, onNavigateToPublic }: UserPortalProps) {
+  const [searchParams] = useSearchParams();
   const [currentView, setCurrentView] = useState<View>('wizard');
   const [wizardKey, setWizardKey] = useState(0);
 
@@ -41,11 +43,21 @@ export function UserPortal({ user, onLogout, onNavigateToPublic }: UserPortalPro
 
   const userContext = dashboardData?.user_context;
   const subsystem = dashboardData?.subsystem;
+  const requestedView = searchParams.get('view');
+  const highlightedTransactionId = Number(searchParams.get('transactionId') || 0) || undefined;
+  const handoffSource = searchParams.get('source');
+  const handoffPeriod = searchParams.get('period');
 
   useEffect(() => {
     fetchDashboardInit();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (requestedView === 'wizard' || requestedView === 'my-transactions' || requestedView === 'credit-requests') {
+      setCurrentView(requestedView);
+    }
+  }, [requestedView]);
 
   const handleNewTransaction = useCallback(() => {
     closeWizard();
@@ -212,11 +224,22 @@ export function UserPortal({ user, onLogout, onNavigateToPublic }: UserPortalPro
 
       {/* ── Main Content ────────────────────────────────────── */}
       <div>
+        {handoffSource === 'attendance' && currentView === 'my-transactions' && highlightedTransactionId && (
+          <div className="mb-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900">
+            پرونده حضور و غیاب {handoffPeriod ? `دوره ${handoffPeriod}` : ''} با شناسه مالی {highlightedTransactionId} به گردش مالی ارجاع شده است.
+          </div>
+        )}
+
         {currentView === 'wizard' && (
           <TransactionWizard key={wizardKey} userId={user.id} />
         )}
 
-        {currentView === 'my-transactions' && <MyTransactionsList userId={user.id} />}
+        {currentView === 'my-transactions' && (
+          <MyTransactionsList
+            userId={user.id}
+            highlightTransactionId={highlightedTransactionId}
+          />
+        )}
 
         {currentView === 'credit-requests' && (
           <CreditRequestManager

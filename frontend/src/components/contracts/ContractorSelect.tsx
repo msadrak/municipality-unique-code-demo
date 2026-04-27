@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Check, ChevronsUpDown, Loader2, User } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Check, ChevronsUpDown, Loader2, Plus, User } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { Button } from '../ui/button';
 import {
     Command,
     CommandEmpty,
@@ -183,7 +185,19 @@ export function ContractorSelect({ value, onChange }: ContractorSelectProps) {
 
                         {/* Empty */}
                         {!loading && !error && filteredContractors.length === 0 && (
-                            <CommandEmpty>پیمانکاری یافت نشد</CommandEmpty>
+                            <CommandEmpty className="text-muted-foreground flex flex-col items-center gap-3 py-8">
+                                <span>
+                                    {searchTerm.trim()
+                                        ? 'پیمانکاری با این مشخصات یافت نشد'
+                                        : 'هیچ پیمانکاری در سامانه ثبت نشده است'}
+                                </span>
+                                <Button asChild variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
+                                    <Link to="/contractor-auth">
+                                        <Plus className="h-3.5 w-3.5" />
+                                        ثبت پیمانکار جدید
+                                    </Link>
+                                </Button>
+                            </CommandEmpty>
                         )}
 
                         {/* Results */}

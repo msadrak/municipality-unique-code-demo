@@ -5,6 +5,8 @@ export interface User {
     username: string;
     full_name: string;
     role: string;
+    region_name?: string | null;
+    is_active?: boolean;
     admin_level?: number;
     zone_id?: number;
     dept_id?: number;
@@ -12,8 +14,11 @@ export interface User {
 }
 
 export interface AuthResponse {
-    authenticated: boolean;
-    user?: User;
+    access_token: string;
+    token_type: string;
+    role: string;
+    region_name?: string | null;
+    user: User;
 }
 
 export interface LoginRequest {

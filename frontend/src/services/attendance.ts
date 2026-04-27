@@ -2,6 +2,7 @@ import api from './api';
 
 export interface AttendanceRecord {
   id: number;
+  sheet_id: number;
   row_number: number;
   location?: string | null;
   full_name: string;
@@ -31,8 +32,10 @@ export interface AttendanceSheet {
   original_filename: string;
   row_count: number;
   status: string;
+  rejection_reason?: string | null;
   created_at: string;
   records: AttendanceRecord[];
+  attachments: AttachmentMeta[];
 }
 
 export interface AttendanceTransitionPayload {
@@ -70,14 +73,50 @@ export interface AttendanceAggregationResponse {
   items: AttendanceAggregationItem[];
 }
 
-export interface AttendanceReconciliation {
+export interface PenaltyRecord {
+  id: number;
+  work_period_id: number;
+  description: string;
+  count: number;
+  unit_amount: number;
+  total_amount: number;
+}
+
+export interface WorkPeriodReconciliation {
   year: number;
   month: number;
-  region_name: string;
+  status: string;
   region_total: number;
   contractor_total: number;
-  difference: number;
-  is_matched: boolean;
+  total_penalties_amount: number;
+  final_payable_amount: number;
+  financial_transaction_id?: number | null;
+  financial_transaction_status?: string | null;
+  financial_tracking_number?: string | null;
+  financial_unique_code?: string | null;
+  penalties: PenaltyRecord[];
+}
+
+export interface WorkPeriodStatus {
+  status: string;
+  total_uploaded: number;
+  uploaded_regions: string[];
+  missing_regions: string[];
+}
+
+export interface WorkPeriodApprovalResponse {
+  success: boolean;
+  status: string;
+  message: string;
+  financial_transaction_id?: number | null;
+  financial_transaction_status?: string | null;
+  financial_tracking_number?: string | null;
+}
+
+export interface CreatePenaltyPayload {
+  description: string;
+  count: number;
+  unit_amount: number;
 }
 
 export async function fetchAttendanceSheets(): Promise<AttendanceSheet[]> {
@@ -134,12 +173,123 @@ export async function fetchAttendanceAggregation(params?: {
   return api.get<AttendanceAggregationResponse>('/api/attendance/reports/aggregation', params);
 }
 
-export async function fetchAttendanceReconciliation(
+export async function fetchWorkPeriodReconciliation(
+  year: number,
+  month: number,
+): Promise<WorkPeriodReconciliation> {
+  return api.get<WorkPeriodReconciliation>(
+    `/api/attendance/work-periods/${year}/${month}/reconciliation`,
+  );
+}
+
+export async function fetchWorkPeriodStatus(
+  year: number,
+  month: number,
+): Promise<WorkPeriodStatus> {
+  return api.get<WorkPeriodStatus>(`/api/attendance/work-periods/${year}/${month}/status`);
+}
+
+export async function approveWorkPeriodAggregation(
+  year: number,
+  month: number,
+): Promise<WorkPeriodApprovalResponse> {
+  return api.post<WorkPeriodApprovalResponse>(
+    `/api/attendance/work-periods/${year}/${month}/approve-aggregation`,
+    {},
+  );
+}
+
+export async function createPenaltyRecord(
+  year: number,
+  month: number,
+  payload: CreatePenaltyPayload,
+): Promise<PenaltyRecord> {
+  return api.post<PenaltyRecord>(
+    `/api/attendance/work-periods/${year}/${month}/penalties`,
+    payload,
+  );
+}
+
+export async function finalizeWorkPeriod(
+  year: number,
+  month: number,
+): Promise<WorkPeriodApprovalResponse> {
+  return api.post<WorkPeriodApprovalResponse>(
+    `/api/attendance/work-periods/${year}/${month}/finalize`,
+    {},
+  );
+}
+
+export async function generateUniqueCode(
+  _year?: number,
+  _month?: number,
+): Promise<WorkPeriodApprovalResponse> {
+  throw new Error('Direct unique-code generation is removed. Continue in the finance dashboard.');
+}
+
+export interface AttendanceAuditLog {
+  id: number;
+  record_id: number;
+  changed_by_user_id?: number | null;
+  changed_by_full_name?: string | null;
+  field_name: string;
+  old_value: string;
+  new_value: string;
+  created_at: string;
+}
+
+export async function fetchRegionAttendanceRecords(
   year: number,
   month: number,
   regionName: string,
-): Promise<AttendanceReconciliation> {
-  return api.get<AttendanceReconciliation>(
-    `/api/attendance/reconciliation/${year}/${month}/${encodeURIComponent(regionName)}`,
-  );
+): Promise<AttendanceRecord[]> {
+  return api.get<AttendanceRecord[]>(`/api/attendance/work-periods/${year}/${month}/regions/${encodeURIComponent(regionName)}/records`);
+}
+
+export async function updateAttendanceRecord(
+  recordId: number,
+  payload: Partial<AttendanceRecord>,
+): Promise<AttendanceRecord> {
+  return api.patch<AttendanceRecord>(`/api/attendance/records/${recordId}`, payload);
+}
+
+export async function fetchAttendanceAuditLogs(
+  recordId: number,
+): Promise<AttendanceAuditLog[]> {
+  return api.get<AttendanceAuditLog[]>(`/api/attendance/records/${recordId}/audit-logs`);
+}
+
+export async function rejectAttendanceSheet(
+  sheetId: number,
+  payload: { reason: string },
+): Promise<AttendanceSheet> {
+  return api.post<AttendanceSheet>(`/api/attendance/sheets/${sheetId}/reject`, payload);
+}
+
+// ---------------------------------------------------------------------------
+// Attachments (PDF / Image invoice documents)
+// ---------------------------------------------------------------------------
+
+export interface AttachmentMeta {
+  id: number;
+  sheet_id: number;
+  file_path: string;
+  file_name: string;
+  file_type: 'pdf' | 'image';
+  created_at: string;
+}
+
+export async function uploadSheetAttachments(
+  sheetId: number,
+  files: File[],
+): Promise<AttachmentMeta[]> {
+  const formData = new FormData();
+  for (const file of files) {
+    formData.append('files', file);
+  }
+  return api.postForm<AttachmentMeta[]>(`/api/attendance/sheets/${sheetId}/attachments`, formData);
+}
+
+export async function fetchSheetAttachments(sheetId: number): Promise<AttachmentMeta[]> {
+  return api.get<AttachmentMeta[]>(`/api/attendance/sheets/${sheetId}/attachments`);
 }

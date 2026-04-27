@@ -13,9 +13,13 @@ import { MyFundingRequestsV2 } from '../components/funding/MyFundingRequestsV2';
 import { FundingManagerInboxV2 } from '../components/funding/FundingManagerInboxV2';
 import {
     canAccessCivilModule,
-    canAccessAttendanceAggregationDashboard,
-    canAccessAttendanceModule,
+    canAccessAttendanceInbox,
+    canAccessFinanceWorkflow,
     canAccessHrModule,
+    canAccessSecurityAggregation,
+    canAccessSecurityReconciliation,
+    canUploadContractorStatement,
+    canUploadRegionalAttendance,
     canSeeFundingArchive,
 } from '../components/funding/workflow';
 import { useAuthStore } from '../stores/useAuthStore';
@@ -36,11 +40,14 @@ import {
 } from '../pages';
 import RegionalAttendanceUpload from '../pages/attendance/RegionalAttendanceUpload';
 import ContractorStatementUpload from '../pages/attendance/ContractorStatementUpload';
+import AggregationDashboard from '../pages/attendance/AggregationDashboard';
 import AttendanceInbox from '../pages/attendance/AttendanceInbox';
 import AttendanceDetail from '../pages/attendance/AttendanceDetail';
-import ReconciliationDashboard from '../pages/attendance/ReconciliationDashboard';
+import SecurityReconciliationDashboard from '../pages/attendance/SecurityReconciliationDashboard';
 import LetterArchive from '../pages/funding/LetterArchive';
-import SecurityAggregationDashboard from '../pages/SecurityAggregationDashboard';
+import HRFinanceWizard from '../pages/hr/HRFinanceWizard';
+import MockPage from '../pages/MockPage';
+import { CivilProjectDetail } from '../pages/civil/CivilProjectDetail';
 
 /**
  * Application routes configuration
@@ -95,7 +102,7 @@ export const router = createBrowserRouter(
                 {
                     path: '/portal',
                     element: (
-                        <DomainRoute allow={canAccessCivilModule}>
+                        <DomainRoute allow={canAccessFinanceWorkflow}>
                             <UserPortalPage />
                         </DomainRoute>
                     ),
@@ -140,6 +147,15 @@ export const router = createBrowserRouter(
                     element: (
                         <DomainRoute allow={canAccessCivilModule}>
                             <ContractDetails />
+                        </DomainRoute>
+                    ),
+                },
+                // Civil Project Detail (Dynamic Dossier)
+                {
+                    path: '/civil/projects/:id',
+                    element: (
+                        <DomainRoute allow={canAccessCivilModule}>
+                            <CivilProjectDetail />
                         </DomainRoute>
                     ),
                 },
@@ -207,7 +223,7 @@ export const router = createBrowserRouter(
                 {
                     path: '/region/attendance/upload',
                     element: (
-                        <DomainRoute allow={canAccessAttendanceModule}>
+                        <DomainRoute allow={canUploadRegionalAttendance}>
                             <RegionalAttendanceUpload />
                         </DomainRoute>
                     ),
@@ -215,7 +231,7 @@ export const router = createBrowserRouter(
                 {
                     path: '/contractor/statement/upload',
                     element: (
-                        <DomainRoute allow={canAccessAttendanceModule}>
+                        <DomainRoute allow={canUploadContractorStatement}>
                             <ContractorStatementUpload />
                         </DomainRoute>
                     ),
@@ -223,7 +239,7 @@ export const router = createBrowserRouter(
                 {
                     path: '/attendance/inbox',
                     element: (
-                        <DomainRoute allow={canAccessAttendanceModule}>
+                        <DomainRoute allow={canAccessAttendanceInbox}>
                             <AttendanceInbox />
                         </DomainRoute>
                     ),
@@ -231,24 +247,64 @@ export const router = createBrowserRouter(
                 {
                     path: '/attendance/:id',
                     element: (
-                        <DomainRoute allow={canAccessAttendanceModule}>
+                        <DomainRoute allow={canAccessAttendanceInbox}>
                             <AttendanceDetail />
                         </DomainRoute>
                     ),
                 },
                 {
-                    path: '/security/reconciliation',
+                    path: '/attendance/security-reconciliation',
                     element: (
-                        <DomainRoute allow={canAccessAttendanceAggregationDashboard}>
-                            <ReconciliationDashboard />
+                        <DomainRoute allow={canAccessSecurityReconciliation}>
+                            <SecurityReconciliationDashboard />
                         </DomainRoute>
                     ),
                 },
                 {
                     path: '/security/aggregation',
                     element: (
-                        <DomainRoute allow={canAccessAttendanceAggregationDashboard}>
-                            <SecurityAggregationDashboard />
+                        <DomainRoute allow={canAccessSecurityAggregation}>
+                            <AggregationDashboard />
+                        </DomainRoute>
+                    ),
+                },
+                {
+                    path: '/hr/nowruz',
+                    element: (
+                        <DomainRoute allow={canAccessSecurityReconciliation}>
+                            <MockPage />
+                        </DomainRoute>
+                    ),
+                },
+                {
+                    path: '/hr/war-hq',
+                    element: (
+                        <DomainRoute allow={canAccessSecurityReconciliation}>
+                            <MockPage />
+                        </DomainRoute>
+                    ),
+                },
+                {
+                    path: '/hr/workflow',
+                    element: (
+                        <DomainRoute allow={canAccessSecurityReconciliation}>
+                            <MockPage />
+                        </DomainRoute>
+                    ),
+                },
+                {
+                    path: '/hr/volumetric-forces',
+                    element: (
+                        <DomainRoute allow={canAccessSecurityReconciliation}>
+                            <MockPage />
+                        </DomainRoute>
+                    ),
+                },
+                {
+                    path: '/hr-finance/workflow/:transactionId',
+                    element: (
+                        <DomainRoute allow={canAccessSecurityReconciliation}>
+                            <HRFinanceWizard />
                         </DomainRoute>
                     ),
                 },

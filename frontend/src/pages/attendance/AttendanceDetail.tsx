@@ -3,24 +3,22 @@ import { AlertCircle, CheckCircle2, FileSpreadsheet, Loader2, XCircle } from 'lu
 import { toast } from 'sonner';
 import { useNavigate, useParams } from 'react-router-dom';
 
+import { canTransitionAttendanceSheet } from '../../components/funding/workflow';
 import { Alert, AlertDescription, AlertTitle } from '../../components/ui/alert';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import { Textarea } from '../../components/ui/textarea';
-import {
-  AttendanceSheet,
-  fetchAttendanceSheet,
-  transitionAttendanceSheet,
-} from '../../services/attendance';
-import { useUIStore } from '../../stores/useUIStore';
 import { cn } from '../../components/ui/utils';
+import { AttendanceSheet, fetchAttendanceSheet, transitionAttendanceSheet } from '../../services/attendance';
+import { useAuthStore } from '../../stores/useAuthStore';
+import { useUIStore } from '../../stores/useUIStore';
 
 const STATUS_LABELS: Record<string, string> = {
   DRAFT: 'پیش‌نویس',
   CREATOR_APPROVED: 'تایید ثبت‌کننده',
-  COMPANY_REP_APPROVED: 'تایید نماینده',
+  COMPANY_REP_APPROVED: 'تایید پیمانکار',
   SECURITY_APPROVED: 'تایید حراست',
   GM_APPROVED: 'تایید نهایی',
   NEEDS_CORRECTION: 'نیازمند اصلاح',
@@ -48,13 +46,14 @@ function formatNumber(value?: string | number | null) {
 export default function AttendanceDetail() {
   const params = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const currentRole = useAuthStore((state) => state.user?.role);
+  const { isSidebarExpanded } = useUIStore();
+
   const [sheet, setSheet] = useState<AttendanceSheet | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [submittingAction, setSubmittingAction] = useState<'approve' | 'reject' | null>(null);
-
-  const { isSidebarExpanded } = useUIStore();
 
   const sheetId = Number(params.id);
 
@@ -100,10 +99,8 @@ export default function AttendanceDetail() {
         rejection_reason: action === 'reject' ? rejectionReason.trim() : undefined,
       });
       setSheet(updatedSheet);
-      if (action === 'reject') {
-        setRejectionReason('');
-      }
-      toast.success(action === 'approve' ? 'شیت با موفقیت تایید شد.' : 'شیت با موفقیت رد شد.');
+      setRejectionReason('');
+      toast.success(action === 'approve' ? 'شیت با موفقیت تایید شد.' : 'شیت برای اصلاح برگشت داده شد.');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'انجام عملیات ناموفق بود.';
       setError(message);
@@ -154,6 +151,8 @@ export default function AttendanceDetail() {
     return null;
   }
 
+  const canManageCurrentSheet = canTransitionAttendanceSheet(currentRole, sheet.status);
+
   return (
     <div className="space-y-6 pb-36">
       <Card className="border-slate-200 shadow-sm">
@@ -179,7 +178,7 @@ export default function AttendanceDetail() {
           </div>
           <div className="rounded-2xl bg-slate-50 p-4 text-right">
             <div className="text-xs text-slate-500">تعداد ردیف</div>
-            <div className="mt-2 font-mono text-lg font-semibold text-slate-900">{sheet.row_count}</div>
+            <div className="mt-2 text-lg font-semibold text-slate-900">{formatNumber(sheet.row_count)}</div>
           </div>
           <div className="rounded-2xl bg-slate-50 p-4 text-right">
             <div className="text-xs text-slate-500">وضعیت</div>
@@ -201,13 +200,21 @@ export default function AttendanceDetail() {
         </Alert>
       ) : null}
 
+      {sheet.rejection_reason ? (
+        <Alert className="border-orange-200 bg-orange-50 text-orange-900">
+          <AlertCircle className="h-4 w-4 text-orange-700" />
+          <AlertTitle>علت ارجاع یا رد فایل</AlertTitle>
+          <AlertDescription className="text-orange-800">{sheet.rejection_reason}</AlertDescription>
+        </Alert>
+      ) : null}
+
       <Card className="border-slate-200 shadow-sm">
         <CardHeader>
           <CardTitle className="text-lg font-semibold text-slate-900">ردیف‌های اکسل</CardTitle>
-          <CardDescription>خروجی parse‌شده فایل برای بازبینی قبل از تایید یا رد.</CardDescription>
+          <CardDescription>خروجی parse‌شده فایل برای بازبینی قبل از تایید یا ارجاع.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto w-full rounded-2xl border border-slate-200">
+          <div className="w-full overflow-x-auto rounded-2xl border border-slate-200">
             <Table>
               <TableHeader className="bg-slate-100/80">
                 <TableRow>
@@ -241,16 +248,16 @@ export default function AttendanceDetail() {
                 ) : (
                   sheet.records.map((record) => (
                     <TableRow key={record.id}>
-                      <TableCell className="whitespace-nowrap text-right font-mono">{record.row_number}</TableCell>
+                      <TableCell className="whitespace-nowrap text-right">{formatNumber(record.row_number)}</TableCell>
                       <TableCell className="whitespace-nowrap text-right">{record.location || '-'}</TableCell>
                       <TableCell className="whitespace-nowrap text-right font-medium text-slate-900">
                         {record.full_name}
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-right">{record.father_name || '-'}</TableCell>
-                      <TableCell className="whitespace-nowrap text-right font-mono">{record.national_id || '-'}</TableCell>
+                      <TableCell className="whitespace-nowrap text-right">{record.national_id || '-'}</TableCell>
                       <TableCell className="whitespace-nowrap text-right">{record.marital_status || '-'}</TableCell>
                       <TableCell className="whitespace-nowrap text-right">{formatNumber(record.children_count)}</TableCell>
-                      <TableCell className="whitespace-nowrap text-right font-mono">{record.start_date || '-'}</TableCell>
+                      <TableCell className="whitespace-nowrap text-right">{record.start_date || '-'}</TableCell>
                       <TableCell className="whitespace-nowrap text-right">{formatNumber(record.average_per_capita)}</TableCell>
                       <TableCell className="whitespace-nowrap text-right">{formatNumber(record.min_paid_hours)}</TableCell>
                       <TableCell className="whitespace-nowrap text-right">{formatNumber(record.max_paid_hours)}</TableCell>
@@ -264,9 +271,7 @@ export default function AttendanceDetail() {
                       <TableCell className="whitespace-nowrap text-right font-medium text-sky-700">
                         {formatNumber(record.total_overtime_given)}
                       </TableCell>
-                      <TableCell className="whitespace-nowrap text-right font-medium">
-                        {record.performance_balance || '-'}
-                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-right">{record.performance_balance || '-'}</TableCell>
                     </TableRow>
                   ))
                 )}
@@ -276,56 +281,58 @@ export default function AttendanceDetail() {
         </CardContent>
       </Card>
 
-      <div
-        className={cn(
-          "fixed bottom-0 left-0 z-40 border-t border-slate-200 bg-white/95 shadow-lg backdrop-blur transition-all duration-300",
-          isSidebarExpanded ? "right-72" : "right-20"
-        )}
-      >
-        <div className="flex w-full flex-col gap-4 px-6 py-4 lg:px-10">
-          <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
-            <div className="space-y-2 text-right">
-              <label className="text-sm font-medium text-slate-700" htmlFor="attendance-rejection-reason">
-                دلیل رد
-              </label>
-              <Textarea
-                id="attendance-rejection-reason"
-                value={rejectionReason}
-                onChange={(event) => setRejectionReason(event.target.value)}
-                placeholder="در صورت رد، دلیل را وارد کنید."
-                className="min-h-24 bg-slate-50"
-              />
-            </div>
-            <div className="flex items-center justify-start gap-3">
-              <Button
-                variant="destructive"
-                disabled={submittingAction !== null}
-                onClick={() => void handleTransition('reject')}
-                className="min-w-28"
-              >
-                {submittingAction === 'reject' ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <XCircle className="h-4 w-4" />
-                )}
-                رد
-              </Button>
-              <Button
-                disabled={submittingAction !== null}
-                onClick={() => void handleTransition('approve')}
-                className="min-w-28 bg-emerald-600 hover:bg-emerald-700"
-              >
-                {submittingAction === 'approve' ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <CheckCircle2 className="h-4 w-4" />
-                )}
-                تایید
-              </Button>
+      {canManageCurrentSheet ? (
+        <div
+          className={cn(
+            'fixed bottom-0 left-0 z-40 border-t border-slate-200 bg-white/95 shadow-lg backdrop-blur transition-all duration-300',
+            isSidebarExpanded ? 'right-72' : 'right-20',
+          )}
+        >
+          <div className="flex w-full flex-col gap-4 px-6 py-4 lg:px-10">
+            <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
+              <div className="space-y-2 text-right">
+                <label className="text-sm font-medium text-slate-700" htmlFor="attendance-rejection-reason">
+                  دلیل رد
+                </label>
+                <Textarea
+                  id="attendance-rejection-reason"
+                  value={rejectionReason}
+                  onChange={(event) => setRejectionReason(event.target.value)}
+                  placeholder="در صورت نیاز به اصلاح، توضیح لازم را ثبت کنید."
+                  className="min-h-24 bg-slate-50"
+                />
+              </div>
+              <div className="flex items-center justify-start gap-3">
+                <Button
+                  variant="destructive"
+                  disabled={submittingAction !== null}
+                  onClick={() => void handleTransition('reject')}
+                  className="min-w-28"
+                >
+                  {submittingAction === 'reject' ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <XCircle className="h-4 w-4" />
+                  )}
+                  رد
+                </Button>
+                <Button
+                  disabled={submittingAction !== null}
+                  onClick={() => void handleTransition('approve')}
+                  className="min-w-28 bg-emerald-600 hover:bg-emerald-700"
+                >
+                  {submittingAction === 'approve' ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="h-4 w-4" />
+                  )}
+                  تایید
+                </Button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      ) : null}
     </div>
   );
 }

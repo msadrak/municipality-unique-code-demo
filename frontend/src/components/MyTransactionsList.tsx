@@ -24,6 +24,7 @@ type Transaction = {
 
 type MyTransactionsListProps = {
   userId: number;
+  highlightTransactionId?: number;
 };
 
 type SortField = 'date' | 'amount' | 'status';
@@ -57,7 +58,7 @@ const isRejected = (status: string) => status === 'REJECTED' || status === 'reje
 const isPending = (status: string) => status.startsWith('PENDING_') || status === 'pending';
 const isApproved = (status: string) => status === 'APPROVED' || status === 'approved';
 
-export function MyTransactionsList({ userId }: MyTransactionsListProps) {
+export function MyTransactionsList({ userId, highlightTransactionId }: MyTransactionsListProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -210,7 +211,10 @@ export function MyTransactionsList({ userId }: MyTransactionsListProps) {
   };
 
   const renderTransactionCard = (tx: Transaction) => (
-    <Card key={tx.id} className="p-4 hover:shadow-md transition-shadow">
+    <Card
+      key={tx.id}
+      className={`p-4 transition-shadow ${highlightTransactionId === tx.id ? 'ring-2 ring-sky-400 shadow-lg shadow-sky-100' : 'hover:shadow-md'}`}
+    >
       <div className="space-y-3">
         {/* Header */}
         <div className="flex items-start justify-between gap-4">

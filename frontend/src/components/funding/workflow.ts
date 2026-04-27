@@ -5,6 +5,7 @@ export type FundingActionButton = {
 };
 
 const SYSTEM_ADMIN_PREFIXES = ['ADMIN_L'];
+
 const HR_ROLES = new Set([
   'GM_HC',
   'VP_PLANNING',
@@ -13,17 +14,22 @@ const HR_ROLES = new Set([
   'FINANCE_UNIT',
   'GM_FINANCE',
   'ISFAHAN_CARD',
-  'SECURITY_DIRECTOR',
-  'PAYROLL_MANAGER',
-  'OPERATOR',
-  'HR_ADMIN',
 ]);
+
 const ATTENDANCE_ROLES = new Set([
+  'REGION_USER',
+  'SECURITY_AGGREGATOR',
+  'CONTRACTOR',
   'SECURITY_DIRECTOR',
   'PAYROLL_MANAGER',
   'OPERATOR',
   'HR_ADMIN',
 ]);
+
+const REGION_UPLOAD_ROLES = new Set(['REGION_USER', 'OPERATOR']);
+const CONTRACTOR_UPLOAD_ROLES = new Set(['CONTRACTOR']);
+const SECURITY_AGGREGATION_ROLES = new Set(['SECURITY_AGGREGATOR', 'PAYROLL_MANAGER']);
+const SECURITY_RECONCILIATION_ROLES = new Set(['SECURITY_DIRECTOR']);
 
 export const STATUS_LABELS: Record<string, string> = {
   PENDING_VP_PLANNING: 'در انتظار تایید معاون برنامه‌ریزی',
@@ -46,6 +52,10 @@ export const STATUS_LABELS: Record<string, string> = {
 };
 
 export const ROLE_LABELS: Record<string, string> = {
+  REGION_USER: 'کاربر منطقه',
+  SECURITY_AGGREGATOR: 'تجمیع کارکرد مناطق',
+  CONTRACTOR: 'پیمانکار',
+  SECURITY_DIRECTOR: 'مدیر سیستم منابع انسانی',
   GM_HC: 'مدیرکل سرمایه انسانی',
   VP_PLANNING: 'معاون برنامه‌ریزی',
   VP_FINANCE: 'معاون مالی',
@@ -53,9 +63,9 @@ export const ROLE_LABELS: Record<string, string> = {
   FINANCE_UNIT: 'واحد مالی',
   GM_FINANCE: 'مدیرکل امور مالی',
   ISFAHAN_CARD: 'اصفهان کارت',
-  SECURITY_DIRECTOR: 'مدیر حراست',
   PAYROLL_MANAGER: 'مدیر حقوق و دستمزد',
   OPERATOR: 'اپراتور',
+  HR_ADMIN: 'کارشناس حضور و غیاب',
   ADMIN: 'ادمین سیستم',
 };
 
@@ -176,7 +186,13 @@ export function canAccessHrModule(role?: string | null): boolean {
 export function canAccessCivilModule(role?: string | null): boolean {
   const normalized = normalizeFundingRole(role);
   if (!normalized) return false;
-  return normalized === 'ADMIN' || !HR_ROLES.has(normalized);
+  return normalized === 'ADMIN' || (!HR_ROLES.has(normalized) && !ATTENDANCE_ROLES.has(normalized));
+}
+
+export function canAccessFinanceWorkflow(role?: string | null): boolean {
+  const normalized = normalizeFundingRole(role);
+  if (!normalized) return false;
+  return normalized === 'SECURITY_DIRECTOR' || canAccessCivilModule(role);
 }
 
 export function canAccessAttendanceModule(role?: string | null): boolean {
@@ -185,18 +201,63 @@ export function canAccessAttendanceModule(role?: string | null): boolean {
   return normalized === 'ADMIN' || ATTENDANCE_ROLES.has(normalized);
 }
 
+export function canUploadRegionalAttendance(role?: string | null): boolean {
+  const normalized = normalizeFundingRole(role);
+  if (!normalized) return false;
+  return normalized === 'ADMIN' || REGION_UPLOAD_ROLES.has(normalized);
+}
+
+export function canUploadContractorStatement(role?: string | null): boolean {
+  const normalized = normalizeFundingRole(role);
+  if (!normalized) return false;
+  return normalized === 'ADMIN' || CONTRACTOR_UPLOAD_ROLES.has(normalized);
+}
+
+export function canAccessAttendanceInbox(role?: string | null): boolean {
+  return canAccessAttendanceModule(role);
+}
+
 export function canAccessAttendanceAggregationDashboard(role?: string | null): boolean {
   const normalized = normalizeFundingRole(role);
   if (!normalized) return false;
-  return normalized === 'ADMIN' || normalized === 'SECURITY_DIRECTOR';
+  return normalized === 'ADMIN' || SECURITY_AGGREGATION_ROLES.has(normalized) || SECURITY_RECONCILIATION_ROLES.has(normalized);
+}
+
+export function canAccessSecurityAggregation(role?: string | null): boolean {
+  const normalized = normalizeFundingRole(role);
+  if (!normalized) return false;
+  return normalized === 'ADMIN' || SECURITY_AGGREGATION_ROLES.has(normalized);
+}
+
+export function canAccessSecurityReconciliation(role?: string | null): boolean {
+  const normalized = normalizeFundingRole(role);
+  if (!normalized) return false;
+  return normalized === 'ADMIN' || SECURITY_RECONCILIATION_ROLES.has(normalized);
+}
+
+export function canTransitionAttendanceSheet(role?: string | null, status?: string | null): boolean {
+  const normalized = normalizeFundingRole(role);
+  if (!normalized || !status) return false;
+  if (normalized === 'ADMIN') return true;
+
+  const statusRoleMap: Record<string, Set<string>> = {
+    DRAFT: REGION_UPLOAD_ROLES,
+    NEEDS_CORRECTION: REGION_UPLOAD_ROLES,
+    CREATOR_APPROVED: CONTRACTOR_UPLOAD_ROLES,
+    COMPANY_REP_APPROVED: SECURITY_AGGREGATION_ROLES,
+    SECURITY_APPROVED: SECURITY_RECONCILIATION_ROLES,
+  };
+
+  return statusRoleMap[status]?.has(normalized) ?? false;
 }
 
 export function getDefaultHomePath(role?: string | null): string {
   const normalized = normalizeFundingRole(role);
-  
-  // Specific redirects for Attendance domain
-  if (normalized === 'OPERATOR') return '/attendance/inbox';
-  if (normalized === 'SECURITY_DIRECTOR') return '/security/reconciliation';
+
+  if (normalized === 'REGION_USER' || normalized === 'OPERATOR') return '/region/attendance/upload';
+  if (normalized === 'CONTRACTOR') return '/contractor/statement/upload';
+  if (normalized === 'SECURITY_AGGREGATOR' || normalized === 'PAYROLL_MANAGER') return '/security/aggregation';
+  if (normalized === 'SECURITY_DIRECTOR') return '/attendance/security-reconciliation';
 
   if (canAccessHrModule(role) && !canAccessCivilModule(role)) {
     return canSeeFundingInbox(role) ? '/hr/funding/inbox' : '/hr/funding/my-requests';

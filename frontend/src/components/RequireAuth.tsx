@@ -1,6 +1,6 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { useAuthStore } from '../stores/useAuthStore';
+import { useAuth } from '../context/AuthContext';
 import { Loader2 } from 'lucide-react';
 
 /**
@@ -8,7 +8,7 @@ import { Loader2 } from 'lucide-react';
  * Shows loading spinner during session restoration
  */
 export function RequireAuth({ children }: { children: React.ReactNode }) {
-    const { isAuthenticated, isLoading } = useAuthStore();
+    const { isAuthenticated, isLoading } = useAuth();
     const location = useLocation();
 
     // Show loading state while checking session

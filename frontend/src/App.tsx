@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { RouterProvider } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import { router } from './app/routes';
-import { useAuthStore } from './stores/useAuthStore';
+import { useAuth } from './context/AuthContext';
 import './components/Accounting/AccountingInbox.css';
 
 /**
@@ -10,7 +10,7 @@ import './components/Accounting/AccountingInbox.css';
  * Initializes auth session restore and provides router
  */
 export default function App() {
-  const { restoreSession } = useAuthStore();
+  const { restoreSession } = useAuth();
 
   // Restore session on app mount
   useEffect(() => {

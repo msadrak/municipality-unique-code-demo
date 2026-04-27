@@ -1,4 +1,5 @@
 // Base API client with credentials support
+import { readStoredAccessToken } from '../lib/auth-storage';
 
 const API_BASE_URL = '';  // Same origin, use relative URLs
 
@@ -91,9 +92,13 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
         headers.set('Content-Type', 'application/json');
     }
 
+    const accessToken = readStoredAccessToken();
+    if (accessToken && !headers.has('Authorization')) {
+        headers.set('Authorization', `Bearer ${accessToken}`);
+    }
+
     const response = await fetch(url, {
         ...init,
-        credentials: 'include',  // Important for session cookies
         headers,
     });
 

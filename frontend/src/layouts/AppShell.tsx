@@ -10,14 +10,14 @@ import { TopBarV2 } from './TopBarV2';
  */
 export function AppShell() {
     return (
-        <div dir="rtl" className="flex min-h-screen bg-[var(--vault-bg)] text-[var(--vault-on-surface)]">
+        <div dir="rtl" className="flex min-h-screen bg-background">
             {/* Dark sidebar on the right (RTL start) */}
             <SideNavV2 />
             {/* Main content area */}
-            <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+            <main className="flex-1 flex flex-col min-h-screen min-w-0">
                 <TopBarV2 />
                 {/* Scrollable content */}
-                <div className="flex-1 overflow-auto p-6 lg:p-10">
+                <div className="p-6 lg:p-10">
                     <Outlet />
                 </div>
             </main>

@@ -31,7 +31,8 @@ export function Login({ onLogin, onNavigateToPublic, onNavigateToContractorAuth 
     setIsLoading(true);
 
     try {
-      const user = await authService.login({ username, password });
+      const response = await authService.login({ username, password });
+      const user = response.user;
       onLogin({
         id: user.id,
         username: user.username,
