@@ -42,6 +42,9 @@ from .statements import router as statements_router
 from .reports import router as reports_router
 from .funding_workflow import router as funding_router
 from .attendance import router as attendance_router
+from .hr_finance import router as hr_finance_router
+from .notifications import router as notifications_router
+from .civil import router as civil_router
 
 __all__ = [
     "budget_router", "rbac_router", "auth_router", "admin_router",
@@ -50,5 +53,6 @@ __all__ = [
     "treasury_integration_router", "credit_requests_router",
     "contractors_router", "templates_router", "contracts_router",
     "statements_router", "reports_router", "funding_router",
-    "attendance_router",
+    "attendance_router", "hr_finance_router", "notifications_router",
+    "civil_router",
 ]

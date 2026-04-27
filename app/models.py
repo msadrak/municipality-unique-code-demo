@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Float, ForeignKey, Date, DateTime, Boolean, Enum, JSON, CheckConstraint, BigInteger, UniqueConstraint, Text
 from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import relationship, backref, synonym
 from app.database import Base
 from datetime import datetime
 import enum
@@ -277,22 +277,16 @@ class ActivityConstraint(Base):
 # --- جداول کاربری و احراز هویت ---
 
 class User(Base):
-    """کاربران سیستم با نقش‌های چند سطحی
-    
-    نقش‌ها:
-    - USER: کاربر عادی (ایجاد درخواست)
-    - ADMIN_L1: متولی قسمت (تایید سطح ۱)
-    - ADMIN_L2: ادمین اداره (تایید سطح ۲)
-    - ADMIN_L3: ادمین حوزه (تایید سطح ۳)
-    - ADMIN_L4: ذی‌حساب (تایید نهایی)
-    - ACCOUNTANT: حسابدار (ثبت سند)
-    """
+    """User record for the platform's mixed legacy and workflow-specific RBAC."""
     __tablename__ = "users"
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
-    password_hash = Column(String)
+    hashed_password = Column("password_hash", String)
+    password_hash = synonym("hashed_password")
     full_name = Column(String)
-    role = Column(String, default="USER")  # USER, ADMIN_L1, ADMIN_L2, ADMIN_L3, ADMIN_L4, ACCOUNTANT
+    role = Column(String, default="USER")  # e.g. USER, admin, ADMIN_L*, CIVIL_MANAGER, CONTRACTOR
+    region_name = Column(String, nullable=True, index=True)
+    contractor_id = Column(Integer, ForeignKey("contractors.id"), nullable=True, index=True)
     
     # سطح ادمین (فقط برای نقش‌های ADMIN_L*)
     # 1=قسمت, 2=اداره, 3=حوزه, 4=ذی‌حساب
@@ -316,9 +310,14 @@ class User(Base):
     default_zone = relationship("OrgUnit", foreign_keys=[default_zone_id])
     default_dept = relationship("OrgUnit", foreign_keys=[default_dept_id])
     default_section = relationship("OrgUnit", foreign_keys=[default_section_id])
+    contractor_profile = relationship("Contractor", foreign_keys=[contractor_id], back_populates="linked_users")
     
     # RBAC: Subsystem access control (DENY ALL if empty)
     subsystem_access_list = relationship("UserSubsystemAccess", back_populates="user", cascade="all, delete-orphan")
+
+    @property
+    def display_name(self) -> str:
+        return self.full_name or self.region_name or self.username
 
 
 
@@ -422,6 +421,7 @@ class Transaction(Base):
     # سامانه و فعالیت ویژه
     subsystem_id = Column(Integer, ForeignKey("subsystems.id"), nullable=True)
     subsystem_activity_id = Column(Integer, ForeignKey("subsystem_activities.id"), nullable=True)
+    activity_id = Column(Integer, ForeignKey("activities.id"), nullable=True, index=True)
     
     # Stage 1 Gateway: link to approved CreditRequest (nullable for legacy rows)
     credit_request_id = Column(Integer, ForeignKey("credit_requests.id"), nullable=True, index=True)
@@ -489,6 +489,7 @@ class Transaction(Base):
     financial_event = relationship("FinancialEventRef")
     subsystem = relationship("Subsystem")
     subsystem_activity = relationship("SubsystemActivity")
+    activity = relationship("Activity", back_populates="transactions")
     credit_request = relationship("CreditRequest", foreign_keys=[credit_request_id], backref="linked_transaction")
     progress_statement = relationship("ProgressStatement", back_populates="transactions")
 
@@ -845,6 +846,7 @@ class CreditRequest(Base):
     zone_id = Column(Integer, ForeignKey("org_units.id"), nullable=False)
     department_id = Column(Integer, ForeignKey("org_units.id"), nullable=True)
     section_id = Column(Integer, ForeignKey("org_units.id"), nullable=True)
+    civil_project_id = Column(Integer, ForeignKey("civil_projects.id"), nullable=True, index=True)
     
     # Budget reference (string match for Stage 1)
     budget_code = Column(String, nullable=False, index=True)
@@ -874,6 +876,7 @@ class CreditRequest(Base):
     zone = relationship("OrgUnit", foreign_keys=[zone_id])
     department = relationship("OrgUnit", foreign_keys=[department_id])
     section = relationship("OrgUnit", foreign_keys=[section_id])
+    civil_project = relationship("CivilProject", foreign_keys=[civil_project_id], back_populates="credit_requests")
     used_transaction = relationship("Transaction", foreign_keys=[used_transaction_id])
     logs = relationship("CreditRequestLog", back_populates="credit_request", cascade="all, delete-orphan")
     
@@ -1031,6 +1034,7 @@ class Contractor(Base):
     
     # Relationships
     contracts = relationship("Contract", back_populates="contractor")
+    linked_users = relationship("User", back_populates="contractor_profile")
 
 
 class ContractTemplate(Base):
@@ -1091,6 +1095,7 @@ class Contract(Base):
     budget_row_id = Column(Integer, ForeignKey("budget_rows.id"), nullable=True, index=True)
     template_id = Column(Integer, ForeignKey("contract_templates.id"), nullable=True, index=True)
     org_unit_id = Column(Integer, ForeignKey("org_units.id"), nullable=True, index=True)
+    civil_project_id = Column(Integer, ForeignKey("civil_projects.id"), nullable=True, index=True)
     
     # Status machine
     status = Column(
@@ -1127,6 +1132,7 @@ class Contract(Base):
     budget_row = relationship("BudgetRow")
     template = relationship("ContractTemplate", back_populates="contracts")
     org_unit = relationship("OrgUnit", foreign_keys=[org_unit_id])
+    civil_project = relationship("CivilProject", foreign_keys=[civil_project_id], back_populates="contracts")
     created_by = relationship("User", foreign_keys=[created_by_id])
     progress_statements = relationship("ProgressStatement", back_populates="contract", cascade="all, delete-orphan")
     guarantees = relationship("ContractGuarantee", back_populates="contract", cascade="all, delete-orphan")
@@ -1324,6 +1330,13 @@ class FundingStatus(str, enum.Enum):
 
 
 class UserRole(str, enum.Enum):
+    CIVIL_MANAGER = "CIVIL_MANAGER"
+    TENDERING_OFFICER = "TENDERING_OFFICER"
+    CONTRACTS_OFFICER = "CONTRACTS_OFFICER"
+    SUPERVISOR = "SUPERVISOR"
+    DELIVERY_COMMISSION = "DELIVERY_COMMISSION"
+    CONTRACTOR = "CONTRACTOR"
+    FINANCE_MANAGER = "FINANCE_MANAGER"
     GM_HC = "GM_HC"
     VP_PLANNING = "VP_PLANNING"
     VP_FINANCE = "VP_FINANCE"

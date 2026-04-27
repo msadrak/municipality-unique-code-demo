@@ -28,12 +28,33 @@ for _name in dir(_legacy_module):
     if not _name.startswith("_"):
         globals()[_name] = getattr(_legacy_module, _name)
 
-from .enums import AttendanceSheetStatus, UserRole
+from .enums import AttendanceSheetStatus, UserRole, WorkFlowStatus
+from .users import Notification, User
 from .attendance import (
+    Attachment,
     AttendanceRecord,
     ContractorStatement,
     ContractorStatementItem,
+    PenaltyRecord,
     RegionalAttendanceSheet,
+    WorkPeriod,
+)
+from .organization import Activity, OrgUnit, OrgUnitType
+from .finance import TransactionAllocation
+from .finance_rules import FinancialRule
+from .civil import (
+    ApprovalTask,
+    ApprovalTaskStatus,
+    CivilProject,
+    CivilProjectAssignment,
+    CivilProjectRole,
+    DOCUMENT_PAYLOAD_REQUIREMENTS,
+    EntityDocument,
+    StepAction,
+    WorkflowStep,
+    WorkflowStepDefinition,
+    WorkflowTransition,
+    validate_document_payload,
 )
 
 __all__ = sorted(name for name in globals() if not name.startswith("_"))
