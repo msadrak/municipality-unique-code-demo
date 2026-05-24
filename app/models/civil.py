@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import enum
 from datetime import datetime
+from decimal import Decimal
 
 from sqlalchemy import (
     Boolean,
@@ -60,6 +61,82 @@ DOCUMENT_PAYLOAD_REQUIREMENTS: dict[str, set[str]] = {
         "agenda",
         "decisions",
     },
+    "CONTRACTOR_ASSIGNMENT": {
+        "contractor_name",
+        "national_id",
+        "phone_number",
+        "winning_bid",
+        "contract_coefficient",
+    },
+    "VOLUME_CONTRACT_BASE": {
+        "contract_title",
+        "contractor_name",
+        "total_amount",
+        "start_date",
+        "end_date",
+    },
+    "APPENDIX_5_SALARY_ANALYSIS": {
+        "base_salary",
+        "housing_allowance",
+        "grocery_allowance",
+        "child_family_allowance",
+        "overtime_rate",
+        "employer_insurance_premium",
+    },
+    "FINANCIAL_MATRIX_LINK": {
+        "budget_line_level_5",
+        "cost_center",
+    },
+    "YEKTA_CODE_ISSUANCE": {
+        "zone_id",
+        "department_id",
+        "section_id",
+        "budget_code",
+        "cost_center_code",
+        "continuous_activity_code",
+        "special_activity",
+        "beneficiary_name",
+        "financial_event_defaults",
+        "fiscal_year",
+    },
+    "APPENDIX_5_TIMESHEET": {
+        "statement_number",
+        "work_period",
+        "statement_file",
+        "statement_6_column_file",
+    },
+    "MONTHLY_TIMESHEET": {
+        "statement_number",
+        "work_period",
+        "statement_file",
+        "statement_6_column_file",
+    },
+    "CONTRACTOR_STATEMENT_UPLOAD": {
+        "statement_number",
+        "work_period",
+        "statement_file",
+        "statement_6_column_file",
+    },
+    "AUTO_STATEMENT_CALCULATION": {
+        "gross_amount",
+        "financial_events",
+    },
+}
+
+
+DOCUMENT_NUMERIC_FIELDS: dict[str, set[str]] = {
+    "VOLUME_CONTRACT_BASE": {"total_amount"},
+    "APPENDIX_5_SALARY_ANALYSIS": {
+        "base_salary",
+        "housing_allowance",
+        "grocery_allowance",
+        "child_family_allowance",
+        "overtime_rate",
+        "employer_insurance_premium",
+    },
+    "AUTO_STATEMENT_CALCULATION": {
+        "gross_amount",
+    },
 }
 
 
@@ -75,6 +152,31 @@ def validate_document_payload(document_type: str | None, payload: dict | None) -
     if missing_fields:
         missing_csv = ", ".join(missing_fields)
         raise ValueError(f"{document_type} payload is missing required fields: {missing_csv}")
+
+    if document_type == "YEKTA_CODE_ISSUANCE":
+        if "sequence" in payload or "occurrence_sequence" in payload:
+            raise ValueError(
+                "YEKTA_CODE_ISSUANCE payload must not include the system-generated sequence field."
+            )
+        if not isinstance(payload.get("financial_event_defaults"), dict):
+            raise ValueError("YEKTA_CODE_ISSUANCE financial_event_defaults must be an object.")
+        if "event_overrides" in payload and not isinstance(payload.get("event_overrides"), list):
+            raise ValueError("YEKTA_CODE_ISSUANCE event_overrides must be a list.")
+
+    numeric_fields = DOCUMENT_NUMERIC_FIELDS.get(document_type, set())
+    invalid_numeric_fields = sorted(
+        field
+        for field in numeric_fields
+        if field in payload
+        and (
+            isinstance(payload[field], bool)
+            or not isinstance(payload[field], (int, float, Decimal))
+        )
+    )
+    if invalid_numeric_fields:
+        invalid_csv = ", ".join(invalid_numeric_fields)
+        raise ValueError(f"{document_type} fields must be numeric: {invalid_csv}")
+
     return payload
 
 
@@ -194,6 +296,7 @@ class WorkflowTransition(Base):
         index=True,
     )
     required_role = Column(String(64), nullable=True, index=True)
+    action = Column(String(64), nullable=True)
     is_automatic = Column(Boolean, nullable=False, default=False)
 
     from_step = relationship(
@@ -217,6 +320,8 @@ class CivilProject(Base):
     id = Column(Integer, primary_key=True, index=True)
     project_code = Column(String(64), unique=True, nullable=False, index=True)
     title = Column(String(255), nullable=False, index=True)
+    contract_category = Column(String(128), nullable=True, index=True)
+    yekta_code = Column(String(128), nullable=True, unique=True, index=True)
 
     owning_org_unit_id = Column(
         Integer,
@@ -243,6 +348,12 @@ class CivilProject(Base):
         nullable=False,
         index=True,
     )
+    contractor_id = Column(
+        Integer,
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
     planned_start_date = Column(Date, nullable=True)
     planned_end_date = Column(Date, nullable=True)
@@ -253,6 +364,7 @@ class CivilProject(Base):
     owning_org_unit = relationship("OrgUnit", foreign_keys=[owning_org_unit_id], backref="civil_projects")
     activity = relationship("Activity", foreign_keys=[activity_id], backref="civil_projects")
     created_by = relationship("User", foreign_keys=[created_by_id], backref="civil_projects_created")
+    contractor = relationship("User", foreign_keys=[contractor_id], backref="civil_projects_contracted")
     current_step = relationship(
         "WorkflowStep",
         back_populates="current_projects",

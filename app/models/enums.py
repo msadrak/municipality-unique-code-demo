@@ -14,6 +14,10 @@ class UserRole(str, enum.Enum):
     SUPERVISOR = "SUPERVISOR"
     DELIVERY_COMMISSION = "DELIVERY_COMMISSION"
     FINANCE_MANAGER = "FINANCE_MANAGER"
+    FINANCE_OFFICER = "FINANCE_OFFICER"
+    YEKTA_ADMIN = "YEKTA_ADMIN"
+    OPERATIONAL_MANAGER = "OPERATIONAL_MANAGER"
+    TREASURY = "TREASURY"
 
     # Legacy roles retained for backward compatibility with existing modules.
     ADMIN = "ADMIN"

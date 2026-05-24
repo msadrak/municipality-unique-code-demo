@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { Building2, Lock, User, Loader2, UserPlus, LayoutDashboard, Eye, EyeOff } from 'lucide-react';
+import { Lock, User, Loader2, UserPlus, LayoutDashboard, Eye, EyeOff, Landmark } from 'lucide-react';
 import { authService } from '../services';
 
 type UserData = {
@@ -73,7 +73,7 @@ export function Login({ onLogin, onNavigateToPublic, onNavigateToContractorAuth 
             }}
           />
           <div className="relative bg-white p-4 rounded-xl shadow-lg border border-slate-100 mt-8">
-            <Building2 className="h-9 w-9 text-blue-600" />
+            <Landmark className="h-9 w-9 text-blue-600" />
           </div>
         </div>
 
@@ -81,10 +81,10 @@ export function Login({ onLogin, onNavigateToPublic, onNavigateToContractorAuth 
         <div className="px-8 pb-8 pt-10">
           <div className="text-center mb-8">
             <h1 className="text-2xl font-bold text-slate-900 mb-2 tracking-tight">
-              سامانه مالی شهرداری
+              سامانه جامع مدیریت منابع شهرداری (ERP)
             </h1>
             <h2 className="text-slate-500 font-medium text-sm">
-              منابع انسانی شهرداری مرکزی
+              دسترسی یکپارچه به داشبوردهای مالی، مدیریت پروژههای عمرانی، منابع انسانی و املاک در یک بستر شفاف و امن.
             </h2>
           </div>
 
@@ -159,12 +159,13 @@ export function Login({ onLogin, onNavigateToPublic, onNavigateToContractorAuth 
             </Button>
 
             {/* Demo Credentials */}
-            <div className="bg-slate-50/80 border border-slate-200 p-3 rounded-lg text-xs space-y-1">
+            <div className="bg-slate-50/80 border border-slate-200 p-3 rounded-lg text-xs space-y-2 text-right">
               <p className="text-center text-slate-400 font-medium">اطلاعات ورود نمونه:</p>
-              <div className="flex justify-center gap-6 text-slate-500">
-                <span>کاربر: user / user</span>
-                <span>مدیر: admin / admin</span>
-              </div>
+              <p className="text-slate-500">مدیر عمران (Civil): <span className="font-mono">civil_manager@test.com / password123</span></p>
+              <p className="text-slate-500">مدیر مالی (Finance): <span className="font-mono">finance_manager@test.com / password123</span></p>
+              <p className="text-slate-500">شهردار (Mayor/Council): <span className="font-mono">mayor@test.com / password123</span></p>
+              <p className="text-slate-500">ناظر مقیم: <span className="font-mono">supervisor@test.com / password123</span></p>
+              <p className="text-slate-500">مدیریت کل/Admin: <span className="font-mono">admin@test.com / password123</span></p>
             </div>
           </form>
 

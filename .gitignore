@@ -1,6 +1,9 @@
 # Virtual environments
 venv/
 .venv/
+fresh_venv/
+venv_new/
+.linux-venv/
 __pycache__/
 *.pyc
 *.pyo
@@ -45,3 +48,14 @@ Thumbs.db
 *.csv
 *.txt
 *.json
+
+# Binaries
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Temporary HTML files
+tmp_*.html
+downloaded.html
+dossier_design.html

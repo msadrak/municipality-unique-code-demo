@@ -8,13 +8,108 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 from app import models
+from app.models.enums import WorkFlowStatus
 from app.routers.auth import get_current_user, get_db
+from app.services.yekta_codes import build_yekta_prefix, build_yekta_segments
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
 class RejectWithReasonRequest(BaseModel):
     reason: str
     return_to_user: bool = False
+
+
+ATTENDANCE_FINANCE_ACTIVITY_NAME = "تسویه کارکرد پیمانکاران"
+
+
+def _extract_attendance_work_period_id(transaction: models.Transaction) -> Optional[int]:
+    form_data = transaction.form_data if isinstance(transaction.form_data, dict) else {}
+    raw_value = form_data.get("attendance_work_period_id", form_data.get("work_period_id"))
+    if raw_value is None:
+        return None
+    try:
+        return int(raw_value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _generate_transaction_unique_code(db: Session, transaction: models.Transaction) -> str:
+    form_data = transaction.form_data if isinstance(transaction.form_data, dict) else {}
+
+    zone = db.query(models.OrgUnit).filter(models.OrgUnit.id == transaction.zone_id).first() if transaction.zone_id else None
+    dept = db.query(models.OrgUnit).filter(models.OrgUnit.id == transaction.department_id).first() if transaction.department_id else None
+    section = db.query(models.OrgUnit).filter(models.OrgUnit.id == transaction.section_id).first() if transaction.section_id else None
+    budget = db.query(models.BudgetItem).filter(models.BudgetItem.id == transaction.budget_item_id).first() if transaction.budget_item_id else None
+
+    special_activity = (
+        transaction.special_activity
+        or getattr(transaction.activity, "name", None)
+        or str(form_data.get("special_activity") or "")
+    )
+    beneficiary_name = (transaction.beneficiary_name or "Unknown").strip()
+    date_code = str(transaction.fiscal_year or datetime.utcnow().year)[:4]
+
+    prefix = build_yekta_prefix(
+        zone_code=zone.code if zone else transaction.zone_id,
+        department_code=dept.code if dept else transaction.department_id,
+        section_code=section.code if section else transaction.section_id,
+        budget_code=budget.budget_code if budget else form_data.get("budget_code"),
+        cost_center_code=getattr(transaction.cost_center, "code", None)
+        or form_data.get("cost_center_code"),
+        continuous_action_code=getattr(transaction.continuous_action, "code", None)
+        or form_data.get("continuous_activity_code"),
+        special_activity=special_activity,
+        beneficiary_name=beneficiary_name,
+        financial_event_code=getattr(transaction.financial_event, "code", None)
+        or form_data.get("financial_event_code"),
+        fiscal_year=date_code,
+    )
+    occurrence = str(
+        db.query(models.Transaction)
+        .filter(models.Transaction.unique_code.like(f"{prefix}-%"))
+        .count()
+        + 1
+    )
+    return build_yekta_segments(
+        zone_code=zone.code if zone else transaction.zone_id,
+        department_code=dept.code if dept else transaction.department_id,
+        section_code=section.code if section else transaction.section_id,
+        budget_code=budget.budget_code if budget else form_data.get("budget_code"),
+        cost_center_code=getattr(transaction.cost_center, "code", None)
+        or form_data.get("cost_center_code"),
+        continuous_action_code=getattr(transaction.continuous_action, "code", None)
+        or form_data.get("continuous_activity_code"),
+        special_activity=special_activity,
+        beneficiary_name=beneficiary_name,
+        financial_event_code=getattr(transaction.financial_event, "code", None)
+        or form_data.get("financial_event_code"),
+        fiscal_year=date_code,
+        sequence=occurrence,
+    ).code()
+
+
+def _sync_attendance_finance_handoff(db: Session, transaction: models.Transaction) -> None:
+    if not transaction.unique_code:
+        return
+
+    activity_name = getattr(transaction.activity, "name", None)
+    if activity_name != ATTENDANCE_FINANCE_ACTIVITY_NAME:
+        return
+
+    work_period_id = _extract_attendance_work_period_id(transaction)
+    if not work_period_id:
+        return
+
+    work_period = (
+        db.query(models.WorkPeriod)
+        .filter(models.WorkPeriod.id == work_period_id)
+        .first()
+    )
+    if not work_period:
+        return
+
+    work_period.financial_unique_code = transaction.unique_code
+    work_period.status = WorkFlowStatus.SENT_TO_FINANCE
 
 @router.get("/transactions")
 def admin_get_transactions(request: Request, status: str = "", search: str = "", page: int = 1, limit: int = 10, my_level_only: bool = True, db: Session = Depends(get_db)):
@@ -33,7 +128,13 @@ def admin_get_transactions(request: Request, status: str = "", search: str = "",
     if status:
         query = query.filter(models.Transaction.status == status)
     if search:
-        query = query.filter(or_(models.Transaction.unique_code.contains(search), models.Transaction.beneficiary_name.contains(search)))
+        query = query.filter(
+            or_(
+                models.Transaction.unique_code.contains(search),
+                models.Transaction.tracking_number.contains(search),
+                models.Transaction.beneficiary_name.contains(search),
+            )
+        )
     
     total = query.count()
     stats = {
@@ -52,7 +153,7 @@ def admin_get_transactions(request: Request, status: str = "", search: str = "",
     result = []
     for t in transactions:
         zone = db.query(models.OrgUnit).filter(models.OrgUnit.id == t.zone_id).first() if t.zone_id else None
-        result.append({"id": t.id, "unique_code": t.unique_code, "beneficiary_name": t.beneficiary_name, "amount": t.amount, "status": t.status, "zone_title": zone.title if zone else "-", "created_at": t.created_at.strftime("%Y/%m/%d %H:%M") if t.created_at else None})
+        result.append({"id": t.id, "unique_code": t.unique_code or t.tracking_number, "beneficiary_name": t.beneficiary_name, "amount": t.amount, "status": t.status, "zone_title": zone.title if zone else "-", "created_at": t.created_at.strftime("%Y/%m/%d %H:%M") if t.created_at else None})
     
     return {"transactions": result, "total": total, "page": page, "limit": limit, "stats": stats, "admin_level": admin_level}
 
@@ -75,7 +176,7 @@ def admin_get_transaction_detail(transaction_id: int, request: Request, db: Sess
     created_by = db.query(models.User).filter(models.User.id == t.created_by_id).first() if t.created_by_id else None
     reviewed_by = db.query(models.User).filter(models.User.id == t.reviewed_by_id).first() if t.reviewed_by_id else None
     
-    return {"id": t.id, "unique_code": t.unique_code, "status": t.status, "beneficiary_name": t.beneficiary_name, "amount": t.amount, "contract_number": t.contract_number, "special_activity": t.special_activity, "description": t.description, "zone_title": zone.title if zone else "-", "dept_title": dept.title if dept else "-", "section_title": section.title if section else "-", "budget_code": budget.budget_code if budget else "-", "budget_description": budget.description if budget else "-", "financial_event_title": event.title if event else "-", "created_by_name": created_by.full_name if created_by else "-", "reviewed_by_name": reviewed_by.full_name if reviewed_by else None, "rejection_reason": t.rejection_reason, "created_at": t.created_at.strftime("%Y/%m/%d %H:%M") if t.created_at else None, "reviewed_at": t.reviewed_at.strftime("%Y/%m/%d %H:%M") if t.reviewed_at else None}
+    return {"id": t.id, "unique_code": t.unique_code or t.tracking_number, "status": t.status, "beneficiary_name": t.beneficiary_name, "amount": t.amount, "contract_number": t.contract_number, "special_activity": t.special_activity, "description": t.description, "zone_title": zone.title if zone else "-", "dept_title": dept.title if dept else "-", "section_title": section.title if section else "-", "budget_code": budget.budget_code if budget else "-", "budget_description": budget.description if budget else "-", "financial_event_title": event.title if event else "-", "created_by_name": created_by.full_name if created_by else "-", "reviewed_by_name": reviewed_by.full_name if reviewed_by else None, "rejection_reason": t.rejection_reason, "created_at": t.created_at.strftime("%Y/%m/%d %H:%M") if t.created_at else None, "reviewed_at": t.reviewed_at.strftime("%Y/%m/%d %H:%M") if t.reviewed_at else None}
 
 @router.post("/transactions/{transaction_id}/approve")
 def admin_approve_transaction(transaction_id: int, request: Request, db: Session = Depends(get_db)):
@@ -106,11 +207,14 @@ def admin_approve_transaction(transaction_id: int, request: Request, db: Session
             budget.remaining_budget = (budget.remaining_budget or budget.allocated_1403 or 0) - (t.amount or 0)
             budget.reserved_amount = (budget.reserved_amount or 0) - (t.amount or 0)
             budget.spent_1403 = (budget.spent_1403 or 0) + (t.amount or 0)
+
     
     t.status = new_status
     t.current_approval_level = admin_level
     t.reviewed_by_id = current_user.id
     t.reviewed_at = datetime.utcnow()
+    if new_status == "APPROVED":
+        _sync_attendance_finance_handoff(db, t)
     
     db.add(models.WorkflowLog(transaction_id=t.id, admin_id=current_user.id, admin_level=admin_level, action="APPROVE", previous_status=previous_status, new_status=new_status))
     db.commit()
@@ -175,7 +279,7 @@ def _serialize_transaction(t: models.Transaction, db: Session) -> dict:
     creator = db.query(models.User).filter(models.User.id == t.created_by_id).first() if t.created_by_id else None
     return {
         "id": t.id,
-        "unique_code": t.unique_code,
+        "unique_code": t.unique_code or t.tracking_number,
         "status": t.status,
         "current_approval_level": t.current_approval_level,
         "beneficiary_name": t.beneficiary_name,

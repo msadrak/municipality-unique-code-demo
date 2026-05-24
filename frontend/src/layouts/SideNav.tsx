@@ -8,6 +8,7 @@ import {
     Settings,
     LogOut,
     Inbox,
+    LayoutDashboard,
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -35,6 +36,7 @@ const hrFundingNavItems: NavItem[] = [
 const userNavSections: NavSection[] = [
     {
         items: [
+            { title: 'تخته پروژه‌های عمرانی', icon: LayoutDashboard, path: '/civil/dashboard' },
             { title: 'پورتال کاربر', icon: Home, path: '/portal' },
             { title: 'قراردادها', icon: FileText, path: '/contracts' },
             { title: 'گزارش‌ها', icon: BarChart3, path: '/reports' },
@@ -50,6 +52,7 @@ const userNavSections: NavSection[] = [
 const adminNavSections: NavSection[] = [
     {
         items: [
+            { title: 'تخته پروژه‌های عمرانی', icon: LayoutDashboard, path: '/civil/dashboard' },
             { title: 'پورتال کاربر', icon: Home, path: '/portal' },
             { title: 'قراردادها', icon: FileText, path: '/contracts' },
             { title: 'گزارش‌ها', icon: BarChart3, path: '/reports' },
@@ -99,7 +102,7 @@ export function SideNav() {
                         <Home className="h-6 w-6 text-blue-400" />
                     </div>
                     <div className="flex flex-col">
-                        <h1 className="text-base font-bold leading-tight text-white">منابع انسانی</h1>
+                        <h1 className="text-base font-bold leading-tight text-white">سیستم جامع ERP</h1>
                         <p className="text-slate-400 text-sm">شهرداری مرکزی</p>
                     </div>
                 </div>

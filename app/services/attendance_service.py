@@ -1,5 +1,7 @@
 import io
+import logging
 import re
+import uuid
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from typing import Callable, Optional
@@ -7,26 +9,42 @@ from typing import Callable, Optional
 from fastapi import HTTPException, UploadFile
 from openpyxl import load_workbook
 from sqlalchemy import func
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.models.attendance import (
     AttendanceRecord,
     ContractorStatement,
     ContractorStatementItem,
+    PenaltyRecord,
     RegionalAttendanceSheet,
+    WorkPeriod,
 )
-from app.models.enums import AttendanceSheetStatus
+from app.models.enums import AttendanceSheetStatus, WorkFlowStatus
+from app.services.notification_service import create_notification
 from app.schemas.attendance import (
     AttendanceAggregationItem,
     AttendanceAggregationOut,
     AttendanceReconciliationOut,
+    PenaltyRecordCreate,
+    PenaltyRecordOut,
     SheetMetaSummary,
+    WorkPeriodApprovalOut,
+    WorkPeriodStatusOut,
     WorkflowStatusLabel,
 )
+from app.utils.constants import AUTHORIZED_REGIONS
+from app.utils.pricing_engine import calculate_record_legal_value
 
 EXCEL_SKIPROWS = 2
 EXCEL_HEADER_ROW_NUMBER = 3
 EXCEL_DATA_START_ROW_NUMBER = EXCEL_HEADER_ROW_NUMBER + 1
+logger = logging.getLogger(__name__)
+UNIQUE_CODE_CONNECTION_ERROR_DETAIL = (
+    "خطا در برقراری ارتباط با سرور مالی جهت صدور کد یکتا. لطفاً دقایقی دیگر تلاش کنید."
+)
+
+ATTENDANCE_FINANCE_ACTIVITY_NAME = "تسویه کارکرد پیمانکاران"
 
 ATTENDANCE_FIELD_ORDER = [
     "location",
@@ -293,6 +311,599 @@ def _read_excel_rows(contents: bytes) -> tuple[list[object], list[dict[object, o
     return headers, records
 
 
+def get_or_create_work_period(db: Session, year: int, month: int) -> WorkPeriod:
+    work_period = (
+        db.query(WorkPeriod)
+        .filter(
+            WorkPeriod.year == year,
+            WorkPeriod.month == month,
+        )
+        .first()
+    )
+    if work_period:
+        return work_period
+
+    work_period = WorkPeriod(
+        year=year,
+        month=month,
+        status=WorkFlowStatus.DRAFT_REGIONS,
+    )
+    db.add(work_period)
+    try:
+        db.flush()
+    except IntegrityError:
+        db.rollback()
+        work_period = (
+            db.query(WorkPeriod)
+            .filter(
+                WorkPeriod.year == year,
+                WorkPeriod.month == month,
+            )
+            .first()
+        )
+        if work_period:
+            return work_period
+        raise
+
+    return work_period
+
+
+def _get_work_period_by_period(
+    db: Session,
+    *,
+    year: int,
+    month: int,
+) -> Optional[WorkPeriod]:
+    return (
+        db.query(WorkPeriod)
+        .filter(
+            WorkPeriod.year == year,
+            WorkPeriod.month == month,
+        )
+        .first()
+    )
+
+
+def _get_work_period_or_404(
+    db: Session,
+    *,
+    year: int,
+    month: int,
+) -> WorkPeriod:
+    work_period = _get_work_period_by_period(db, year=year, month=month)
+    if not work_period:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No work period found for year={year}, month={month}.",
+        )
+    return work_period
+
+
+def get_work_period_upload_status(
+    db: Session,
+    *,
+    year: int,
+    month: int,
+) -> WorkPeriodStatusOut:
+    work_period = _get_work_period_by_period(db, year=year, month=month)
+    normalized_authorized_regions = {
+        _normalize_text(region): region for region in AUTHORIZED_REGIONS
+    }
+
+    uploaded_region_set: set[str] = set()
+    if work_period:
+        uploaded_region_rows = (
+            db.query(RegionalAttendanceSheet.region)
+            .filter(
+                RegionalAttendanceSheet.work_period_id == work_period.id,
+                RegionalAttendanceSheet.row_count > 0,
+                RegionalAttendanceSheet.region.isnot(None),
+            )
+            .all()
+        )
+        uploaded_region_set = {
+            normalized_authorized_regions[_normalize_text(region)]
+            for (region,) in uploaded_region_rows
+            if region and _normalize_text(region) in normalized_authorized_regions
+        }
+
+    uploaded_regions = [
+        region for region in AUTHORIZED_REGIONS if region in uploaded_region_set
+    ]
+    missing_regions = [
+        region for region in AUTHORIZED_REGIONS if region not in uploaded_region_set
+    ]
+
+    return WorkPeriodStatusOut(
+        status=(work_period.status if work_period else WorkFlowStatus.DRAFT_REGIONS),
+        total_uploaded=len(uploaded_regions),
+        uploaded_regions=uploaded_regions,
+        missing_regions=missing_regions,
+    )
+
+
+def approve_work_period_aggregation(
+    db: Session,
+    *,
+    year: int,
+    month: int,
+) -> WorkPeriodApprovalOut:
+    work_period = _get_work_period_or_404(db, year=year, month=month)
+    if work_period.status in {
+        WorkFlowStatus.PENDING_CONTRACTOR_STATEMENT,
+        WorkFlowStatus.PENDING_SECURITY_AUDIT,
+        WorkFlowStatus.FINAL_APPROVED,
+    }:
+        raise HTTPException(
+            status_code=400,
+            detail="This work period has already passed the aggregation approval stage.",
+        )
+
+    work_period.status = WorkFlowStatus.PENDING_CONTRACTOR_STATEMENT
+
+    try:
+        db.commit()
+        db.refresh(work_period)
+    except Exception as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to approve aggregation: {exc}",
+        ) from exc
+
+    return WorkPeriodApprovalOut(
+        success=True,
+        status=work_period.status,
+        message="Aggregation approved successfully.",
+    )
+
+
+def _get_latest_contractor_statement_for_work_period(
+    db: Session,
+    *,
+    work_period_id: int,
+) -> Optional[ContractorStatement]:
+    return (
+        db.query(ContractorStatement)
+        .filter(ContractorStatement.work_period_id == work_period_id)
+        .order_by(ContractorStatement.created_at.desc(), ContractorStatement.id.desc())
+        .first()
+    )
+
+
+def _generate_finance_tracking_number() -> str:
+    """Generate the finance tracking number used before a unique code exists."""
+    now = datetime.utcnow()
+    persian_year = now.year - 622 if (now.month, now.day) < (3, 21) else now.year - 621
+    return f"TRX-{persian_year}-{uuid.uuid4().hex[:8]}"
+
+
+def _extract_attendance_work_period_id(transaction) -> Optional[int]:
+    form_data = transaction.form_data if isinstance(transaction.form_data, dict) else {}
+    raw_work_period_id = form_data.get("attendance_work_period_id", form_data.get("work_period_id"))
+    if raw_work_period_id is None:
+        return None
+
+    try:
+        return int(raw_work_period_id)
+    except (TypeError, ValueError):
+        return None
+
+
+def _get_attendance_finance_activity(
+    db: Session,
+    *,
+    required: bool = True,
+):
+    from app.models import Activity
+
+    activity = (
+        db.query(Activity)
+        .filter(Activity.name == ATTENDANCE_FINANCE_ACTIVITY_NAME)
+        .first()
+    )
+    if activity is None and required:
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "Attendance finance handoff activity "
+                f"'{ATTENDANCE_FINANCE_ACTIVITY_NAME}' was not found in the Financial Rules Matrix."
+            ),
+        )
+    return activity
+
+
+def _find_attendance_financial_transaction(
+    db: Session,
+    *,
+    work_period_id: int,
+    activity_id: Optional[int] = None,
+):
+    from app.models import Transaction
+
+    resolved_activity_id = activity_id
+    if resolved_activity_id is None:
+        activity = _get_attendance_finance_activity(db, required=False)
+        if activity is None:
+            return None
+        resolved_activity_id = activity.id
+
+    candidates = (
+        db.query(Transaction)
+        .filter(Transaction.activity_id == resolved_activity_id)
+        .order_by(Transaction.created_at.desc(), Transaction.id.desc())
+        .all()
+    )
+    for transaction in candidates:
+        if _extract_attendance_work_period_id(transaction) == work_period_id:
+            return transaction
+    return None
+
+
+def _ensure_attendance_financial_transaction(
+    db: Session,
+    *,
+    work_period: WorkPeriod,
+    year: int,
+    month: int,
+    final_payable_amount: Decimal,
+    initiated_by,
+):
+    from app.models import Transaction, User
+
+    activity = _get_attendance_finance_activity(db)
+    existing_transaction = _find_attendance_financial_transaction(
+        db,
+        work_period_id=work_period.id,
+        activity_id=activity.id,
+    )
+    if existing_transaction:
+        return existing_transaction
+
+    contractor_statement = _get_latest_contractor_statement_for_work_period(
+        db,
+        work_period_id=work_period.id,
+    )
+
+    contractor_id = None
+    beneficiary_name = "پیمانکار"
+    if contractor_statement and contractor_statement.sheet and contractor_statement.sheet.created_by_id:
+        contractor_id = contractor_statement.sheet.created_by_id
+        contractor_user = db.query(User).filter(User.id == contractor_id).first()
+        if contractor_user and contractor_user.full_name:
+            beneficiary_name = contractor_user.full_name
+
+    amount_value = int(final_payable_amount)
+    transaction = Transaction(
+        tracking_number=_generate_finance_tracking_number(),
+        unique_code=None,
+        status="PENDING_L1",
+        current_approval_level=0,
+        created_by_id=initiated_by.id,
+        zone_id=getattr(initiated_by, "default_zone_id", None),
+        department_id=getattr(initiated_by, "default_dept_id", None),
+        section_id=getattr(initiated_by, "default_section_id", None),
+        activity_id=activity.id,
+        amount=amount_value,
+        beneficiary_name=beneficiary_name,
+        contract_number=f"ATT-{year}-{str(month).zfill(2)}",
+        description=f"Attendance reconciliation payout for {year}/{str(month).zfill(2)}",
+        fiscal_year=str(year),
+        form_data={
+            "source_module": "ATTENDANCE",
+            "attendance_work_period_id": work_period.id,
+            "work_period_id": work_period.id,
+            "year": year,
+            "month": month,
+            "contractor_user_id": contractor_id,
+            "contractor_name": beneficiary_name,
+            "final_payable_amount": amount_value,
+        },
+    )
+    db.add(transaction)
+    db.flush()
+    return transaction
+
+
+def get_work_period_reconciliation(
+    db: Session,
+    *,
+    year: int,
+    month: int,
+) -> AttendanceReconciliationOut:
+    work_period = _get_work_period_or_404(db, year=year, month=month)
+
+    attendance_records = (
+        db.query(AttendanceRecord)
+        .filter(AttendanceRecord.work_period_id == work_period.id)
+        .all()
+    )
+
+    region_total = Decimal("0")
+    for record in attendance_records:
+        region_total += calculate_record_legal_value(record)
+
+    contractor_statement = _get_latest_contractor_statement_for_work_period(
+        db,
+        work_period_id=work_period.id,
+    )
+    contractor_total = _as_decimal(
+        contractor_statement.declared_total_amount if contractor_statement else Decimal("0")
+    )
+
+    penalties = (
+        db.query(PenaltyRecord)
+        .filter(PenaltyRecord.work_period_id == work_period.id)
+        .order_by(PenaltyRecord.id.desc())
+        .all()
+    )
+    total_penalties_amount = sum(
+        (_as_decimal(penalty.total_amount) for penalty in penalties),
+        Decimal("0"),
+    )
+    final_payable_amount = contractor_total - total_penalties_amount
+    financial_transaction = _find_attendance_financial_transaction(
+        db,
+        work_period_id=work_period.id,
+    )
+
+    return AttendanceReconciliationOut(
+        year=year,
+        month=month,
+        status=work_period.status,
+        region_total=region_total,
+        contractor_total=contractor_total,
+        total_penalties_amount=total_penalties_amount,
+        final_payable_amount=final_payable_amount,
+        financial_transaction_id=financial_transaction.id if financial_transaction else None,
+        financial_transaction_status=financial_transaction.status if financial_transaction else None,
+        financial_tracking_number=financial_transaction.tracking_number if financial_transaction else None,
+        financial_unique_code=work_period.financial_unique_code,
+        penalties=[PenaltyRecordOut.model_validate(penalty) for penalty in penalties],
+    )
+
+
+def create_penalty_record_for_work_period(
+    db: Session,
+    *,
+    year: int,
+    month: int,
+    payload: PenaltyRecordCreate,
+) -> PenaltyRecordOut:
+    work_period = _get_work_period_or_404(db, year=year, month=month)
+    if work_period.status == WorkFlowStatus.FINAL_APPROVED:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot add penalties to a finalized work period.",
+        )
+
+    total_amount = _as_decimal(payload.unit_amount) * payload.count
+    penalty_record = PenaltyRecord(
+        work_period_id=work_period.id,
+        description=_normalize_text(payload.description),
+        count=payload.count,
+        unit_amount=_as_decimal(payload.unit_amount),
+        total_amount=total_amount,
+    )
+    db.add(penalty_record)
+
+    try:
+        db.commit()
+        db.refresh(penalty_record)
+    except Exception as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to save penalty record: {exc}",
+        ) from exc
+
+    return PenaltyRecordOut.model_validate(penalty_record)
+
+
+def finalize_work_period(
+    db: Session,
+    *,
+    year: int,
+    month: int,
+    initiated_by,
+) -> WorkPeriodApprovalOut:
+    work_period = _get_work_period_or_404(db, year=year, month=month)
+    activity = _get_attendance_finance_activity(db)
+    existing_transaction = _find_attendance_financial_transaction(
+        db,
+        work_period_id=work_period.id,
+        activity_id=activity.id,
+    )
+
+    if work_period.status in {WorkFlowStatus.PENDING_UNIQUE_CODE, WorkFlowStatus.SENT_TO_FINANCE}:
+        return WorkPeriodApprovalOut(
+            success=True,
+            status=work_period.status,
+            message="Work period has already been handed off to finance.",
+            financial_transaction_id=existing_transaction.id if existing_transaction else None,
+            financial_transaction_status=existing_transaction.status if existing_transaction else None,
+            financial_tracking_number=existing_transaction.tracking_number if existing_transaction else None,
+        )
+
+    # Resolve reconciliation before mutating workflow state so failures in the
+    # financial handoff do not leave the period in a partially transitioned state.
+    reconciliation = get_work_period_reconciliation(db, year=year, month=month)
+    final_payable_amount = reconciliation.final_payable_amount
+
+    logger.info("Preparing finance handoff for work period %s/%s.", year, month)
+    contractor_statement = _get_latest_contractor_statement_for_work_period(
+        db,
+        work_period_id=work_period.id,
+    )
+    contractor_id = None
+    if contractor_statement and contractor_statement.sheet and contractor_statement.sheet.created_by_id:
+        contractor_id = contractor_statement.sheet.created_by_id
+
+    # Hook into the financial queue by creating a real Transaction record.
+    from app.models import Transaction, User
+
+    tracking_number = _generate_finance_tracking_number()
+    beneficiary_name = "پیمانکار"
+    if contractor_id:
+        contractor_user = db.query(User).filter(User.id == contractor_id).first()
+        if contractor_user and contractor_user.full_name:
+            beneficiary_name = contractor_user.full_name
+
+    payload = {
+        "tracking_number": tracking_number,
+        "unique_code": None,
+        "status": "DRAFT",
+        "current_approval_level": 0,
+        "activity_id": activity.id,
+        "activity_name": activity.name,
+        "amount": int(final_payable_amount),
+        "beneficiary_name": beneficiary_name,
+        "description": f"تسویه حساب کارکرد منابع انسانی - سال {year} ماه {month}",
+        "created_by_id": initiated_by.id,
+        "fiscal_year": str(year),
+        "form_data": {
+            "source_module": "ATTENDANCE",
+            "attendance_work_period_id": work_period.id,
+            "work_period_id": work_period.id,
+            "year": year,
+            "month": month,
+            "contractor_user_id": contractor_id,
+            "contractor_name": beneficiary_name,
+            "final_payable_amount": int(final_payable_amount),
+        },
+    }
+    logger.info("Attendance finance handoff payload prepared: %s", payload)
+
+    transaction = Transaction(
+        tracking_number=payload["tracking_number"],
+        unique_code=payload["unique_code"],  # explicitly NULL until Transaction reaches APPROVED
+        status=payload["status"],
+        current_approval_level=payload["current_approval_level"],
+        zone_id=getattr(initiated_by, "default_zone_id", None),
+        department_id=getattr(initiated_by, "default_dept_id", None),
+        section_id=getattr(initiated_by, "default_section_id", None),
+        activity_id=payload["activity_id"],
+        amount=payload["amount"],
+        description=f"تسویه حساب کارکرد منابع انسانی - سال {year} ماه {month}",
+        beneficiary_name=payload["beneficiary_name"],
+        contract_number=f"ATT-{year}-{str(month).zfill(2)}",
+        created_by_id=payload["created_by_id"],
+        fiscal_year=payload["fiscal_year"],
+        form_data=payload["form_data"],
+    )
+    try:
+        db.add(transaction)
+        db.flush()
+        work_period.status = WorkFlowStatus.PENDING_UNIQUE_CODE
+        db.commit()
+        db.refresh(transaction)
+        db.refresh(work_period)
+    except Exception as exc:
+        db.rollback()
+        logger.exception("Failed to hand off work period %s/%s to finance.", year, month)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to finalize work period: {exc}",
+        ) from exc
+
+    return WorkPeriodApprovalOut(
+        success=True,
+        status=work_period.status,
+        message="Work period finalized and handed off to the finance workflow.",
+        financial_transaction_id=transaction.id,
+        financial_transaction_status=transaction.status,
+        financial_tracking_number=transaction.tracking_number,
+    )
+
+
+def generate_unique_code_for_period(
+    db: Session,
+    *,
+    year: int,
+    month: int,
+) -> WorkPeriodApprovalOut:
+    raise HTTPException(
+        status_code=410,
+        detail="Direct unique-code generation is removed. Continue the workflow in the finance module.",
+    )
+
+    work_period = _get_work_period_or_404(db, year=year, month=month)
+
+    if work_period.status == WorkFlowStatus.SENT_TO_FINANCE:
+        return WorkPeriodApprovalOut(
+            success=True,
+            status=work_period.status,
+            message="Unique code has already been generated and sent to finance.",
+        )
+
+    if work_period.status != WorkFlowStatus.PENDING_UNIQUE_CODE:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Work period must be in PENDING_UNIQUE_CODE status to generate a unique code. Current status: {work_period.status}",
+        )
+
+    # Find the Transaction created for this work period
+    from app.models import Transaction
+
+    activity = _get_attendance_finance_activity(db)
+    transaction = (
+        db.query(Transaction)
+        .filter(
+            Transaction.activity_id == activity.id,
+            Transaction.status == "DRAFT",
+        )
+        .order_by(Transaction.created_at.desc())
+        .first()
+    )
+
+    if not transaction:
+        # Fallback search in form_data if simple filter fails
+        all_drafts = db.query(Transaction).filter(Transaction.status == "DRAFT").all()
+        for t in all_drafts:
+            if t.form_data and t.form_data.get("work_period_id") == work_period.id:
+                transaction = t
+                break
+
+    if not transaction:
+        raise HTTPException(
+            status_code=404,
+            detail="No draft transaction found for this work period. Please finalize the period first.",
+        )
+
+    # Logic to generate the unique code
+    # Pattern: HR-{year}{month}-{tracking_suffix}
+    tracking_suffix = (
+        transaction.tracking_number.split("-")[-1]
+        if "-" in transaction.tracking_number
+        else uuid.uuid4().hex[:8]
+    )
+    generated_code = f"HR-{year}{str(month).zfill(2)}-{tracking_suffix.upper()}"
+
+    try:
+        transaction.unique_code = generated_code
+        transaction.status = "APPROVED"
+        transaction.current_approval_level = 4
+
+        work_period.financial_unique_code = generated_code
+        work_period.status = WorkFlowStatus.SENT_TO_FINANCE
+
+        db.commit()
+        db.refresh(work_period)
+    except Exception as exc:
+        db.rollback()
+        logger.error(f"Failed to generate unique code: {str(exc)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to generate unique code: {exc}",
+        ) from exc
+
+    return WorkPeriodApprovalOut(
+        success=True,
+        status=work_period.status,
+        message=f"کد یکتا {generated_code} با موفقیت صادر و پرونده به امور مالی ارجاع شد.",
+    )
+
+
 def ingest_excel(
     file: UploadFile,
     title: str,
@@ -324,47 +935,68 @@ def ingest_excel(
 
     column_mapping = _build_column_mapping(columns)
 
-    sheet = db.query(RegionalAttendanceSheet).filter(
-        RegionalAttendanceSheet.year == year,
-        RegionalAttendanceSheet.month == month,
-        RegionalAttendanceSheet.region == region_name,
-    ).first()
-
-    if not sheet:
-        sheet = RegionalAttendanceSheet(
-            title=title,
-            year=year,
-            month=month,
-            region=region_name,
-            original_filename=file.filename or "unknown.xlsx",
-            row_count=0,
-            status=AttendanceSheetStatus.DRAFT,
-            created_by_id=creator_id,
-        )
-        db.add(sheet)
-        db.flush()
-
-    records: list[AttendanceRecord] = []
-    for idx, row in enumerate(rows):
-        if _should_skip_row(row, column_mapping):
-            continue
-
-        record_kwargs = {
-            "sheet": sheet,
-            "row_number": EXCEL_DATA_START_ROW_NUMBER + idx,
-        }
-
-        for field_name, parser in FIELD_PARSERS.items():
-            record_kwargs[field_name] = parser(_get_row_value(row, column_mapping, field_name))
-
-        if not record_kwargs["full_name"]:
-            continue
-
-        records.append(AttendanceRecord(**record_kwargs))
-
-    sheet.row_count = sheet.row_count + len(records)
-
     try:
+        work_period = get_or_create_work_period(db, year=year, month=month)
+        sheet = db.query(RegionalAttendanceSheet).filter(
+            RegionalAttendanceSheet.year == year,
+            RegionalAttendanceSheet.month == month,
+            RegionalAttendanceSheet.region == region_name,
+        ).first()
+
+        had_existing_submission_for_period = bool(
+            sheet
+            and sheet.work_period_id == work_period.id
+            and (sheet.row_count or 0) > 0
+        )
+
+        if not sheet:
+            sheet = RegionalAttendanceSheet(
+                title=title,
+                year=year,
+                month=month,
+                region=region_name,
+                original_filename=file.filename or "unknown.xlsx",
+                row_count=0,
+                status=AttendanceSheetStatus.DRAFT,
+                created_by_id=creator_id,
+                work_period_id=work_period.id,
+            )
+            db.add(sheet)
+            db.flush()
+        else:
+            db.query(AttendanceRecord).filter(
+                AttendanceRecord.sheet_id == sheet.id
+            ).delete(synchronize_session=False)
+            sheet.title = title
+            sheet.original_filename = file.filename or "unknown.xlsx"
+            sheet.created_by_id = creator_id
+            sheet.status = AttendanceSheetStatus.DRAFT
+            sheet.rejection_reason = None
+            sheet.row_count = 0
+            sheet.work_period_id = work_period.id
+
+        records: list[AttendanceRecord] = []
+        for idx, row in enumerate(rows):
+            if _should_skip_row(row, column_mapping):
+                continue
+
+            record_kwargs = {
+                "sheet": sheet,
+                "row_number": EXCEL_DATA_START_ROW_NUMBER + idx,
+                "work_period_id": work_period.id,
+            }
+
+            for field_name, parser in FIELD_PARSERS.items():
+                record_kwargs[field_name] = parser(_get_row_value(row, column_mapping, field_name))
+
+            if not record_kwargs["full_name"]:
+                continue
+
+            records.append(AttendanceRecord(**record_kwargs))
+
+        sheet.row_count = len(records)
+        if not had_existing_submission_for_period:
+            work_period.total_regions_uploaded = (work_period.total_regions_uploaded or 0) + 1
         db.add_all(records)
         db.commit()
         db.refresh(sheet)
@@ -373,6 +1005,26 @@ def ingest_excel(
         raise HTTPException(status_code=500, detail=f"Database write failed: {str(exc)}") from exc
 
     return sheet
+
+
+def parse_attendance_excel_to_db(
+    file: UploadFile,
+    title: str,
+    year: int,
+    month: int,
+    region_name: str,
+    creator_id: int,
+    db: Session,
+) -> RegionalAttendanceSheet:
+    return ingest_excel(
+        file=file,
+        title=title,
+        year=year,
+        month=month,
+        region_name=region_name,
+        creator_id=creator_id,
+        db=db,
+    )
 
 
 STATEMENT_FIELD_PARSERS: dict[str, Callable[[object], object]] = {
@@ -525,66 +1177,146 @@ def ingest_statement_excel(
             detail="Declared total amount must be greater than zero.",
         )
 
-    sheet = db.query(RegionalAttendanceSheet).filter(
-        RegionalAttendanceSheet.year == year,
-        RegionalAttendanceSheet.month == month,
-        RegionalAttendanceSheet.region == region_name,
-    ).first()
+    try:
+        work_period = get_or_create_work_period(db, year=year, month=month)
+        if work_period.status == WorkFlowStatus.DRAFT_REGIONS:
+            logger.warning(
+                "Contractor statement uploaded while work period is still in DRAFT_REGIONS "
+                "(year=%s, month=%s, work_period_id=%s).",
+                year,
+                month,
+                work_period.id,
+            )
 
-    if not sheet:
-        sheet = RegionalAttendanceSheet(
-            title=title,
+        sheet = db.query(RegionalAttendanceSheet).filter(
+            RegionalAttendanceSheet.year == year,
+            RegionalAttendanceSheet.month == month,
+            RegionalAttendanceSheet.region == region_name,
+        ).first()
+
+        if not sheet:
+            sheet = RegionalAttendanceSheet(
+                title=title,
+                year=year,
+                month=month,
+                region=region_name,
+                original_filename=file.filename or "statement.xlsx",
+                row_count=0,
+                status=AttendanceSheetStatus.DRAFT,
+                declared_total_amount=declared_total_decimal,
+                created_by_id=creator_id,
+                work_period_id=work_period.id,
+            )
+            db.add(sheet)
+            db.flush()
+        else:
+            # Update declared amount on existing sheet if being re-uploaded
+            sheet.declared_total_amount = declared_total_decimal
+            sheet.work_period_id = work_period.id
+
+        statement = ContractorStatement(
+            sheet=sheet,
             year=year,
             month=month,
-            region=region_name,
-            original_filename=file.filename or "statement.xlsx",
-            row_count=0,
-            status=AttendanceSheetStatus.DRAFT,
+            region_name=region_name,
             declared_total_amount=declared_total_decimal,
-            created_by_id=creator_id,
+            work_period_id=work_period.id,
         )
-        db.add(sheet)
+        db.add(statement)
         db.flush()
-    else:
-        # Update declared amount on existing sheet if being re-uploaded
-        sheet.declared_total_amount = declared_total_decimal
 
-    statement = ContractorStatement(
-        sheet=sheet,
-        year=year,
-        month=month,
-        region_name=region_name,
-        declared_total_amount=declared_total_decimal,
-    )
-    db.add(statement)
-    db.flush()
+        items: list[ContractorStatementItem] = []
+        for idx, row in enumerate(rows):
+            if _should_skip_row(row, column_mapping):
+                continue
 
-    items: list[ContractorStatementItem] = []
-    for idx, row in enumerate(rows):
-        if _should_skip_row(row, column_mapping):
-            continue
+            item_kwargs = {
+                "statement": statement,
+                "sheet": sheet,
+                "row_number": EXCEL_DATA_START_ROW_NUMBER + idx,
+            }
+            if hasattr(ContractorStatementItem, "work_period_id"):
+                item_kwargs["work_period_id"] = work_period.id
 
-        item_kwargs = {
-            "statement": statement,
-            "sheet": sheet,
-            "row_number": EXCEL_DATA_START_ROW_NUMBER + idx,
-        }
+            for field_name, parser in STATEMENT_FIELD_PARSERS.items():
+                item_kwargs[field_name] = parser(_get_row_value(row, column_mapping, field_name))
 
-        for field_name, parser in STATEMENT_FIELD_PARSERS.items():
-            item_kwargs[field_name] = parser(_get_row_value(row, column_mapping, field_name))
+            if not item_kwargs["full_name"]:
+                continue
 
-        if not item_kwargs["full_name"]:
-            continue
+            items.append(ContractorStatementItem(**item_kwargs))
 
-        items.append(ContractorStatementItem(**item_kwargs))
-
-    try:
         db.add_all(items)
         db.commit()
         db.refresh(sheet)
     except Exception as exc:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Database write failed for statement: {str(exc)}") from exc
+
+    return sheet
+
+
+def parse_contractor_statement_excel(
+    file: UploadFile,
+    title: str,
+    year: int,
+    month: int,
+    region_name: str,
+    declared_total_amount: float,
+    creator_id: int,
+    db: Session,
+) -> RegionalAttendanceSheet:
+    return ingest_statement_excel(
+        file=file,
+        title=title,
+        year=year,
+        month=month,
+        region_name=region_name,
+        declared_total_amount=declared_total_amount,
+        creator_id=creator_id,
+        db=db,
+    )
+
+
+def reject_attendance_sheet(
+    db: Session,
+    *,
+    sheet_id: int,
+    reason: str,
+    actor_id: int,
+) -> RegionalAttendanceSheet:
+    normalized_reason = _normalize_text(reason)
+    if not normalized_reason:
+        raise HTTPException(status_code=422, detail="Rejection reason is required.")
+
+    sheet = (
+        db.query(RegionalAttendanceSheet)
+        .filter(RegionalAttendanceSheet.id == sheet_id)
+        .first()
+    )
+    if not sheet:
+        raise HTTPException(status_code=404, detail="Sheet not found.")
+
+    sheet.status = AttendanceSheetStatus.REJECTED
+    sheet.rejection_reason = normalized_reason
+    sheet.company_rep_id = actor_id
+    sheet.work_period_id = None
+
+    create_notification(
+        db,
+        user_id=sheet.created_by_id,
+        message=f"فایل کارکرد شما به دلیل: {normalized_reason} رد شد. لطفاً اصلاح و مجدداً آپلود کنید.",
+    )
+
+    try:
+        db.commit()
+        db.refresh(sheet)
+    except Exception as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to reject attendance sheet: {exc}",
+        ) from exc
 
     return sheet
 
@@ -641,153 +1373,6 @@ def _get_statement_total_candidate(item: ContractorStatementItem) -> Optional[De
         if value is not None:
             return value
     return None
-
-
-def _get_attendance_sheet_for_period(
-    db: Session,
-    *,
-    year: int,
-    month: int,
-    region_name: str,
-) -> RegionalAttendanceSheet:
-    normalized_region = _normalize_text(region_name)
-    candidates = (
-        db.query(RegionalAttendanceSheet)
-        .filter(
-            RegionalAttendanceSheet.year == year,
-            RegionalAttendanceSheet.month == month,
-        )
-        .order_by(RegionalAttendanceSheet.created_at.desc())
-        .all()
-    )
-
-    matched_sheets: list[RegionalAttendanceSheet] = []
-    for sheet in candidates:
-        if _normalize_text(sheet.region or "") != normalized_region:
-            continue
-        matched_sheets.append(sheet)
-        has_rows = (
-            db.query(AttendanceRecord.id)
-            .filter(AttendanceRecord.sheet_id == sheet.id)
-            .first()
-            is not None
-        )
-        if has_rows:
-            return sheet
-
-    if matched_sheets:
-        raise HTTPException(
-            status_code=404,
-            detail=(
-                "No regional attendance rows found for the selected period and region. "
-                "Upload the 18-column regional attendance file for this period."
-            ),
-        )
-
-    raise HTTPException(
-        status_code=404,
-        detail=(
-            f"No attendance sheet found for year={year}, month={month}, "
-            f"region='{region_name}'."
-        ),
-    )
-
-
-def get_attendance_reconciliation(
-    db: Session,
-    *,
-    year: int,
-    month: int,
-    region_name: str,
-) -> AttendanceReconciliationOut:
-    normalized_region = _normalize_text(region_name)
-    if not normalized_region:
-        raise HTTPException(status_code=422, detail="Region name is required.")
-
-    sheet = _get_attendance_sheet_for_period(
-        db,
-        year=year,
-        month=month,
-        region_name=normalized_region,
-    )
-
-    region_totals = (
-        db.query(
-            func.coalesce(func.sum(AttendanceRecord.total_average_per_capita), 0).label(
-                "per_capita_total"
-            ),
-            func.coalesce(func.sum(AttendanceRecord.total_overtime_given), 0).label(
-                "overtime_total"
-            ),
-        )
-        .filter(AttendanceRecord.sheet_id == sheet.id)
-        .first()
-    )
-
-    has_attendance_rows = (
-        db.query(AttendanceRecord.id)
-        .filter(AttendanceRecord.sheet_id == sheet.id)
-        .first()
-        is not None
-    )
-    if not has_attendance_rows:
-        raise HTTPException(
-            status_code=404,
-            detail="No regional attendance rows found for the selected period and region.",
-        )
-
-    region_total = _as_decimal(region_totals.per_capita_total) + _as_decimal(
-        region_totals.overtime_total
-    )
-
-    matching_statements = (
-        db.query(ContractorStatement)
-        .filter(
-            ContractorStatement.year == year,
-            ContractorStatement.month == month,
-        )
-        .order_by(ContractorStatement.created_at.desc())
-        .all()
-    )
-    statement = next(
-        (
-            candidate
-            for candidate in matching_statements
-            if _normalize_text(candidate.region_name or "") == normalized_region
-        ),
-        None,
-    )
-
-    if not statement:
-        raise HTTPException(
-            status_code=404,
-            detail="No contractor statement found for the selected period and region.",
-        )
-
-    has_statement_rows = (
-        db.query(ContractorStatementItem.id)
-        .filter(ContractorStatementItem.statement_id == statement.id)
-        .first()
-        is not None
-    )
-    if not has_statement_rows:
-        raise HTTPException(
-            status_code=404,
-            detail="No contractor statement rows found for the selected period and region.",
-        )
-
-    contractor_total = _as_decimal(statement.declared_total_amount)
-    difference = contractor_total - region_total
-
-    return AttendanceReconciliationOut(
-        year=year,
-        month=month,
-        region_name=sheet.region or normalized_region,
-        region_total=region_total,
-        contractor_total=contractor_total,
-        difference=difference,
-        is_matched=difference == 0,
-    )
 
 
 def get_attendance_aggregation(
@@ -871,3 +1456,103 @@ def get_attendance_aggregation(
         )
 
     return AttendanceAggregationOut(count=len(items), items=items)
+
+
+def update_attendance_record(
+    db: Session,
+    *,
+    record_id: int,
+    payload: "app.schemas.attendance.AttendanceRecordUpdate", # type: ignore
+    user_id: int,
+) -> app.models.attendance.AttendanceRecord: # type: ignore
+    from app.models.attendance import AttendanceRecord, AttendanceAuditLog
+    
+    record = db.query(AttendanceRecord).filter(AttendanceRecord.id == record_id).first()
+    if not record:
+        raise HTTPException(status_code=404, detail="Attendance record not found.")
+
+    update_data = payload.model_dump(exclude_unset=True)
+    if not update_data:
+        return record  # Nothing to update
+
+    logs = []
+    
+    for field_name, new_value in update_data.items():
+        old_value = getattr(record, field_name, None)
+        
+        # Compare as strings or float, because Decimal vs float vs string
+        # For simple difference check, converting both to strings handles Decimals/Floats
+        str_old = str(old_value) if old_value is not None else None
+        str_new = str(new_value) if new_value is not None else None
+
+        if str_old != str_new:
+            setattr(record, field_name, new_value)
+            logs.append(
+                AttendanceAuditLog(
+                    record_id=record.id,
+                    changed_by_user_id=user_id,
+                    field_name=field_name,
+                    old_value=str_old,
+                    new_value=str_new,
+                )
+            )
+
+    if logs:
+        db.add_all(logs)
+        try:
+            db.commit()
+            db.refresh(record)
+        except Exception as exc:
+            db.rollback()
+            raise HTTPException(status_code=500, detail=f"Failed to update record: {exc}") from exc
+
+    return record
+
+
+def get_attendance_audit_logs(
+    db: Session,
+    *,
+    record_id: int,
+) -> list["app.schemas.attendance.AttendanceAuditLogOut"]: # type: ignore
+    from app.models.attendance import AttendanceAuditLog
+    from app.models import User
+    from app.schemas.attendance import AttendanceAuditLogOut
+    
+    logs = (
+        db.query(AttendanceAuditLog, User)
+        .outerjoin(User, AttendanceAuditLog.changed_by_user_id == User.id)
+        .filter(AttendanceAuditLog.record_id == record_id)
+        .order_by(AttendanceAuditLog.created_at.desc())
+        .all()
+    )
+
+    out_logs = []
+    for log, user in logs:
+        out_log = AttendanceAuditLogOut.model_validate(log)
+        out_log.changed_by_full_name = user.full_name if user else None
+        out_logs.append(out_log)
+
+    return out_logs
+
+
+def get_work_period_region_records(
+    db: Session,
+    *,
+    year: int,
+    month: int,
+    region_name: str,
+) -> list[app.models.attendance.AttendanceRecord]: # type: ignore
+    from app.models.attendance import AttendanceRecord, RegionalAttendanceSheet
+    
+    records = (
+        db.query(AttendanceRecord)
+        .join(RegionalAttendanceSheet, AttendanceRecord.sheet_id == RegionalAttendanceSheet.id)
+        .filter(
+            RegionalAttendanceSheet.year == year,
+            RegionalAttendanceSheet.month == month,
+            RegionalAttendanceSheet.region == region_name,
+        )
+        .order_by(AttendanceRecord.row_number.asc())
+        .all()
+    )
+    return records

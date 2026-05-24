@@ -40,6 +40,7 @@ from app.routers import (
     hr_finance_router,
     notifications_router,
     civil_router,
+    volume_contracts_router,
 )
 from pydantic import BaseModel
 
@@ -65,12 +66,12 @@ app.include_router(templates_router)
 app.include_router(contracts_router)
 app.include_router(statements_router)
 app.include_router(reports_router, tags=["Reports"])
-app.include_router(funding_router)
 app.include_router(funding_router, prefix="/api")
 app.include_router(attendance_router)
 app.include_router(hr_finance_router)
 app.include_router(notifications_router)
 app.include_router(civil_router)
+app.include_router(volume_contracts_router)
 
 # --- CORS Configuration ---
 allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8000,http://localhost:5173").split(",")

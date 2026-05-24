@@ -10,6 +10,8 @@ class CivilProjectListItem(BaseModel):
     title: str
     current_phase: int
     current_step: int
+    contract_category: str | None = None
+    yekta_code: str | None = None
     current_step_code: str | None = None
     current_step_name: str | None = None
     activity_name: str | None = None
@@ -38,15 +40,34 @@ class CivilFinancialSummary(BaseModel):
 class CivilTransactionResponse(BaseModel):
     id: int
     document_number: str
+    unique_code: str | None = None
     date: str | None = None
     amount: int | None = None
     description: str | None = None
     status: str | None = None
+    financial_event: str | None = None
+    financial_event_label: str | None = None
+    financial_matrix_id: int | None = None
+
+class CivilFinancialMatrixRowResponse(BaseModel):
+    id: int
+    transaction_id: int | None = None
+    event_sequence: int | None = None
+    event_code: str
+    event_label: str | None = None
+    event_group: str | None = None
+    event_direction: str | None = None
+    amount: float | None = None
+    yekta_code: str | None = None
+    payment_queue_status: str | None = None
+    period_key: str | None = None
+    source_payload: Dict[str, Any] | None = None
 
 class StepInfoResponse(BaseModel):
     step_name: str
     step_number: int
     total_steps: int
+    assigned_role: str | None = None
     required_form_type: str | None = None
     form_schema: Dict[str, Any] | None = None
 
@@ -54,6 +75,8 @@ class CivilProjectDetailResponse(BaseModel):
     id: int
     project_code: str
     title: str
+    contract_category: str | None = None
+    yekta_code: str | None = None
     budget_line: str | None = None
     current_step_info: StepInfoResponse
     documents: List[DocumentResponse]
@@ -61,6 +84,7 @@ class CivilProjectDetailResponse(BaseModel):
     can_advance: bool
     financial_summary: CivilFinancialSummary | None = None
     transactions: List[CivilTransactionResponse] = []
+    financial_matrix: List[CivilFinancialMatrixRowResponse] = []
 
 
-__all__ = ["CivilProjectListItem", "CivilProjectDetailResponse"]
+__all__ = ["CivilProjectListItem", "CivilProjectDetailResponse", "CivilFinancialMatrixRowResponse"]

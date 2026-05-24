@@ -17,6 +17,7 @@ import hashlib
 import json
 import io
 import csv
+import os
 
 from app.database import SessionLocal
 from app.models import (
@@ -260,17 +261,18 @@ def _create_journal_snapshot(tx: Transaction, db: Session) -> JournalSnapshot:
         "source_budget_item_id": expense_budget_item_id
     })
     
-    # Credit line (bank) - TODO: make configurable
-    # Currently hard-coded per audit finding
+    # Credit line (bank) - configurable via environment
+    bank_account_code = os.getenv("DEFAULT_BANK_ACCOUNT_CODE", "21010100")
+    bank_account_name = os.getenv("DEFAULT_BANK_ACCOUNT_NAME", "حساب بانکی")
     lines_data.append({
         "sequence": 2,
-        "account_code": "21010100",  # Hard-coded bank account
-        "account_name": "حساب بانکی",  # Hard-coded name
+        "account_code": bank_account_code,
+        "account_name": bank_account_name,
         "account_type": "BANK",
         "debit_amount": 0,
         "credit_amount": amount_int,
         "line_description": "واریز از حساب بانکی",
-        "source_budget_item_id": None  # No source for bank account
+        "source_budget_item_id": None
     })
     
     # Calculate totals

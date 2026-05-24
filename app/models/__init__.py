@@ -40,7 +40,7 @@ from .attendance import (
     WorkPeriod,
 )
 from .organization import Activity, OrgUnit, OrgUnitType
-from .finance import TransactionAllocation
+from .finance import FinancialMatrix, TransactionAllocation, generate_financial_matrix_yekta_code
 from .finance_rules import FinancialRule
 from .civil import (
     ApprovalTask,

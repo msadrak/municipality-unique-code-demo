@@ -5,9 +5,9 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional
-import hashlib
 from app import models, schemas
 from app.routers.auth import get_current_user, get_db
+from app.services.yekta_codes import build_yekta_prefix, build_yekta_segments
 
 router = APIRouter(prefix="/portal", tags=["Portal"])
 
@@ -114,22 +114,36 @@ def create_transaction(data: CreateTransactionRequest, request: Request, db: Ses
     dept = db.query(models.OrgUnit).filter(models.OrgUnit.id == data.department_id).first() if data.department_id else None
     section = db.query(models.OrgUnit).filter(models.OrgUnit.id == data.section_id).first() if data.section_id else None
     
-    zone_code = (zone.code or str(data.zone_id)).zfill(2) if zone else "00"
-    dept_code = (dept.code or "00").zfill(2) if dept else "00"
-    section_code = (section.code or "000").zfill(3) if section else "000"
-    budget_code = data.budget_code.zfill(4)
-    cost_center = (data.cost_center_code or "000").zfill(3)
-    cont_act = (data.continuous_activity_code or "00").zfill(2)
-    spec_act_hash = hashlib.md5(data.special_activity.encode()).hexdigest()[:3].upper() if data.special_activity else "000"
-    ben_hash = hashlib.md5((data.beneficiary_name.strip() or "Unknown").encode()).hexdigest()[:6].upper()
-    fin_event = (data.financial_event_code or "000").zfill(3)
     date_code = "1403"
     
-    existing_prefix = f"{zone_code}-{dept_code}-{section_code}-{budget_code}"
+    existing_prefix = build_yekta_prefix(
+        zone_code=zone.code if zone else data.zone_id,
+        department_code=dept.code if dept else data.department_id,
+        section_code=section.code if section else data.section_id,
+        budget_code=data.budget_code,
+        cost_center_code=data.cost_center_code,
+        continuous_action_code=data.continuous_activity_code,
+        special_activity=data.special_activity,
+        beneficiary_name=data.beneficiary_name,
+        financial_event_code=data.financial_event_code,
+        fiscal_year=date_code,
+    )
     count_query = db.query(models.Transaction).filter(models.Transaction.unique_code.like(f"{existing_prefix}%")).count()
-    occurrence = str(count_query + 1).zfill(3)
+    occurrence = count_query + 1
     
-    unique_code = f"{zone_code}-{dept_code}-{section_code}-{budget_code}-{cost_center}-{cont_act}-{spec_act_hash}-{ben_hash}-{fin_event}-{date_code}-{occurrence}"
+    unique_code = build_yekta_segments(
+        zone_code=zone.code if zone else data.zone_id,
+        department_code=dept.code if dept else data.department_id,
+        section_code=section.code if section else data.section_id,
+        budget_code=data.budget_code,
+        cost_center_code=data.cost_center_code,
+        continuous_action_code=data.continuous_activity_code,
+        special_activity=data.special_activity,
+        beneficiary_name=data.beneficiary_name,
+        financial_event_code=data.financial_event_code,
+        fiscal_year=date_code,
+        sequence=occurrence,
+    ).code()
     
     budget_item = db.query(models.BudgetItem).filter(models.BudgetItem.budget_code == data.budget_code).first()
     if budget_item:
@@ -163,7 +177,22 @@ def get_my_transactions(request: Request, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="احراز هویت الزامی است")
     
     transactions = db.query(models.Transaction).filter(models.Transaction.created_by_id == current_user.id).order_by(models.Transaction.created_at.desc()).limit(50).all()
-    return {"transactions": [{"id": t.id, "unique_code": t.unique_code, "beneficiary_name": t.beneficiary_name, "amount": t.amount, "status": t.status, "rejection_reason": t.rejection_reason, "created_at": t.created_at.strftime("%Y/%m/%d %H:%M") if t.created_at else None} for t in transactions], "count": len(transactions)}
+    return {
+        "transactions": [
+            {
+                "id": t.id,
+                "tracking_number": t.tracking_number,
+                "unique_code": t.unique_code,
+                "beneficiary_name": t.beneficiary_name,
+                "amount": t.amount,
+                "status": t.status,
+                "rejection_reason": t.rejection_reason,
+                "created_at": t.created_at.strftime("%Y/%m/%d %H:%M") if t.created_at else None,
+            }
+            for t in transactions
+        ],
+        "count": len(transactions),
+    }
 
 @router.get("/user/allowed-activities")
 def get_user_allowed_activities(request: Request, db: Session = Depends(get_db)):

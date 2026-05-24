@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 TRANSACTION_CREATED = "TRANSACTION_CREATED"
 PROGRESS_STATEMENT = "PROGRESS_STATEMENT"
+PROGRESS_STATEMENT_STEP_NUMBER = 33
 NET_PAYABLE_RATE = Decimal("0.85")
 
 PERSIAN_ARABIC_DIGITS = str.maketrans(
@@ -71,7 +72,7 @@ class CivilFinancialBridgeService:
         if document is None:
             raise ValueError(
                 f"Civil project {project.project_code} has no {PROGRESS_STATEMENT} "
-                "document from workflow step 20"
+                f"document from workflow step {PROGRESS_STATEMENT_STEP_NUMBER}"
             )
 
         tracking_number = self._tracking_number(project, document)
@@ -161,7 +162,7 @@ class CivilFinancialBridgeService:
             .filter(
                 EntityDocument.project_id == project_id,
                 EntityDocument.document_type == PROGRESS_STATEMENT,
-                WorkflowStep.order_index == 20,
+                WorkflowStep.order_index == PROGRESS_STATEMENT_STEP_NUMBER,
             )
             .order_by(EntityDocument.created_at.desc(), EntityDocument.id.desc())
             .first()

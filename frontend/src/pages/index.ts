@@ -9,3 +9,4 @@ export { NewContract } from './NewContract';
 export { ReportsPage } from './ReportsPage';
 export { ContractorRegistration } from './ContractorRegistration';
 export { default as ProgressStatementPage } from './ProgressStatementPage';
+export { CivilDashboard } from './civil/CivilDashboard';

@@ -88,7 +88,7 @@ def login(
             detail="حساب کاربری غیرفعال است.",
         )
 
-    if not str(user.hashed_password).startswith("$2"):
+    if not str(user.hashed_password).startswith("$argon2"):
         user.hashed_password = get_password_hash(credentials.password)
         db.commit()
         db.refresh(user)

@@ -13,11 +13,13 @@ import { MyFundingRequestsV2 } from '../components/funding/MyFundingRequestsV2';
 import { FundingManagerInboxV2 } from '../components/funding/FundingManagerInboxV2';
 import {
     canAccessCivilModule,
+    canAccessCivilProjectScreens,
     canAccessAttendanceInbox,
     canAccessFinanceWorkflow,
     canAccessHrModule,
     canAccessSecurityAggregation,
     canAccessSecurityReconciliation,
+    canAccessVolumeContractsModule,
     canUploadContractorStatement,
     canUploadRegionalAttendance,
     canSeeFundingArchive,
@@ -48,6 +50,9 @@ import LetterArchive from '../pages/funding/LetterArchive';
 import HRFinanceWizard from '../pages/hr/HRFinanceWizard';
 import MockPage from '../pages/MockPage';
 import { CivilProjectDetail } from '../pages/civil/CivilProjectDetail';
+import { CivilDashboard } from '../pages/civil/CivilDashboard';
+import { VolumeContractDetail } from '../pages/volume_contracts/VolumeContractDetail';
+import { VolumeContractsDashboard } from '../pages/volume_contracts/VolumeContractsDashboard';
 
 /**
  * Application routes configuration
@@ -154,8 +159,35 @@ export const router = createBrowserRouter(
                 {
                     path: '/civil/projects/:id',
                     element: (
-                        <DomainRoute allow={canAccessCivilModule}>
+                        <DomainRoute allow={canAccessCivilProjectScreens}>
                             <CivilProjectDetail />
+                        </DomainRoute>
+                    ),
+                },
+                // Civil Projects Kanban Dashboard
+                {
+                    path: '/civil/dashboard',
+                    element: (
+                        <DomainRoute allow={canAccessCivilProjectScreens}>
+                            <CivilDashboard />
+                        </DomainRoute>
+                    ),
+                },
+                // Dedicated volume contracts dashboard
+                {
+                    path: '/volume-contracts/dashboard',
+                    element: (
+                        <DomainRoute allow={canAccessVolumeContractsModule}>
+                            <VolumeContractsDashboard />
+                        </DomainRoute>
+                    ),
+                },
+                // Dedicated volume contract detail
+                {
+                    path: '/volume-contracts/:id',
+                    element: (
+                        <DomainRoute allow={canAccessVolumeContractsModule}>
+                            <VolumeContractDetail />
                         </DomainRoute>
                     ),
                 },

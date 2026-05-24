@@ -52,7 +52,7 @@ CONTRACT_NUMBER = "CNT-SOMAYEH-1405-020"
 DEFAULT_PASSWORD = "password123"
 
 
-STEP_BLUEPRINTS: tuple[tuple[int, str, str, str | None, str | None], ...] = (
+_LEGACY_STEP_BLUEPRINTS: tuple[tuple[int, str, str, str | None, str | None], ...] = (
     (1, "ثبت درخواست پروژه", UserRole.CIVIL_MANAGER.value, "PROJECT_REQUEST", None),
     (2, "بررسی اولیه درخواست", UserRole.CIVIL_MANAGER.value, "PRELIMINARY_REVIEW", None),
     (3, "بازدید و برداشت میدانی", UserRole.SUPERVISOR.value, "SITE_SURVEY_REPORT", None),
@@ -84,6 +84,49 @@ STEP_BLUEPRINTS: tuple[tuple[int, str, str, str | None, str | None], ...] = (
     (29, "دوره رفع نقص", UserRole.SUPERVISOR.value, "DEFECTS_LIABILITY_REPORT", None),
     (30, "آزادسازی تضمین‌ها", UserRole.FINANCE_MANAGER.value, "GUARANTEE_RELEASE", "GUARANTEE_RELEASED"),
     (31, "اختتام و بایگانی پرونده", UserRole.CIVIL_MANAGER.value, "CLOSEOUT_ARCHIVE", None),
+)
+
+
+STEP_BLUEPRINTS = (
+    (1, "تعریف پروژه برای سال آینده...", UserRole.CIVIL_MANAGER.value, "NEXT_YEAR_PROJECT_DEFINITION", None),
+    (2, "تصویب بودجه شورا", UserRole.FINANCE_MANAGER.value, "COUNCIL_BUDGET_APPROVAL", "BUDGET_BLOCKED"),
+    (3, "تخمین ریالی هزینه انجام", UserRole.CIVIL_MANAGER.value, "COST_ESTIMATE", None),
+    (4, "ثبت در سامانه های مربوطه...", UserRole.CIVIL_MANAGER.value, "SYSTEM_REGISTRATION", None),
+    (5, "ارسال به سازمان طراحی...", UserRole.CIVIL_MANAGER.value, "DESIGN_ORG_REFERRAL", None),
+    (6, "برگزاری جلسات کمیته فنی فاز 1", UserRole.CIVIL_MANAGER.value, "TECHNICAL_COMMITTEE_PHASE_1", None),
+    (7, "برگزاری جلسات اولویت بندی زمان طراحی", UserRole.CIVIL_MANAGER.value, "DESIGN_PRIORITY_MEETING", None),
+    (8, "تهیه فرم های مستندسازی...", UserRole.CIVIL_MANAGER.value, "DOCUMENTATION_FORMS", None),
+    (9, "تکمیل اطلاعات درخواستی طراحی...", UserRole.CIVIL_MANAGER.value, "DESIGN_REQUEST_COMPLETION", None),
+    (10, "برگزاری جلسات کمیته فنی فاز 2", UserRole.CIVIL_MANAGER.value, "TECHNICAL_COMMITTEE_PHASE_2", None),
+    (11, "بررسی طرح توسط کارشناسان معاونت عمران", UserRole.CIVIL_MANAGER.value, "DEPUTY_TECHNICAL_REVIEW", None),
+    (12, "با توجه به مبلغ برآورد: صورت استعلام/مناقصه", UserRole.TENDERING_OFFICER.value, "PROCUREMENT_METHOD_DECISION", None),
+    (13, "مرحله 10 - در انتظار تعیین کارفرما", UserRole.CIVIL_MANAGER.value, None, None),
+    (14, "دعوتنامه شرکت در کمیسیون", UserRole.TENDERING_OFFICER.value, "COMMISSION_INVITATION", None),
+    (15, "شرکت در جلسه کمیسیون و تعیین برنده", UserRole.TENDERING_OFFICER.value, "COMMISSION_WINNER_SELECTION", None),
+    (16, "دعوتنامه برای پیمانکار برنده", UserRole.CONTRACTS_OFFICER.value, "WINNING_CONTRACTOR_INVITATION", None),
+    (17, "تهیه قرارداد و امضاء مسئولین", UserRole.CONTRACTS_OFFICER.value, "CONTRACT_SIGNED", "CONTRACT_COMMITTED"),
+    (18, "ابلاغ قرارداد به پیمانکار", UserRole.CONTRACTS_OFFICER.value, "CONTRACT_NOTICE_TO_CONTRACTOR", None),
+    (19, "ابلاغ ناظر به پیمانکار", UserRole.CIVIL_MANAGER.value, "SUPERVISOR_NOTICE_TO_CONTRACTOR", None),
+    (20, "دعوتنامه تحویل زمین", UserRole.DELIVERY_COMMISSION.value, "LAND_HANDOVER_INVITATION", None),
+    (21, "صورتجلسه تحویل زمین", UserRole.DELIVERY_COMMISSION.value, "LAND_HANDOVER", None),
+    (22, "ابلاغ تحویل زمین", UserRole.CONTRACTS_OFFICER.value, "LAND_HANDOVER_NOTICE", None),
+    (23, "ارائه صورتوضعیت پیمانکار به ناظر", UserRole.CONTRACTOR.value, "CONTRACTOR_PROGRESS_STATEMENT", None),
+    (24, "تهیه روکش توسط کارشناس پیمان", UserRole.CONTRACTS_OFFICER.value, "CONTRACT_COVER_SHEET", None),
+    (25, "تکمیل امضا، و شماره شدن روکش", UserRole.CONTRACTS_OFFICER.value, "COVER_SHEET_SIGNATURES", None),
+    (26, "واحد رسیدگی مجدد", UserRole.FINANCE_MANAGER.value, "REVIEW_UNIT_RECHECK", None),
+    (27, "درخواست تحویل موقت", UserRole.CONTRACTOR.value, "TEMPORARY_HANDOVER_REQUEST", None),
+    (28, "درخواست سیستمی از منطقه به معاونت", UserRole.CIVIL_MANAGER.value, "REGION_TO_DEPUTY_REQUEST", None),
+    (29, "دعوتنامه تحویل موقت", UserRole.DELIVERY_COMMISSION.value, "TEMPORARY_HANDOVER_INVITATION", None),
+    (30, "صورتجلسه تحویل موقت و امضاها (هوشمند)", UserRole.DELIVERY_COMMISSION.value, "TEMPORARY_HANDOVER_MINUTES", None),
+    (31, "ابلاغ تحویل موقت و آزادسازی ضمانتنامه", UserRole.FINANCE_MANAGER.value, "TEMPORARY_HANDOVER_NOTICE_GUARANTEE_RELEASE", "GUARANTEE_RELEASED"),
+    (32, "ارسال اطلاعات مالی مناطق", UserRole.FINANCE_MANAGER.value, "REGIONAL_FINANCIAL_DATA", None),
+    (33, "صورت وضعیت قطعی و تعدیل قطعی (هوشمند)", UserRole.FINANCE_MANAGER.value, "PROGRESS_STATEMENT", "TRANSACTION_CREATED"),
+    (34, "ابلاغ 25% مازاد بر قرارداد", UserRole.CONTRACTS_OFFICER.value, "CONTRACT_SURPLUS_25_NOTICE", None),
+    (35, "درخواست تحویل قطعی پیمانکار", UserRole.CONTRACTOR.value, "FINAL_HANDOVER_REQUEST", None),
+    (36, "درخواست سیستمی جهت معاونت جهت تایید", UserRole.CIVIL_MANAGER.value, "FINAL_HANDOVER_DEPUTY_APPROVAL_REQUEST", None),
+    (37, "دعوتنامه تحویل قطعی", UserRole.DELIVERY_COMMISSION.value, "FINAL_HANDOVER_INVITATION", None),
+    (38, "صورتجلسه تحویل قطعی (هوشمند)", UserRole.DELIVERY_COMMISSION.value, "FINAL_HANDOVER_MINUTES", None),
+    (39, "ابلاغ تحویل قطعی", UserRole.CONTRACTS_OFFICER.value, "FINAL_HANDOVER_NOTICE", None),
 )
 
 
@@ -128,12 +171,64 @@ PROGRESS_STATEMENT_SCHEMA: dict[str, Any] = {
 }
 
 
+PHASE_1_STEP_1_SCHEMA: dict[str, Any] = {
+    "title": "تعریف پروژه برای سال آینده",
+    "description": "فقط اطلاعات پایه را وارد کنید و مدارک فنی، فرم‌های طراحی و مستندات تفصیلی را در بخش پیوست‌ها بارگذاری کنید.",
+    "type": "object",
+    "properties": {
+        "project_title": {
+            "type": "string",
+            "title": "عنوان پروژه",
+            "placeholder": PROJECT_TITLE,
+        },
+        "reference_number": {
+            "type": "string",
+            "title": "شماره نامه / ارجاع",
+            "placeholder": "REF-1405-001",
+        },
+    },
+    "required": ["project_title", "reference_number"],
+}
+
+
+TEMPORARY_HANDOVER_SCHEMA: dict[str, Any] = {
+    "title": "صورتجلسه تحویل موقت و امضاها",
+    "type": "object",
+    "additionalProperties": True,
+    "properties": {
+        "meeting_date": {"type": "string", "title": "تاریخ جلسه"},
+        "commission_members": {"type": "string", "title": "اعضای کمیسیون", "widget": "textarea"},
+        "decisions": {"type": "string", "title": "مصوبات", "widget": "textarea"},
+    },
+}
+
+
+FINAL_HANDOVER_SCHEMA: dict[str, Any] = {
+    "title": "صورتجلسه تحویل قطعی",
+    "type": "object",
+    "additionalProperties": True,
+    "properties": {
+        "handover_date": {"type": "string", "title": "تاریخ تحویل قطعی"},
+        "commission_members": {"type": "string", "title": "اعضای کمیسیون", "widget": "textarea"},
+        "final_decision": {"type": "string", "title": "نتیجه نهایی", "widget": "textarea"},
+    },
+}
+
+
+SMART_FORM_SCHEMAS: dict[int, dict[str, Any]] = {
+    1: PHASE_1_STEP_1_SCHEMA,
+    30: TEMPORARY_HANDOVER_SCHEMA,
+    33: PROGRESS_STATEMENT_SCHEMA,
+    38: FINAL_HANDOVER_SCHEMA,
+}
+
+
 def phase_for_step(step_number: int) -> int:
-    if step_number <= 8:
+    if step_number <= 11:
         return 1
-    if step_number <= 16:
+    if step_number <= 18:
         return 2
-    if step_number <= 24:
+    if step_number <= 34:
         return 3
     return 4
 
@@ -226,8 +321,7 @@ def upsert_definition(
     definition.role_required = role_required
     definition.required_form_type = required_form_type
     definition.financial_gate = financial_gate
-    if step_number == 20:
-        definition.form_schema = PROGRESS_STATEMENT_SCHEMA
+    definition.form_schema = SMART_FORM_SCHEMAS.get(step_number)
     return definition
 
 
@@ -275,6 +369,32 @@ def ensure_transition(db: Session, from_step: WorkflowStep, to_step: WorkflowSte
     )
 
 
+def ensure_required_action(
+    db: Session,
+    *,
+    step: WorkflowStep,
+    assigned_role: str,
+    order_index: int = 1,
+) -> StepAction:
+    action = (
+        db.query(StepAction)
+        .filter(
+            StepAction.step_definition_id == step.definition.id,
+            StepAction.assigned_role == assigned_role,
+        )
+        .first()
+    )
+    if action is None:
+        action = StepAction(
+            step_definition_id=step.definition.id,
+            assigned_role=assigned_role,
+        )
+        db.add(action)
+    action.is_required = True
+    action.order_index = order_index
+    return action
+
+
 def ensure_workflow(db: Session) -> dict[int, WorkflowStep]:
     steps: dict[int, WorkflowStep] = {}
     for step_number, name, role_required, required_form_type, financial_gate in STEP_BLUEPRINTS:
@@ -289,25 +409,18 @@ def ensure_workflow(db: Session) -> dict[int, WorkflowStep]:
         steps[step_number] = upsert_step(db, step_number=step_number, definition=definition)
 
     db.flush()
-    for step_number in range(1, 31):
+    db.query(WorkflowTransition).filter(
+        WorkflowTransition.from_step_id.in_([step.id for step in steps.values()])
+    ).delete(synchronize_session=False)
+
+    for step_number in range(1, len(STEP_BLUEPRINTS)):
         ensure_transition(db, steps[step_number], steps[step_number + 1])
 
-    step20_action = (
-        db.query(StepAction)
-        .filter(
-            StepAction.step_definition_id == steps[20].definition.id,
-            StepAction.assigned_role == UserRole.SUPERVISOR.value,
-        )
-        .first()
+    ensure_required_action(
+        db,
+        step=steps[33],
+        assigned_role=UserRole.FINANCE_MANAGER.value,
     )
-    if step20_action is None:
-        step20_action = StepAction(
-            step_definition_id=steps[20].definition.id,
-            assigned_role=UserRole.SUPERVISOR.value,
-        )
-        db.add(step20_action)
-    step20_action.is_required = True
-    step20_action.order_index = 1
     db.flush()
     return steps
 
@@ -503,7 +616,7 @@ def seed() -> None:
                 owning_org_unit_id=zone.id,
                 activity_id=activity.id,
                 created_by_id=civil_manager.id,
-                current_step_id=steps[20].id,
+                current_step_id=steps[33].id,
                 planned_start_date=date(2026, 3, 21),
                 planned_end_date=date(2026, 11, 20),
                 is_active=True,
@@ -514,7 +627,7 @@ def seed() -> None:
         project.owning_org_unit_id = zone.id
         project.activity_id = activity.id
         project.created_by_id = civil_manager.id
-        project.current_step_id = steps[20].id
+        project.current_step_id = steps[33].id
         project.planned_start_date = date(2026, 3, 21)
         project.planned_end_date = date(2026, 11, 20)
         project.is_active = True
@@ -561,7 +674,7 @@ def seed() -> None:
         upsert_document(
             db,
             project=project,
-            step=steps[5],
+            step=steps[21],
             document_type="LAND_HANDOVER",
             created_by=delivery_user,
             created_at=now - timedelta(days=47),
@@ -582,7 +695,7 @@ def seed() -> None:
         upsert_document(
             db,
             project=project,
-            step=steps[15],
+            step=steps[17],
             document_type="CONTRACT_SIGNED",
             created_by=contracts_officer,
             created_at=now - timedelta(days=25),
@@ -607,24 +720,24 @@ def seed() -> None:
         ).delete(synchronize_session=False)
         db.query(EntityDocument).filter(
             EntityDocument.project_id == project.id,
-            EntityDocument.step_id == steps[20].id,
+            EntityDocument.step_id == steps[33].id,
             EntityDocument.document_type == "PROGRESS_STATEMENT",
         ).delete(synchronize_session=False)
 
-        step20_action = (
+        step33_action = (
             db.query(StepAction)
             .filter(
-                StepAction.step_definition_id == steps[20].definition.id,
-                StepAction.assigned_role == UserRole.SUPERVISOR.value,
+                StepAction.step_definition_id == steps[33].definition.id,
+                StepAction.assigned_role == UserRole.FINANCE_MANAGER.value,
             )
             .one()
         )
         task = ApprovalTask(
             project_id=project.id,
-            step_id=steps[20].id,
-            step_action_id=step20_action.id,
-            assigned_role=UserRole.SUPERVISOR.value,
-            assigned_user_id=supervisor.id,
+            step_id=steps[33].id,
+            step_action_id=step33_action.id,
+            assigned_role=UserRole.FINANCE_MANAGER.value,
+            assigned_user_id=finance_user.id,
             status=ApprovalTaskStatus.PENDING,
             is_required=True,
             comments="آماده بررسی صورت‌وضعیت مرحله‌ای در جلسه دمو",
@@ -638,11 +751,11 @@ def seed() -> None:
         print("")
         print("Grand demo seed complete.")
         print(f"Project: {project.project_code} - {project.title}")
-        print("Current step: 20 - تهیه صورت‌وضعیت")
+        print("Current step: 33 - صورت وضعیت قطعی و تعدیل قطعی (هوشمند)")
         print(f"Budget matrix: {TOTAL_BUDGET:,} IRR")
         print(f"Contract commitment: {COMMITTED_AMOUNT:,} IRR")
-        print(f"Pending task: #{task.id} for {supervisor.username} ({supervisor.role})")
-        print(f"Demo login: {supervisor.username} / {DEFAULT_PASSWORD}")
+        print(f"Pending task: #{task.id} for {finance_user.username} ({finance_user.role})")
+        print(f"Demo login: {finance_user.username} / {DEFAULT_PASSWORD}")
     except Exception:
         db.rollback()
         raise

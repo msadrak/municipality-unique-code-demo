@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, BadgeCheck, Building2, KeyRound, Loader2, Shield, UserSquare2 } from 'lucide-react';
+import { ArrowLeft, Building2, KeyRound, Landmark, Loader2, HardHat, Users, Shield, UserCog } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { Button } from '../components/ui/button';
@@ -8,10 +8,12 @@ import { getDefaultHomePath } from '../components/funding/workflow';
 import { useAuthStore } from '../stores/useAuthStore';
 
 const QUICK_HINTS = [
-  { title: 'کاربران منطقه', value: 'نام منطقه / 123456' },
-  { title: 'تجمیع حراست', value: 'niroumand / 123456' },
-  { title: 'پیمانکار', value: 'contractor / 123456' },
-  { title: 'مدیر سیستم منابع انسانی', value: 'bahadori / 123456' },
+  { title: 'مدیر عمران (Civil)', value: 'civil_manager@test.com / password123', icon: HardHat },
+  { title: 'مدیر مالی (Finance)', value: 'finance_manager@test.com / password123', icon: Landmark },
+  { title: 'شهردار (Mayor/Council)', value: 'mayor@test.com / password123', icon: Building2 },
+  { title: 'امور قراردادها', value: 'contracts_officer@test.com / password123', icon: Users },
+  { title: 'کمیسیون تحویل', value: 'delivery_commission@test.com / password123', icon: Users },
+  { title: 'مدیریت کل/Admin', value: 'admin@test.com / password123', icon: Shield },
 ];
 
 export function LoginPage() {
@@ -58,34 +60,34 @@ export function LoginPage() {
                   <Building2 className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-xs font-bold tracking-wider text-slate-400 uppercase">Municipality Portal</p>
-                  <p className="text-sm font-black text-slate-800">شهرداری مرکزی</p>
+                  <p className="text-xs font-bold tracking-wider text-slate-400 uppercase">Municipality ERP</p>
+                  <p className="text-sm font-black text-slate-800">پلتفرم یکپارچه مدیریت شهری</p>
                 </div>
               </div>
 
               <div className="space-y-4">
-                <h1 className="text-4xl font-black leading-[1.2] text-slate-900 lg:text-5xl">
-                  سامانه مدیریت
-                  <br />
-                  <span className="text-[#008099]">هوشمند منابع انسانی</span>
+                <h1 className="text-4xl font-black leading-[1.35] text-slate-900 lg:text-5xl">
+                  سامانه جامع مدیریت منابع شهرداری (ERP)
                 </h1>
                 <p className="max-w-md text-base leading-relaxed text-slate-500">
-                  دسترسی یکپارچه به پنل‌های حضور و غیاب، تسویه حساب مناطق و مدیریت نیروهای انسانی.
-                  امنیت و شفافیت در قلب خدمات شهری.
+                  دسترسی یکپارچه به داشبوردهای مالی، مدیریت پروژههای عمرانی، منابع انسانی و املاک در یک بستر شفاف و امن.
                 </p>
               </div>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
-              {QUICK_HINTS.map((hint) => (
-                <div key={hint.title} className="group rounded-2xl border border-white bg-white/60 p-4 transition-all hover:bg-white hover:shadow-md">
+              {QUICK_HINTS.map((hint) => {
+                const Icon = hint.icon;
+                return (
+                <div key={hint.title} className="group rounded-2xl border border-white bg-white/60 p-4 transition-all hover:bg-white hover:shadow-md text-right">
                   <div className="mb-2 flex items-center justify-between gap-2">
-                    <p className="text-[11px] font-bold text-[#008099] uppercase tracking-tighter opacity-70">{hint.title}</p>
-                    <BadgeCheck className="h-3.5 w-3.5 text-[#008099]" />
+                    <p className="text-[11px] font-bold text-[#008099] uppercase opacity-70">{hint.title}</p>
+                    <Icon className="h-4 w-4 text-[#008099]" />
                   </div>
-                  <p className="font-mono text-xs text-slate-600">{hint.value}</p>
+                  <p className="font-mono text-[11px] text-slate-600 text-left" dir="ltr">{hint.value}</p>
                 </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Decorative element */}
@@ -98,7 +100,7 @@ export function LoginPage() {
               <div className="space-y-2 text-right">
                 <div className="mb-6 flex justify-end lg:hidden">
                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#008099] text-white shadow-lg shadow-[#008099]/20">
-                    <UserSquare2 className="h-6 w-6" />
+                    <Landmark className="h-6 w-6" />
                   </div>
                 </div>
                 <h2 className="text-3xl font-black tracking-tight text-slate-900">ورود به پنل کاربری</h2>
@@ -120,7 +122,7 @@ export function LoginPage() {
                       <Input
                         value={username}
                         onChange={(event) => setUsername(event.target.value)}
-                        placeholder="شناسه کاربری یا نام منطقه"
+                        placeholder="ایمیل یا نام کاربری"
                         className="h-14 rounded-2xl border-slate-100 bg-slate-50/50 pr-5 text-right transition-all focus:bg-white focus:ring-[#008099]/20"
                         autoFocus
                       />
@@ -166,14 +168,20 @@ export function LoginPage() {
                   <div className="w-full border-t border-slate-100"></div>
                 </div>
                 <div className="relative flex justify-center text-xs font-bold uppercase tracking-widest">
-                  <span className="bg-white px-4 text-slate-300">راهنمای سیستمی</span>
+                  <span className="bg-white px-4 text-slate-300">دسترسی نمایشی</span>
                 </div>
               </div>
 
-              <div className="text-right">
-                <p className="text-xs leading-relaxed text-slate-400">
-                  توکن دسترسی شما به‌صورت رمزنگاری شده در مرورگر ذخیره می‌گردد. جهت حفظ امنیت، پس از پایان کار حتماً از سیستم خارج شوید.
-                </p>
+              <div className="space-y-2 text-right">
+                <p className="text-xs font-bold tracking-wide text-slate-400">اعتبارهای ورود آزمایشی:</p>
+                <div className="space-y-2 rounded-2xl border border-slate-100 bg-slate-50/70 p-4 text-xs text-slate-500">
+                  {QUICK_HINTS.map((hint, i) => (
+                    <p key={i} className="flex justify-between items-center gap-4">
+                      <span className="whitespace-nowrap">{hint.title}:</span>
+                      <span className="font-mono text-left text-[10px] sm:text-xs" dir="ltr">{hint.value}</span>
+                    </p>
+                  ))}
+                </div>
               </div>
             </div>
           </section>

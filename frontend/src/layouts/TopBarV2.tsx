@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Bell } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { getRoleDisplayName } from '../components/funding/workflow';
@@ -12,6 +12,7 @@ import { useAuthStore } from '../stores/useAuthStore';
 export function TopBarV2() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
+  const location = useLocation();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -56,11 +57,21 @@ export function TopBarV2() {
     }
   };
 
+  let moduleTitle = 'داشبورد یکپارچه مدیریت شهری (ERP)';
+  const path = location.pathname;
+  if (path.startsWith('/civil') || path.startsWith('/contracts') || path.startsWith('/reports') || path.startsWith('/accounting') || path.startsWith('/portal')) {
+    moduleTitle = 'سیستم مدیریت پروژه‌های عمرانی';
+  } else if (path.startsWith('/hr') || path.startsWith('/attendance') || path.startsWith('/security') || path.startsWith('/region') || path.startsWith('/contractor')) {
+    moduleTitle = 'سیستم مدیریت منابع انسانی';
+  } else if (path.startsWith('/admin')) {
+    moduleTitle = 'پنل مدیریت سیستم';
+  }
+
   return (
     <header className="sticky top-0 z-50 flex items-center justify-between border-b border-[var(--vault-surface-highest)] bg-[var(--vault-bg)]/80 px-8 py-5 backdrop-blur-xl">
       <div className="flex flex-col gap-1">
         <h2 className="text-2xl font-black tracking-tight text-[var(--vault-on-surface)]">
-          خوش آمدید، مدیر سیستم منابع انسانی
+          {moduleTitle}
         </h2>
         <div className="flex items-center gap-3">
           <span className="text-sm font-medium text-[var(--vault-primary)]">{getRoleDisplayName(user?.role)}</span>
