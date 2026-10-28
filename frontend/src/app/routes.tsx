@@ -53,6 +53,7 @@ import { CivilProjectDetail } from '../pages/civil/CivilProjectDetail';
 import { CivilDashboard } from '../pages/civil/CivilDashboard';
 import { VolumeContractDetail } from '../pages/volume_contracts/VolumeContractDetail';
 import { VolumeContractsDashboard } from '../pages/volume_contracts/VolumeContractsDashboard';
+import { PreAccountingPackagePage } from '../pages/pre-accounting/PreAccountingPackagePage';
 
 /**
  * Application routes configuration
@@ -95,6 +96,16 @@ export const router = createBrowserRouter(
             ],
         },
 
+        // Pre-accounting control gate (AppShell layout — accessible for presentation & review)
+        {
+            element: <AppShell />,
+            children: [
+                {
+                    path: '/pre-accounting',
+                    element: <PreAccountingPackagePage />,
+                },
+            ],
+        },
         // Protected routes (AppShell - with sidebar)
         {
             element: (

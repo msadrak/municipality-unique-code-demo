@@ -4,8 +4,8 @@ import {
   BarChart3,
   BriefcaseBusiness,
   Calendar,
+  ClipboardCheck,
   ClipboardList,
-  FileText,
   GitBranch,
   Home,
   Inbox,
@@ -109,6 +109,19 @@ const civilSection: SidebarNavSection = {
       icon: Wallet,
       path: '/accounting',
       visible: (role) => canAccessCivilModule(role),
+    },
+  ],
+};
+
+const preAccountingSection: SidebarNavSection = {
+  id: 'pre-accounting-module',
+  title: 'کنترل مالی',
+  items: [
+    {
+      id: 'pre-accounting-package',
+      title: 'بسته‌های پیش‌حسابداری',
+      icon: ClipboardCheck,
+      path: '/pre-accounting',
     },
   ],
 };
@@ -322,8 +335,11 @@ function filterNavItem(
 }
 
 export function resolveSidebarSections(role?: string | null): SidebarNavSection[] {
+  const normalizedRole = role?.toUpperCase();
   const sections = [
-    ...(isVolumeContractRole(role) ? [volumeContractsSection] : [civilSection]),
+    ...(isVolumeContractRole(role) || normalizedRole === 'CONTRACTOR'
+      ? [volumeContractsSection, preAccountingSection]
+      : [civilSection, preAccountingSection]),
     ...(isAdminRole(role) ? [adminSection] : []),
     ...(canAccessHrModule(role) ? [fundingSection] : []),
     attendanceSection,

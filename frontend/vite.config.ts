@@ -157,6 +157,9 @@ export default defineConfig({
       '/accounting': {
         target: 'http://127.0.0.1:8000',
         changeOrigin: true,
+        bypass(req) {
+          if (req.headers.accept?.includes('text/html')) return req.url;
+        },
       },
       '/credit-requests': {
         target: 'http://127.0.0.1:8000',
