@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Building2, Landmark, Loader2 } from 'lucide-react';
+import { Building2, Landmark, Loader2, UserRound } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { Button } from '../components/ui/button';
@@ -24,6 +24,7 @@ import { cn } from '../components/ui/utils';
 import { IRAN_PROVINCES } from '../data/iranProvinces';
 
 type ContractorRegistrationForm = {
+  contractor_type: 'CORPORATE' | 'INDIVIDUAL';
   applicant_name: string;
   national_id: string;
   corporate_id: string;
@@ -42,6 +43,7 @@ type FormField = keyof ContractorRegistrationForm;
 type FormErrors = Partial<Record<FormField, string>>;
 
 const INITIAL_FORM: ContractorRegistrationForm = {
+  contractor_type: 'CORPORATE',
   applicant_name: '',
   national_id: '',
   corporate_id: '',
@@ -76,6 +78,21 @@ const validateField = (
   value: string,
   form: ContractorRegistrationForm,
 ): string | undefined => {
+  if (field === 'contractor_type') return undefined;
+  if (field === 'applicant_name' && !value.trim()) {
+    return form.contractor_type === 'INDIVIDUAL'
+      ? 'نام و نام خانوادگی الزامی است.'
+      : 'نام متقاضی/شرکت الزامی است.';
+  }
+  if (field === 'national_id' && !/^\d{10}$/.test(value)) {
+    return form.contractor_type === 'INDIVIDUAL'
+      ? 'کد ملی باید دقیقا ۱۰ رقم باشد.'
+      : 'کد ملی مدیرعامل باید دقیقا ۱۰ رقم باشد.';
+  }
+  if (field === 'corporate_id' && form.contractor_type === 'INDIVIDUAL') {
+    return undefined;
+  }
+
   switch (field) {
     case 'applicant_name':
       if (!value.trim()) return 'نام متقاضی/شرکت الزامی است.';
@@ -151,6 +168,23 @@ export function ContractorRegistration() {
     if (!form.province) return [];
     return IRAN_PROVINCES.find((item) => item.name === form.province)?.cities ?? [];
   }, [form.province]);
+  const isIndividual = form.contractor_type === 'INDIVIDUAL';
+
+  const setContractorType = (contractorType: ContractorRegistrationForm['contractor_type']) => {
+    setForm((prev) => ({
+      ...prev,
+      contractor_type: contractorType,
+      corporate_id: contractorType === 'INDIVIDUAL' ? '' : prev.corporate_id,
+    }));
+    setErrors((prev) => {
+      const updated = { ...prev };
+      delete updated.contractor_type;
+      delete updated.applicant_name;
+      delete updated.national_id;
+      if (contractorType === 'INDIVIDUAL') delete updated.corporate_id;
+      return updated;
+    });
+  };
 
   const setFieldValue = (field: FormField, value: string) => {
     setForm((prev) => {
@@ -236,6 +270,34 @@ export function ContractorRegistration() {
 
         <CardContent className="pt-6 sm:pt-8">
           <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="flex flex-col gap-3 rounded-xl border border-primary/15 bg-muted/30 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-bold text-foreground">نوع پیمانکار</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  اطلاعات هویتی بر اساس حقیقی یا حقوقی بودن تنظیم می‌شود.
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-2 rounded-lg bg-background p-1 shadow-sm">
+                <Button
+                  type="button"
+                  variant={form.contractor_type === 'CORPORATE' ? 'default' : 'ghost'}
+                  className="rounded-md"
+                  onClick={() => setContractorType('CORPORATE')}
+                >
+                  <Building2 className="h-4 w-4" />
+                  حقوقی
+                </Button>
+                <Button
+                  type="button"
+                  variant={form.contractor_type === 'INDIVIDUAL' ? 'default' : 'ghost'}
+                  className="rounded-md"
+                  onClick={() => setContractorType('INDIVIDUAL')}
+                >
+                  <UserRound className="h-4 w-4" />
+                  حقیقی
+                </Button>
+              </div>
+            </div>
             <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
               <Card className="border-primary/20 shadow-sm">
                 <CardHeader className="pb-3">
@@ -245,13 +307,15 @@ export function ContractorRegistration() {
                 <CardContent>
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     <div className="space-y-2">
-                      <Label htmlFor="applicant_name">نام متقاضی/شرکت</Label>
+                      <Label htmlFor="applicant_name">
+                        {isIndividual ? 'نام و نام خانوادگی' : 'نام متقاضی/شرکت'}
+                      </Label>
                       <Input
                         id="applicant_name"
                         value={form.applicant_name}
                         onChange={(event) => setFieldValue('applicant_name', event.target.value)}
                         onBlur={() => handleBlur('applicant_name')}
-                        placeholder="نام شخص یا شرکت"
+                        placeholder={isIndividual ? 'نام کامل شخص' : 'نام شخص یا شرکت'}
                         aria-invalid={!!getFieldError('applicant_name')}
                       />
                       {getFieldError('applicant_name') && (
@@ -260,7 +324,9 @@ export function ContractorRegistration() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="national_id">کد ملی مدیرعامل</Label>
+                      <Label htmlFor="national_id">
+                        {isIndividual ? 'کد ملی' : 'کد ملی مدیرعامل'}
+                      </Label>
                       <Input
                         id="national_id"
                         dir="ltr"
@@ -280,6 +346,7 @@ export function ContractorRegistration() {
                       )}
                     </div>
 
+                    {!isIndividual ? (
                     <div className="space-y-2">
                       <Label htmlFor="corporate_id">شناسه ملی شرکت</Label>
                       <Input
@@ -300,6 +367,7 @@ export function ContractorRegistration() {
                         <p className="text-xs text-destructive">{getFieldError('corporate_id')}</p>
                       )}
                     </div>
+                    ) : null}
 
                     <div className="space-y-2">
                       <Label htmlFor="economic_code">شماره اقتصادی</Label>

@@ -15,15 +15,16 @@ from pydantic import BaseModel, Field
 
 class ContractorCreate(BaseModel):
     """POST /contractors - create a new contractor record."""
-    national_id: str = Field(..., min_length=1, description="National ID")
-    company_name: str = Field(..., min_length=1, description="Company name")
-    registration_number: Optional[str] = Field(None, description="Registration number")
-    ceo_name: Optional[str] = Field(None, description="CEO name")
+    contractor_type: str = Field("CORPORATE", description="CORPORATE (حقوقی) | INDIVIDUAL (حقیقی)")
+    national_id: str = Field(..., min_length=1, description="National ID / کد ملی")
+    company_name: str = Field(..., min_length=1, description="Company name or full name / نام شرکت یا نام و نام خانوادگی")
+    registration_number: Optional[str] = Field(None, description="Registration number (corporate only)")
+    ceo_name: Optional[str] = Field(None, description="CEO name (corporate only)")
     phone: Optional[str] = Field(None, description="Phone number")
     address: Optional[str] = Field(None, description="Address")
 
     # Contractor onboarding fields
-    corporate_id: Optional[str] = Field(None, description="Corporate national ID")
+    corporate_id: Optional[str] = Field(None, description="Corporate national ID (corporate only)")
     economic_code: Optional[str] = Field(None, description="Economic code")
     postal_code: Optional[str] = Field(None, description="Postal code")
     province: Optional[str] = Field(None, description="Province")
@@ -48,6 +49,7 @@ class ContractorSetadFetch(BaseModel):
 class ContractorResponse(BaseModel):
     """Full contractor detail."""
     id: int
+    contractor_type: str
     national_id: str
     company_name: str
     registration_number: Optional[str] = None
@@ -79,6 +81,7 @@ class ContractorResponse(BaseModel):
 class ContractorListItem(BaseModel):
     """Abbreviated contractor for list views."""
     id: int
+    contractor_type: str
     national_id: str
     company_name: str
     ceo_name: Optional[str] = None

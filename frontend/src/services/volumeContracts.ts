@@ -13,6 +13,8 @@ export interface VolumeContractListItem {
   activity_name?: string | null;
   budget_line?: string | null;
   owning_org_unit_name?: string | null;
+  created_at?: string | null;
+  paid_amount?: number | null;
 }
 
 export interface VolumeContractDocument {
@@ -105,6 +107,23 @@ export interface ContractorUser {
   full_name?: string | null;
 }
 
+export interface ContractorDashboardStats {
+  total_contracts: number;
+  active_contracts: number;
+  completed_contracts: number;
+  pending_invitations: number;
+}
+
+export interface ContractorDashboardData {
+  contractor_name: string;
+  contractor_type: string;
+  is_verified: boolean;
+  stats: ContractorDashboardStats;
+  invitations: VolumeContractListItem[];
+  active_contracts: VolumeContractListItem[];
+  completed_contracts: VolumeContractListItem[];
+}
+
 export interface VolumeContractUploadResponse {
   file_name: string;
   file_url: string;
@@ -138,6 +157,10 @@ export async function createVolumeContract(
 
 export async function fetchContractorUsers(): Promise<ContractorUser[]> {
   return api.get<ContractorUser[]>("/api/volume-contracts/contractor-users");
+}
+
+export async function getContractorDashboard(): Promise<ContractorDashboardData> {
+  return api.get<ContractorDashboardData>("/api/volume-contracts/contractor-dashboard");
 }
 
 export async function submitVolumeContractDocument(

@@ -991,6 +991,12 @@ class ProgressStatementStatus(enum.Enum):
     REJECTED = "REJECTED"
 
 
+class ContractorType(str, enum.Enum):
+    """Contractor legal identity type."""
+    INDIVIDUAL = "INDIVIDUAL"
+    CORPORATE = "CORPORATE"
+
+
 class Contractor(Base):
     """
     پیمانکار - Contractor entity (data-only in Phase 2, no portal)
@@ -999,6 +1005,7 @@ class Contractor(Base):
     The portal_enabled field is reserved for Phase 3 contractor portal activation.
     """
     __tablename__ = "contractors"
+    contractor_type = Column(String, default=ContractorType.CORPORATE.value, nullable=False)
     
     id = Column(Integer, primary_key=True, index=True)
     national_id = Column(String, unique=True, nullable=False, index=True)  # کد ملی / شناسه ملی

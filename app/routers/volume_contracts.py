@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, File, HTTPException, Query, Request, Upl
 from pydantic import BaseModel
 from sqlalchemy.orm import Session, joinedload
 
-from app.models import Activity, ApprovalTask, CivilProject, EntityDocument, User, UserRole, WorkflowStep
+from app.models import Activity, ApprovalTask, CivilProject, Contractor, EntityDocument, User, UserRole, WorkflowStep
 from app.models.civil import ApprovalTaskStatus
 from app.routers.auth import get_db
 from app.routers.civil import (
@@ -56,11 +56,51 @@ class ContractorUserResponse(BaseModel):
     full_name: str | None = None
 
 
+class ContractorDashboardStats(BaseModel):
+    total_contracts: int
+    active_contracts: int
+    completed_contracts: int
+    pending_invitations: int
+
+
+class ContractorDashboardResponse(BaseModel):
+    contractor_name: str
+    contractor_type: str
+    is_verified: bool
+    stats: ContractorDashboardStats
+    invitations: list[CivilProjectListItem]
+    active_contracts: list[CivilProjectListItem]
+    completed_contracts: list[CivilProjectListItem]
+
+
 def _get_volume_contract_or_404(db: Session, project_id: int) -> CivilProject:
     project = db.query(CivilProject).filter(CivilProject.id == project_id).first()
     if project is None or not project.contract_category:
         raise HTTPException(status_code=404, detail="Volume contract not found")
     return project
+
+
+def _project_paid_amount(db: Session, project: CivilProject) -> int:
+    return int(sum(transaction.amount or 0 for transaction in _project_transactions(db, project)))
+
+
+def _volume_contract_list_item(db: Session, project: CivilProject) -> CivilProjectListItem:
+    return CivilProjectListItem(
+        id=project.id,
+        project_code=project.project_code,
+        title=project.title,
+        current_phase=project.current_step.phase_number,
+        current_step=project.current_step.order_index,
+        contract_category=project.contract_category,
+        yekta_code=project.yekta_code,
+        current_step_code=project.current_step.code,
+        current_step_name=project.current_step.name,
+        activity_name=project.activity.name if project.activity else None,
+        budget_line=_resolve_budget_line(project),
+        owning_org_unit_name=project.owning_org_unit.title if project.owning_org_unit else None,
+        created_at=project.created_at.date().isoformat() if project.created_at else None,
+        paid_amount=_project_paid_amount(db, project),
+    )
 
 
 @router.post("/attachments", response_model=UploadResponse)
@@ -165,22 +205,73 @@ def list_volume_contract_projects(
     ).all()
 
     return [
-        CivilProjectListItem(
-            id=project.id,
-            project_code=project.project_code,
-            title=project.title,
-            current_phase=project.current_step.phase_number,
-            current_step=project.current_step.order_index,
-            contract_category=project.contract_category,
-            yekta_code=project.yekta_code,
-            current_step_code=project.current_step.code,
-            current_step_name=project.current_step.name,
-            activity_name=project.activity.name if project.activity else None,
-            budget_line=_resolve_budget_line(project),
-            owning_org_unit_name=project.owning_org_unit.title if project.owning_org_unit else None,
-        )
+        _volume_contract_list_item(db, project)
         for project in projects
     ]
+
+
+@router.get("/contractor-dashboard", response_model=ContractorDashboardResponse)
+def get_contractor_dashboard(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    user = _require_auth(request, db)
+    if user.role != "CONTRACTOR":
+        raise HTTPException(status_code=403, detail="Contractor dashboard is only available to contractor users.")
+
+    contractor_profile = user.contractor_profile
+    if contractor_profile is None and user.contractor_id:
+        contractor_profile = db.query(Contractor).filter(Contractor.id == user.contractor_id).first()
+
+    projects = (
+        db.query(CivilProject)
+        .options(
+            joinedload(CivilProject.owning_org_unit),
+            joinedload(CivilProject.activity).joinedload(Activity.financial_rules),
+            joinedload(CivilProject.current_step),
+        )
+        .join(WorkflowStep, CivilProject.current_step_id == WorkflowStep.id)
+        .filter(
+            CivilProject.contract_category.isnot(None),
+            CivilProject.contractor_id == user.id,
+        )
+        .order_by(WorkflowStep.order_index.asc(), CivilProject.project_code.asc())
+        .all()
+    )
+
+    invitations = [project for project in projects if project.current_step.order_index == 102 and project.is_active]
+    active_contracts = [
+        project
+        for project in projects
+        if 102 < project.current_step.order_index < 110 and project.is_active
+    ]
+    completed_contracts = [
+        project
+        for project in projects
+        if project.current_step.order_index >= 110 or not project.is_active
+    ]
+
+    contractor_name = (
+        contractor_profile.company_name
+        if contractor_profile and contractor_profile.company_name
+        else user.full_name or user.username
+    )
+    contractor_type = contractor_profile.contractor_type if contractor_profile else "CORPORATE"
+
+    return ContractorDashboardResponse(
+        contractor_name=contractor_name,
+        contractor_type=contractor_type or "CORPORATE",
+        is_verified=bool(contractor_profile.is_verified) if contractor_profile else False,
+        stats=ContractorDashboardStats(
+            total_contracts=len(projects),
+            active_contracts=len(active_contracts),
+            completed_contracts=len(completed_contracts),
+            pending_invitations=len(invitations),
+        ),
+        invitations=[_volume_contract_list_item(db, project) for project in invitations],
+        active_contracts=[_volume_contract_list_item(db, project) for project in active_contracts],
+        completed_contracts=[_volume_contract_list_item(db, project) for project in completed_contracts],
+    )
 
 
 @router.get("/projects/{project_id}", response_model=CivilProjectDetailResponse)

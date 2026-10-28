@@ -17,6 +17,8 @@ class CivilProjectListItem(BaseModel):
     activity_name: str | None = None
     budget_line: str | None = None
     owning_org_unit_name: str | None = None
+    created_at: str | None = None
+    paid_amount: int | None = None
 
 class DocumentResponse(BaseModel):
     id: int

@@ -16,7 +16,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Query
 from sqlalchemy.orm import Session
 from typing import Optional
 
-from app.models import Contractor
+from app.models import Contractor, ContractorType
 from app.schemas.contractor import (
     ContractorCreate,
     ContractorSetadFetch,
@@ -48,6 +48,7 @@ def _contractor_to_response(c: Contractor) -> ContractorResponse:
     """Convert Contractor ORM model to Pydantic response."""
     return ContractorResponse(
         id=c.id,
+        contractor_type=c.contractor_type or "CORPORATE",
         national_id=c.national_id,
         company_name=c.company_name,
         registration_number=c.registration_number,
@@ -75,6 +76,7 @@ def _contractor_to_list_item(c: Contractor) -> ContractorListItem:
     """Convert Contractor ORM model to list item."""
     return ContractorListItem(
         id=c.id,
+        contractor_type=c.contractor_type or "CORPORATE",
         national_id=c.national_id,
         company_name=c.company_name,
         ceo_name=c.ceo_name,
@@ -82,6 +84,14 @@ def _contractor_to_list_item(c: Contractor) -> ContractorListItem:
         is_verified=c.is_verified or False,
         created_at=c.created_at.strftime("%Y/%m/%d %H:%M") if c.created_at else None,
     )
+
+
+def _normalize_contractor_type(value: str | None) -> str:
+    contractor_type = (value or ContractorType.CORPORATE.value).upper()
+    allowed_types = {item.value for item in ContractorType}
+    if contractor_type not in allowed_types:
+        raise HTTPException(status_code=400, detail="contractor_type must be INDIVIDUAL or CORPORATE")
+    return contractor_type
 
 
 # ============================================================
@@ -161,14 +171,18 @@ def create_contractor(
             detail=f"پیمانکار با کد ملی {data.national_id} قبلاً ثبت شده است"
         )
     
+    contractor_type = _normalize_contractor_type(data.contractor_type)
+    is_individual = contractor_type == ContractorType.INDIVIDUAL.value
+
     contractor = Contractor(
+        contractor_type=contractor_type,
         national_id=data.national_id,
         company_name=data.company_name,
-        registration_number=data.registration_number,
-        ceo_name=data.ceo_name,
+        registration_number=None if is_individual else data.registration_number,
+        ceo_name=None if is_individual else data.ceo_name,
         phone=data.phone,
         address=data.address,
-        corporate_id=data.corporate_id,
+        corporate_id=None if is_individual else data.corporate_id,
         economic_code=data.economic_code,
         postal_code=data.postal_code,
         province=data.province,
@@ -223,6 +237,7 @@ def fetch_from_setad(
     
     # Create local record from Setad data
     contractor = Contractor(
+        contractor_type="CORPORATE",
         national_id=info.national_id,
         company_name=info.company_name,
         registration_number=info.registration_number,
