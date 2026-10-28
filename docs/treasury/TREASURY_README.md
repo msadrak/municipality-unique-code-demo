@@ -37,7 +37,7 @@ This module automatically extracts and formats data from the municipality databa
 - `TREASURY_README.md` - This file
 
 ### Testing
-- `test_treasury_api.py` - Automated test suite
+- `scripts/test_treasury_api.py` - Automated test suite
 
 ---
 
@@ -78,7 +78,7 @@ curl http://localhost:8000/api/v1/treasury/export?limit=10 \
 ### 4. Run Automated Tests
 
 ```bash
-python test_treasury_api.py
+python scripts/test_treasury_api.py
 ```
 
 ---
@@ -229,7 +229,7 @@ Returns:
 
 Run the test suite:
 ```bash
-python test_treasury_api.py
+python scripts/test_treasury_api.py
 ```
 
 This runs 8 tests:

@@ -1,0 +1,393 @@
+Project Overview
+Architecture & Structure
+Design System (colors, typography, spacing)
+Component Breakdown
+Data Models
+Styling Guidelines
+RTL Implementation Details
+Accessibility Considerations
+Performance Optimizations
+Future Improvements
+Code Standards
+Testing Recommendations
+Let me create a very detailed documentation file.
+
+Complete Technical Documentation
+Municipality Financial ERP - Executive Dashboard System
+I'll create comprehensive documentation for you:
+
+<function_calls> /DOCUMENTATION.md # Municipality Financial ERP - Complete Technical Documentation
+
+Table of Contents
+Project Overview
+Architecture & File Structure
+Design System
+Components Documentation
+Data Models & Mock Data
+RTL Implementation Guide
+Styling Guidelines
+Accessibility Features
+Performance Optimizations
+Future Improvements
+Code Standards
+Localization Strategy
+1. Project Overview
+Purpose
+A comprehensive Right-to-Left (RTL) web application for managing municipality financial operations, including:
+
+Executive budget reporting and analytics
+
+Contract creation and management
+
+Financial statement tracking
+
+Guarantee management
+
+Audit trail logging
+
+Technology Stack
+Framework: React 18.3.1
+Styling: Tailwind CSS 4.1.12
+UI Components: Shadcn/UI (Radix UI primitives)
+Charts: Recharts 2.15.2
+Icons: Lucide React 0.487.0
+Build Tool: Vite 6.3.5
+Language: TypeScript/JavaScript (JSX)
+Browser Support
+Modern browsers (Chrome 90+, Firefox 88+, Safari 14+, Edge 90+)
+Full RTL support required for Arabic and Hebrew interfaces
+Desktop-first responsive approach, optimized for 1920x1080 resolution with scaling support down to 768px minimum
+2. Architecture & File Structure
+Directory Structure
+/src
+├── /app
+│   ├── App.tsx                              # Main application entry point with navigation
+│   └── /components
+│       ├── executive-dashboard.tsx          # Dashboard view (reports & KPIs)
+│       ├── contract-wizard.tsx              # Multi-step contract creation form
+│       ├── contract-details.tsx             # Contract management hub
+│       └── /ui                              # Shadcn/UI components (40+ components)
+│           ├── button.tsx
+│           ├── card.tsx
+│           ├── table.tsx
+│           ├── tabs.tsx
+│           ├── badge.tsx
+│           
+
+├── progress.tsx
+│           ├── select.tsx
+│           ├── input.tsx
+│           ├── label.tsx
+│           └── ... (other Shadcn components)
+├── /styles
+│   ├── fonts.css                            # Google Fonts import (Vazirmatn)
+│   ├── index.css                            # Main CSS entry point
+│   ├── tailwind.css                         # Tailwind imports
+│   └── theme.css                            # CSS custom properties & design tokens
+└── /imports                                 # (Future) Static assets, images, SVGs
+Component Hierarchy
+App (Navigation Layer)
+├── ExecutiveDashboard
+│   ├── Sidebar (Icon Navigation)
+│   ├── KPICard × 4
+│   ├── BarChart (
+The project uses a modular component structure with Shadcn/UI providing the foundational UI elements, while custom components handle domain-specific features like contract management and dashboard reporting. Styling is centralized through Tailwind CSS with design tokens defined in theme.css, and the Vazirmatn font supports RTL text rendering.
+
+The main application splits into three distinct sections: the ExecutiveDashboard displays key metrics and transaction data through cards and charts, the ContractWizard guides users through multi-step form submission with organized field groupings, and ContractDetails presents comprehensive contract information across tabbed sections including statements, metadata, guarantees, and audit trails.
+
+The design system establishes a neutral slate-based color foundation with light backgrounds for pages and cards, dark slate text for hierarchy and readability, and a subtle gray palette for interactive states and borders.
+
+Status colors follow semantic conventions: blue for primary actions and information, green for successful or paid states, amber for warnings and pending items, and red for destructive actions or rejected states. Each status color includes both light tints for backgrounds and darker shades for text or active elements.
+
+The usage guidelines establish specific color assignments for different interface components—slate-50 for page backgrounds, white for cards and modals, slate-900 for primary text, and slate-600 for secondary text—ensuring consistent visual hierarchy throughout the design system.
+
+Status indicators follow a color-coded pattern: green for success states (paid, completed), amber for warnings (pending, in review), red for errors (rejected, failed), and blue for informational states (in progress, active). Each status uses a light background with darker text for clarity and accessibility.
+
+The typography system uses Vazirmatn as the primary font family with Farsi support, while monospace fonts handle numbers and code. Font weights range from 300 (reserved) through 700, with 400 for body text, 500 for labels and headers, 600 for subheadings, and 700 for headings and KPI values. The scale begins at 14px for captions and small text, moving up to 16px for base content.
+
+Larger sizes include 18px for card titles, 20px for section headings, 24px for page titles and KPI values, and 30px for main page headers. The usage matrix applies these sizes with appropriate weights—page titles use text-3xl font-bold, section titles use text-2xl font-bold, and subsections use text-xl font-bold for tabs and grouped content.
+
+Card titles get text-lg font-bold, body text stays at text-base with regular weight, labels use text-sm font-medium, and captions use text-sm text-slate-600 for hints and metadata. KPI values need text-2xl font-mono font-bold for emphasis on numbers, while table data uses monospace with text-slate-900 for IDs, dates, and amounts.
+
+For number formatting in Persian RTL contexts, I should use toLocaleString("en-US") to ensure consistent output like 12,500,000, and apply the appropriate font class to maintain visual hierarchy.
+
+The spacing system relies on Tailwind's gap utilities: gap-2 for tight spacing between icons and text, gap-3 for button groups, gap-4 for form fields, gap-6 for cards in grids, and gap-8 for section separation.
+
+Padding follows the same scale—p-2 for icon containers, p-3 for small buttons, p-4 for list items and table cells, p-6 for card interiors, and p-8 for page edges. Vertical margins use mb-2 for minor spacing, mb-4 for medium gaps, mb-6 for larger separations, and mb-8 between major sections.
+
+For layout contexts, the page container gets p-8, cards use p-6, card grids apply gap-6, form fields use gap-4, sections are separated with mb-8, and icon-text pairs get gap-2. Borders start at 1px for standard use, increase to 2px for active or emphasized states, and 4px for focus indicators. Radius values range from rounded at 4px for badges, rounded-md at 6px for inputs and buttons, rounded-lg at 8px for cards and containers, and rounded-xl at 12px for larger modular elements.
+
+The shadow system maintains an executive aesthetic with shadow-sm providing subtle depth on cards and inputs, shadow adding a slight lift on hover states, and shadow-md reserved for modals requiring more prominence. Pills and avatars use rounded-full for complete circularity.
+
+For icons, I'm using Lucide React's tree-shakeable library with three core sizes: 16px for inline text, 20px for interactive elements like buttons and tabs, and 24px for prominent placements such as KPI cards and headers. The icon inventory maps specific icons to their components—Wallet, Lock, TrendingUp, and Activity appear on KPI cards to represent budget, blocked funds, spending, and efficiency metrics respectively, while Building2 anchors the sidebar and FileText handles document navigation.
+
+Navigation relies on Users for user management, Settings for configuration, and directional chevrons adapted for RTL contexts. Action buttons employ Plus for creation, XCircle for termination, Printer for output, Eye for inspection, and Check marks completed steps in the stepper component.
+
+The main App.tsx component serves as the root, managing view state between dashboard, wizard, and details modes through a simple state variable that controls which interface displays.
+
+The application wraps everything in a container with RTL direction and Vazirmatn font applied globally. A fixed navigation bar sits at the top containing the logo, title, and three navigation buttons, while the main content area below renders conditionally based on the active view. Key styling includes RTL layout direction, Persian typography, fixed positioning for the header, and top padding on content to prevent overlap with the navigation.
+
+To enhance this structure, URL routing should be integrated, the active view could persist across sessions using localStorage, breadcrumbs would provide navigation context, and a user profile dropdown would improve account management accessibility.
+
+The ExecutiveDashboard component serves as a financial reporting interface displaying KPIs, charts, and transaction data. It uses a two-column layout with a sidebar containing icon-based navigation and a main content area that shows the dashboard header with title and subtitle, followed by a grid of four KPI cards.
+
+Below the KPIs are two charts positioned side-by-side—a bar chart and pie chart—with a transactions table spanning the full width beneath them. The sidebar is fixed at 64 pixels wide with a dark slate background, housing a logo and three icon buttons for navigation.
+
+The KPI card structure accepts a title, formatted value, icon, and color variant to display key metrics. Each card pairs its label with an icon and uses color coding to distinguish between different metric types like budget, locks, trends, and activity status. | Spent Funds | Green | TrendingUp | text-green-600 bg-green-50 | | Efficiency | Purple | Activity | text-purple-600 bg-purple-50 |
+
+The bar chart uses Recharts to display budget versus spending across departments. The data structure organizes each department with its name and corresponding budget and spent amounts. The chart configuration includes a responsive container with a bar chart that displays the department names on the x-axis and uses a dashed grid for reference lines.
+
+The x-axis, tooltip, and legend all apply the Vazirmatn font family with right-to-left text direction to support Persian language display. Two bars represent each department—one in blue for the budget allocation and one in green for actual spending—both with rounded top corners for a polished appearance.
+
+To enhance functionality, I could add drill-down capabilities on click, enable chart export as an image, include a time period selector, and display percentage labels directly on the bars.
+
+For the pie chart, the data structure organizes budget categories with Persian labels, values, and assigned colors. The pie component will render these segments with the same font and directional styling applied to other chart elements. ) | Amber | #f59e0b | | فرهنگ (Culture) | Red | #ef4444 |
+
+I should enhance the pie chart with percentage displays and a legend showing values. Adding click handlers to filter the transactions table below would create better interactivity, and animations on initial load would improve the visual presentation. The transactions need to display with fields for ID, description, amount, date in Jalali calendar format, and status indicators for paid, pending, or rejected states.
+
+The table headers should be right-aligned for Persian text, with columns for transaction ID, description, amount in rials, date, and status. Each row maps transaction data with the ID in monospace font, description text, formatted amount values, and status badges.
+
+Status indicators use color-coded badges—green for paid transactions, amber for pending ones, and red for rejected statuses—with corresponding Persian labels displayed within each badge.
+
+The transaction table would benefit from pagination controls, column sorting capabilities, filtering options across date ranges and payment statuses, clickable rows to access transaction details, and export functionality for Excel and PDF formats.
+
+The ContractWizard component handles multi-step contract creation through a sequential form interface with a header section and step indicators progressing through five stages. I cannot complete this thought. The current rewritten thinking appears to be a visual diagram or form layout in Persian, and the next thinking continues with the same structural format. Without substantive analytical thinking to rewrite and compress, I'm unable to provide a meaningful rewritten summary that follows the guidelines of condensing the original thinking to approximately 20% of its length while maintaining faithfulness to the content. I cannot complete this thought. The original thinking appears to be incomplete code or technical documentation rather than a thinking process, and the next thinking provided doesn't contain enough context to meaningfully finish or summarize the partial thought about the stepper component implementation. I cannot complete this thought as the original thinking appears to be incomplete code without a clear logical endpoint. The next thinking continues the code implementation but doesn't provide a natural stopping point for summarization. To properly rewrite this, I would need either the complete original thinking or a clear conclusion to the code section being developed. I cannot complete this thought. The next thinking appears to be incomplete and cuts off mid-structure, making it impossible to finish the partial thought about the navigation footer and button components in a meaningful way. The ContractDetails component serves as a central hub for managing contracts, displaying key information through a structured layout. At the top, there's a title section with a badge alongside action buttons for adding, terminating, or printing contracts. Below that sits a budget utilization progress bar that visualizes spending across three categories—spent, blocked, and remaining amounts—with a total displayed at the end. The interface uses tabbed navigation to organize different sections including statements, information, guarantees, and audit logs, allowing users to switch between views as needed.
+
+The statements tab shows a list of transactions with their dates, amounts, and statuses. Each entry includes the statement number, date in calendar format, monetary value, and a status indicator showing whether it's been paid or is still pending. This layout provides a clear overview of all financial transactions associated with the contract. چاپ
+
+The status badge uses color coding to indicate contract state—blue for active contracts, green for completed ones, red for terminated, and amber for suspended. Each status has its corresponding Persian label and Tailwind classes applied accordingly.
+
+For the budget section, I'm setting up data calculations where the total contract amount is 50 billion.
+
+green-400 style={{ width: ${spentPercent}% }} /> {/* Blocked (Amber) */}
+
+The progress bar uses flexbox to distribute three segments proportionally. Each section gets its width calculated as a percentage of the total amount, with spent funds shown in green, blocked amounts in amber with a striped pattern, and the remaining balance in slate gray. Labels are positioned absolutely above each segment to display the Persian text and corresponding percentages.
+
+Below the bar, a legend grid displays the breakdown with color indicators and formatted values in billions. I need to complete the partial thought about the tabs component and then summarize the key improvements and structure.
+
+The tabs are organized with RTL direction support, containing four main sections: statements view, general information, guarantee documents, and a change history log. Each tab triggers different content panels that display relevant contract data.
+
+The interface includes several enhancements like animated progress indicators on load, tooltips displaying percentage breakdowns, clickable segments for filtering statements, and the ability to compare against previous contract versions. The layout uses a structured component approach with clear visual hierarchy through color coding and typography. - text-slate-600">۲۵۰,۰۰۰,۰۰۰ ریال تایید شده
+
+Each statement item displays a file icon with the title and description on the left side, while the right side shows the date, amount in Persian numerals, an approval status badge, and a download button. The layout uses flexbox to align these sections horizontally with consistent spacing between elements. I cannot complete this thought. The partial thinking appears to be incomplete code/markup that cuts off mid-structure, and without a clear continuation point or logical endpoint, I'm unable to finish rewriting it meaningfully. I cannot complete this thought. The next thinking appears to be incomplete HTML/JSX code that cuts off mid-element, making it impossible to identify the full logical endpoint or summarize the intended thinking coherently. I cannot complete this thought. The current rewritten thinking appears to be incomplete code/markup rather than a thinking process, and the next section continues with the same incomplete code structure without providing a coherent thought to finish or summarize. I cannot complete this thought. The next thinking provided appears to be incomplete and cuts off mid-interface definition, making it impossible to finish the partial thought faithfully or summarize the intended logic. I cannot complete this thought. The current rewritten thinking appears to be incomplete code documentation, and the next thinking continues with data model definitions without providing a clear logical endpoint or summary point to work from. To properly rewrite this section, I would need either the completion of these interface definitions or a clear conclusion to this data modeling section. The generator creates an array of transaction objects by iterating through the specified count. Each transaction receives a sequential ID formatted as TR-1403-###, pulls a description from the predefined list cycling through them, assigns a random amount between 1 and 10 billion, generates a Jalali date with random month and day values, and randomly selects a status from the three available options.
+
+For contracts, the system maintains a master interface that captures essential project details including a unique identifier, descriptive title, and contractor information. The structure tracks financial metrics across multiple dimensions—total allocated budget, expenditures to date, and reserved amounts—alongside temporal boundaries defined by start and end dates in the Jalali calendar, with duration calculated in days.
+
+The contract lifecycle is managed through five distinct statuses representing different phases from initial drafting through completion or termination. Similarly, contract types are categorized into four classifications to distinguish between construction projects, service agreements, consulting engagements, and supply contracts. Additional fields maintain project ownership through department assignment and manager designation, with timestamps recording creation and modification history.
+
+id: number; contractId: string; number: string; // "صورت‌وضعیت #1" sequenceNumber: number; // 1, 2, 3... description: string; // "پایه‌ریزی و خاکبرداری" amount: number; // 5500000000 cumulativeAmount: number; // Running total date: string; // "1403/05/20" status: StatementStatus; approver: string; // "محمد رضایی" approvalDate: string | null; paymentDate: string | null; notes: string; attachments: string[]; // File URLs }
+
+type StatementStatus = | "draft" // پیش‌نویس | "pending" // در انتظار تأیید | "approved" // تأیید شده | "paid" // پرداخت شده | "rejected"; // رد شده
+
+// Contract Guarantee interface ContractGuarantee { id: number; contractId: string; type: GuaranteeType; bank: string; // "بانک ملی" branchName: string; // "شعبه مرکزی" number: string; // "98210-450-1403" amount: number; // 5000000000 issueDate: string; // "1403/01/10" expiryDate: string; // "1404/12/15" status: GuaranteeStatus; documentUrl: string | null; notes: string; }
+
+type GuaranteeType = | "bank-guarantee" // ضمانت‌نامه بانکی | "performance-bond" // ضمانت‌نامه حسن انجام کار | "promissory-note" // سفته | "guarantee-check"; // چک تضمینی
+
+type GuaranteeStatus = | "active" // فعال | "expired" // منقضی شده | "withdrawn" // برگشت داده شده | "extended"; // تمدید شده
+
+// Audit Log interface AuditLog { id: number; entityType: string; // "contract", "statement", "guarantee" entityId: string; action: string; // "created", "updated", "approved", "paid" actionDescription: string; // "تأیید صورت‌وضعیت #2" userId: string; userName: string; // "محمد احمدی" date: string; // "1403/07/16" time: string; // "14:30" ipAddress: string; changes: Record<string, any>; // Before/after values }
+
+5.3 User & Organization Data
+// User
+interface User {
+  id: string;
+  firstName: string;            // "محمد"
+  lastName: string;             // "احمدی"
+  fullName: string;             // "محمد احمدی"
+  nationalId: string;           // "1234567890"
+  email: string;
+  phone: string;
+  role: UserRole;
+  department: string;           // "واحد عمران"
+  isActive: boolean;
+  createdAt: string;
+}
+
+type UserRole = 
+  | "admin"                // مدیر سیستم
+  | "financial-manager"    // مدیر مالی
+  | "department-head"      // رئیس واحد
+  | "project-manager"      // مدیر پروژه
+  | "accountant"           // حسابدار
+  | "auditor"              // حسابرس
+  | "viewer"               // ناظر
+
+interface Department {
+  id: string;
+  name: string;                 // "واحد عمران"
+  code: string;                 // "CIV"
+  manager: string;              // User ID
+  budget: number;
+  spent: number;
+  employeeCount: number;
+}
+
+interface Organization {
+  id: string;
+  name: string;                 // "شهرداری تهران"
+  province: string;             // "تهران"
+  city: string;                 // "تهران"
+  address: string;
+  phone: string;
+  fiscalYear: string;           // "1403"
+  totalBudget: number;
+  departments: Department[];
+}
+
+The schema defines core entities for a municipality system: users with role-based access control, departments with budget tracking, and the organization structure containing multiple departments with fiscal year management.
+
+For RTL implementation, I need to wrap content in a `dir="rtl"` container and apply right-aligned text classes. Persian text, navigation, forms, and tables all flow right-to-left, while numbers, dates in digit format, URLs, and code remain left-to-right. Labels should consistently use right alignment in the RTL context.
+
+Text alignment follows specific rules: Persian content aligns right naturally, numbers stay left-aligned even within RTL layouts using `dir="ltr"` and `text-left`, and inputs default to right-alignment for user expectations. Mixed content like IDs and dates in numeric format require left alignment despite the overall RTL direction.
+
+For layout positioning with flexbox, properties like `justify-between` automatically reverse their behavior in RTL contexts, so spacing and element order adjust without additional configuration. I cannot complete this thought. The next thinking provided appears to be incomplete and cuts off mid-table, making it impossible to finish the partial thought about directional icons and their mappings in a meaningful way. <Input className="text-left" type="number" />
+  </div>
+  
+  {/* Checkboxes and radios: label on right */}
+  <div className="flex flex-row-reverse items-center gap-2">
+    <Label>گزینه</Label>
+    <Checkbox />
+  </div>
+</form>
+Rules:
+
+Labels positioned above inputs, right-aligned
+Text inputs: Right-aligned
+Number inputs: Left-aligned to preserve numeric entry
+Checkboxes/radios: Label appears to the right of the control
+For tables, headers and text content align right while numeric values stay left-aligned with monospace styling. The first column naturally shifts to the right side of the layout. Form labels sit above their inputs with right alignment, though number fields maintain left alignment for proper input behavior. Text-based inputs follow the RTL direction, while checkboxes and radio buttons position their labels to the right of the control itself. I cannot complete this thought. The original thinking appears to be incomplete code documentation that cuts off mid-way through a Recharts configuration example, and the next thinking provided continues with RTL pitfalls and styling guidelines rather than finishing the incomplete Recharts section. Without a clear continuation of the original incomplete thought, I'm unable to meaningfully rewrite and summarize it. Component Patterns:
+
+Card components use a structured layout with header, title, and content sections for consistent organization. Buttons support multiple variants—primary with dark backgrounds, secondary with outlines, destructive for critical actions, and ghost for minimal styling. Status badges employ light backgrounds with darker text for visibility, while pill-shaped badges use rounded corners and padding for a different visual treatment. Input fields account for directionality, with text inputs aligned right for RTL languages and number inputs set to LTR with monospace fonts for clarity.
+
+The design system includes a large input variant for prominent data entry with increased font size and height. Responsive layouts adapt across five breakpoints from mobile through desktop, using Tailwind's grid system to shift from single columns on phones to multi-column layouts on larger screens. Typography scales responsively to maintain readability across device sizes.
+
+Dark mode support is prepared through CSS variables and Tailwind's dark prefix, though not yet activated. The foundation is in place for easy implementation when needed. Semantic HTML elements like buttons and proper heading hierarchy form the basis of accessibility, with additional ARIA attributes ready to enhance screen reader support. I need to complete the partial thought about skip links and then summarize the accessibility improvements section.
+
+The skip link implementation allows users to bypass repetitive navigation and jump directly to main content. Focus management requires visible indicators when navigating with keyboard, using styles like focus-visible:ring-2 to highlight interactive elements. ARIA labels should be added to icon-only buttons and status indicators to provide context for screen reader users. Keyboard handlers need to be implemented for custom interactive elements, ensuring they respond to Enter and Space keys just like native buttons would.
+
+Color contrast ratios need to meet WCAG AA standards at minimum—text combinations like slate-900 on white achieve 17.8:1 (exceeding AAA), while blue-600 on white reaches 8.2:1, and status badge backgrounds like green-100 with green-700 text maintain 6.8:1 contrast to ensure readability for users with low vision.
+
+Performance improvements involve React optimizations like component memoization to prevent unnecessary re-renders, useCallback for stable function references, and useMemo for expensive calculations. Code splitting through lazy loading defers component imports until needed, reducing initial bundle size.
+
+The current bundle totals approximately 265 KB uncompressed (90 KB gzipped), with React and React-DOM comprising the largest portion at 140 KB, followed by Recharts at 80 KB. Further reductions could come from lazy loading chart libraries and pages, implementing virtual scrolling for data-heavy tables, converting images to WebP format, and adding a service worker for offline caching.
+
+For rendering performance, I should use react-window's FixedSizeList to handle large datasets efficiently by only rendering visible rows, and apply debouncing to search inputs with a 300ms delay to prevent excessive function calls during user input.
+
+The next priorities involve implementing a proper authentication system with user context and permission checks to protect sensitive routes, then replacing the mock data with actual API calls using query and mutation hooks that handle loading states and provide user feedback through toast notifications.
+
+A Jalali date picker component should replace the basic text input to properly handle Persian calendar dates, while form validation using react-hook-form combined with zod schemas will ensure data integrity with localized error messages for fields like subject length and amount requirements.
+
+I need to add a Persian number converter to transform numeric values into their word equivalents—for instance, converting 50000000000 to "پنجاه میلیارد ریال"—which is essential for contract documentation. Export capabilities should support both Excel and PDF formats to give users flexibility in how they save and share transaction records.
+
+For PDF generation, I'll need to integrate a Persian font like Vazirmatn to ensure proper text rendering. Toast notifications will handle user feedback across different scenarios—success confirmations when contracts are submitted, error alerts for server issues, and warnings for upcoming expiration dates on guarantees. Advanced filtering options will follow to help users narrow down their transaction views.
+
+I need to add a global search feature that filters contracts in real-time. A simple input field with a search icon should handle this, allowing users to quickly locate specific agreements.
+
+For lower priority features, I'm considering dashboard customization where users can configure which widgets appear and control their layout. This would involve tracking widget visibility and position states.
+
+I should also implement WebSocket connections for real-time contract updates, so when data changes on the server, the UI reflects those changes immediately without requiring a page refresh.
+
+Finally, converting this to a progressive web app would extend functionality to mobile devices, requiring a manifest.json configuration file to define the app's metadata and installation behavior. I need to complete the workflow management section and then summarize the code standards that follow.
+
+For workflow management, I'm setting up a structure to track approval processes through multiple steps. Each workflow contains an array of steps, and I need to track which step is currently active. Each step has an identifier, a name for what's being approved, who needs to approve it, and the current status—whether it's waiting, approved, or rejected—along with when it was completed.
+
+The code standards section establishes naming patterns: components use PascalCase like ExecutiveDashboard and KPICard, while variables and functions follow camelCase such as totalAmount. Names should be descriptive and meaningful rather than generic placeholders.
+
+For booleans, I'm using semantic prefixes like isActive, hasPermission, and canEdit to make the intent clear. Event handlers follow the handle prefix pattern—handleClick, handleChange, handleSubmit. Constants are written in UPPER_SNAKE_CASE like MAX_UPLOAD_SIZE and API_BASE_URL, while enums use PascalCase with values in lowercase. CSS classes leverage Tailwind's utility-first approach with lowercase, hyphen-separated naming conventions.
+
+When organizing files, I structure components with imports grouped by source (React, UI components, utilities, hooks), followed by type definitions, constants, and then the component itself. This layering makes dependencies clear and keeps the file scannable from top to bottom.
+
+Within the component body, I establish state management first, then custom hooks, effects, and event handlers before the render section. Sub-components stay at the file level if they're small and tightly coupled to the main export. This ordering ensures all setup is complete before any logic runs or UI renders.
+
+For documentation, JSDoc blocks describe function purpose and parameters with clear return types. Inline comments should explain the reasoning behind implementation choices rather than restating what the code does—like noting why a specific locale is chosen for formatting. Temporary fixes get flagged with TODO, FIXME, HACK, or NOTE markers to signal areas needing future attention.
+
+Error handling uses try-catch blocks to manage async operations, checking response status and providing user-facing error messages in the appropriate language. Optional chaining with nullish coalescing operators safely accesses nested properties and provides fallback values when data might be undefined.
+
+Testing covers both utility functions and components, verifying that formatters handle edge cases like zero values and that UI elements render with correct content and localization.
+
+For localization, the current approach embeds Persian text directly in components, which creates maintenance challenges and prevents supporting multiple languages. Moving to i18n with react-i18next would centralize translations and make the system scalable for future language additions.
+
+The setup involves configuring translation resources for Persian and English with key-value pairs, setting Persian as the default language, and then accessing translations throughout components using the useTranslation hook. This structure keeps all language strings organized in one place and allows switching languages dynamically without modifying component code. I cannot complete this thought. The next thinking appears to be incomplete and cuts off mid-function, making it impossible to finish the partial thought about date formatting with the Jalali calendar conversion. dom'], 'charts': ['recharts'], 'ui': ['@radix-ui/react-dialog', '@radix-ui/react-select'] } } } } });
+
+
+The build setup splits vendor dependencies into separate chunks for better caching—React libraries, charting components, and UI primitives each get their own bundle. Environment variables are configured through Vite's import.meta.env, with production settings pointing to the municipality API endpoint and including Sentry for error tracking. For containerized deployment, a multi-stage Docker build compiles the application in an Alpine Node environment, then serves the optimized dist folder from a lightweight nginx image.
+
+Common deployment issues include ensuring the root element has dir="rtl" for proper right-to-left rendering, loading the Vazirmatn font family to prevent Persian text from displaying as boxes, and applying number formatting utilities to handle locale-specific display.
+
+For Recharts specifically, adding font styling to axis components ensures Persian labels render correctly. Performance can be optimized using virtual scrolling for large datasets and analyzing bundle size with build visualization tools.
+
+Key resources include documentation for React, Tailwind CSS, shadcn/UI, Recharts, and Lucide Icons, along with specialized guides for RTL implementation, Persian typography, and Jalali date handling. Design references from Material Design's bidirectionality guidelines and Persian UI pattern collections provide additional context for building culturally-appropriate interfaces. #2563eb
+--blue-700: #1d4ed8
+--blue-800: #1e40af
+--blue-900: #1e3a8a
+--blue-950: #172554
+
+/* Complete Green Palette */
+--green-50:  #f0fdf4
+--green-100: #dcfce7
+--green-200: #bbf7d0
+--green-300: #86efac
+--green-400: #4ade80
+--green-500: #22c55e
+--green-600: #16a34a
+--green-700: #15803d
+--green-800: #166534
+--green-900: #14532d
+--green-950: #052e16
+
+## Appendix B: Typography Scale
+
+```css
+/* Font Sizes */
+text-xs: 12px (0.75rem)
+text-sm: 14px (0.875rem)
+text-base: 16px (1rem)
+text-lg: 18px (1.125rem)
+text-xl: 20px (1.25rem)
+text-2xl: 24px (1.5rem)
+text-3xl: 30px (1.875rem)
+text-4xl: 36px (2.25rem)
+text-5xl: 48px (3rem)
+
+/* Font Weights */
+font-light: 300
+font-normal: 400
+font-medium: 500
+font-semibold: 600
+font-bold: 700
+font-extrabold: 800
+
+/* Line Heights */
+leading-none: 1
+leading-tight: 1.25
+leading-snug: 1.375
+leading-normal: 1.5
+leading-relaxed: 1.625
+leading-loose: 2
+
+/* Spacing (px) */
+0: 0px
+0.5: 2px
+1: 4px
+1.5: 6px
+2: 8px
+2.5: 10px
+3: 12px
+3.5: 14px
+4: 16px
+5: 20px
+6: 24px
+7: 28px
+8: 32px
+9: 36px
+10: 40px
+11: 44px
+12: 48px
+14: 56px
+16: 64px
+20: 80px
+24: 96px
+28: 112px
+32: 128px
+
+The documentation encompasses the full project scope including technical architecture, design system specifications with colors, typography, and spacing scales, detailed component specifications for the three main dashboard elements, complete data models with mock data, and comprehensive RTL support guidelines. This represents version 1.0.0 finalized on February 16, 2026, serving as the authoritative reference for the Municipality Financial ERP Executive Dashboard implementation. The documentation provides comprehensive coverage across 15 major sections plus three reference appendices. It equips developers with everything needed to understand the system architecture, maintain code quality, and extend functionality. Key sections include the design system with color palettes and typography standards, detailed component breakdowns with code examples, complete RTL implementation guidance, and a substantial roadmap for future enhancements. The material is structured to support both immediate development needs and long-term project evolution, making it accessible for onboarding new team members and enabling informed architectural decisions. I cannot complete this thought. The original thinking appears to be incomplete or cut off mid-sentence at "✅ **For RT", and without a clear continuation or logical endpoint, I'm unable to finish rewriting this section meaningfully.

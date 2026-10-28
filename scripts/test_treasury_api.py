@@ -5,7 +5,7 @@ Test script for Treasury Integration API
 This script tests the Treasury Integration API endpoints to ensure they work correctly.
 
 Usage:
-    python test_treasury_api.py
+    python scripts/test_treasury_api.py
 
 Requirements:
     - Server must be running (uvicorn app.main:app --reload)

@@ -1,0 +1,538 @@
+================================================================================
+        TREASURY INTEGRATION API - HANDOVER DOCUMENT
+================================================================================
+        Municipality Financial System → Treasury System (Samaneh Khazaneh-dari)
+================================================================================
+
+Document Version: 1.0
+Date: 2025-01-29
+Prepared for: Treasury Manager
+System: Municipality Transaction Management → External Treasury System
+
+
+================================================================================
+1. OVERVIEW
+================================================================================
+
+This API provides transaction data from the Municipality Financial System
+in a format specifically designed for the Treasury System (Samaneh Khazaneh-dari).
+
+The API exports approved financial transactions with the following information:
+- Unique transaction code (code_yekta)
+- Transaction amount (in Rials)
+- Submission/approval date
+- Financial event details (تامین اعتبار، پیش‌پرداخت، etc.)
+- Activity details (پرداخت حقوق، ثبت قرارداد، etc.)
+
+
+================================================================================
+2. API ENDPOINT
+================================================================================
+
+Main Export Endpoint:
+---------------------
+URL:    http://[YOUR-SERVER]:8000/api/v1/treasury/export
+Method: GET
+
+Health Check Endpoint:
+---------------------
+URL:    http://[YOUR-SERVER]:8000/api/v1/treasury/health
+Method: GET
+
+Summary Statistics:
+-------------------
+URL:    http://[YOUR-SERVER]:8000/api/v1/treasury/export/summary
+Method: GET
+
+
+================================================================================
+3. AUTHENTICATION & AUTHORIZATION
+================================================================================
+
+The API requires authentication. You must:
+
+1. First login to get a session cookie:
+   POST http://[YOUR-SERVER]:8000/auth/login
+   Body: {
+     "username": "your_username",
+     "password": "your_password"
+   }
+
+2. Include the session cookie in all subsequent requests
+
+Required User Roles:
+- admin
+- ACCOUNTANT
+- ADMIN_L1, ADMIN_L2, ADMIN_L3, ADMIN_L4
+- inspector
+
+
+================================================================================
+4. QUERY PARAMETERS
+================================================================================
+
+All parameters are optional. If not specified, defaults are used.
+
+Parameter       Type      Default      Description
+---------------------------------------------------------------------------
+status          string    APPROVED     Transaction status filter
+                                       Options: APPROVED, POSTED, ALL
+
+date_from       string    (none)       Start date in YYYY-MM-DD format
+                                       Example: 2025-01-01
+
+date_to         string    (none)       End date in YYYY-MM-DD format
+                                       Example: 2025-12-31
+
+zone_id         integer   (none)       Filter by specific zone/region ID
+                                       Example: 5 (for region 5)
+
+limit           integer   1000         Maximum records to return
+                                       Range: 1 to 10000
+
+offset          integer   0            Pagination offset
+                                       Example: 1000 (skip first 1000)
+
+
+================================================================================
+5. EXAMPLE REQUESTS
+================================================================================
+
+Example 1: Get all approved transactions
+-----------------------------------------
+GET http://[YOUR-SERVER]:8000/api/v1/treasury/export
+
+
+Example 2: Get transactions for January 2025
+---------------------------------------------
+GET http://[YOUR-SERVER]:8000/api/v1/treasury/export?date_from=2025-01-01&date_to=2025-01-31
+
+
+Example 3: Get transactions for Region 5
+-----------------------------------------
+GET http://[YOUR-SERVER]:8000/api/v1/treasury/export?zone_id=5
+
+
+Example 4: Get first 500 records (pagination)
+----------------------------------------------
+GET http://[YOUR-SERVER]:8000/api/v1/treasury/export?limit=500&offset=0
+
+
+Example 5: Get summary statistics
+----------------------------------
+GET http://[YOUR-SERVER]:8000/api/v1/treasury/export/summary?date_from=2025-01-01&date_to=2025-01-31
+
+
+================================================================================
+6. RESPONSE FORMAT
+================================================================================
+
+The API returns a JSON array of transaction objects.
+
+JSON Structure:
+--------------
+[
+  {
+    "code_yekta": "20-02-015-11020401-001-01-000-A1B2C3-001-1403-001",
+    "amount": 10000000,
+    "submission_date": "2025-01-29",
+    "financial_event": {
+      "id": 1,
+      "name": "تامین اعتبار"
+    },
+    "activity": {
+      "id": 1,
+      "name": "پرداخت حقوق"
+    }
+  },
+  {
+    "code_yekta": "20-03-020-11030502-002-02-001-B2C3D4-002-1403-002",
+    "amount": 25000000,
+    "submission_date": "2025-01-28",
+    "financial_event": {
+      "id": 2,
+      "name": "پیش‌پرداخت"
+    },
+    "activity": {
+      "id": 3,
+      "name": "ثبت قرارداد"
+    }
+  }
+]
+
+
+Field Descriptions:
+------------------
+code_yekta       : Unique transaction identifier (11-part code)
+amount           : Transaction amount in Rials (numeric, not string)
+submission_date  : Transaction approval/submission date (YYYY-MM-DD)
+financial_event  : Object containing financial event details
+  - id           : Financial event ID (integer)
+  - name         : Financial event name (Persian text)
+activity         : Object containing activity details
+  - id           : Activity ID (integer)
+  - name         : Activity name (Persian text)
+
+
+================================================================================
+7. DATA MAPPING (INTERNAL REFERENCE)
+================================================================================
+
+This section shows how the API fields map to internal database tables.
+Treasury Manager does NOT need to understand this - it's for IT reference only.
+
+API Field             Database Table.Column           Description
+-------------------------------------------------------------------------------
+code_yekta            transactions.unique_code        11-part unique code
+amount                transactions.amount             Transaction amount (Rials)
+submission_date       transactions.reviewed_at        Approval date
+                      OR transactions.created_at      (fallback if no approval)
+
+financial_event.id    financial_event_refs.id         FK via transactions.financial_event_id
+financial_event.name  financial_event_refs.title      Event name (تامین اعتبار، etc.)
+
+activity.id           subsystem_activities.id         FK via transactions.subsystem_activity_id
+activity.name         subsystem_activities.title      Activity name (پرداخت حقوق، etc.)
+
+
+Database Tables Involved:
+------------------------
+1. transactions           - Main transaction records
+2. financial_event_refs   - Financial event reference data
+3. subsystem_activities   - Activity reference data
+4. org_units              - Organizational zones/regions
+
+
+================================================================================
+8. ERROR RESPONSES
+================================================================================
+
+HTTP 401 Unauthorized
+---------------------
+{
+  "detail": "احراز هویت الزامی است - Authentication required"
+}
+Cause: No valid session cookie provided
+Solution: Login first via /auth/login
+
+
+HTTP 403 Forbidden
+------------------
+{
+  "detail": "دسترسی مجاز نیست - Access denied. Required roles: [...]"
+}
+Cause: User does not have required role
+Solution: Contact system administrator to grant appropriate role
+
+
+HTTP 400 Bad Request
+--------------------
+{
+  "detail": "Invalid date format for date_from: 2025/01/01. Use YYYY-MM-DD"
+}
+Cause: Incorrect date format in query parameters
+Solution: Use YYYY-MM-DD format (e.g., 2025-01-01)
+
+
+HTTP 500 Internal Server Error
+-------------------------------
+{
+  "detail": "Internal server error"
+}
+Cause: Unexpected system error
+Solution: Contact technical support with request details
+
+
+================================================================================
+9. HEALTH CHECK
+================================================================================
+
+To verify the API is running, call the health endpoint:
+
+Request:
+--------
+GET http://[YOUR-SERVER]:8000/api/v1/treasury/health
+
+Response:
+---------
+{
+  "status": "healthy",
+  "timestamp": "2025-01-29T10:30:45.123456",
+  "service": "Treasury Integration API",
+  "version": "1.0.0"
+}
+
+If you receive this response, the API is operational.
+
+
+================================================================================
+10. SUMMARY STATISTICS
+================================================================================
+
+Before exporting, you can check summary statistics:
+
+Request:
+--------
+GET http://[YOUR-SERVER]:8000/api/v1/treasury/export/summary?date_from=2025-01-01&date_to=2025-01-31
+
+Response:
+---------
+{
+  "total_transactions": 1523,
+  "total_amount": 45230000000,
+  "date_range": {
+    "from": "2025-01-01",
+    "to": "2025-01-31"
+  },
+  "zones_count": 14,
+  "status": "success"
+}
+
+This shows:
+- Total number of transactions in the date range
+- Total sum of all transaction amounts
+- Actual date range of available data
+- Number of unique zones/regions
+
+
+================================================================================
+11. PAGINATION (LARGE DATASETS)
+================================================================================
+
+If you have many transactions, use pagination to retrieve data in chunks:
+
+Step 1: Get first 1000 records
+-------------------------------
+GET /api/v1/treasury/export?limit=1000&offset=0
+
+Step 2: Get next 1000 records
+------------------------------
+GET /api/v1/treasury/export?limit=1000&offset=1000
+
+Step 3: Get next 1000 records
+------------------------------
+GET /api/v1/treasury/export?limit=1000&offset=2000
+
+Continue incrementing offset by limit until you receive fewer records than
+the limit (indicating you've reached the end).
+
+
+================================================================================
+12. TESTING THE API
+================================================================================
+
+Step-by-Step Testing:
+--------------------
+
+1. Check API health:
+   GET http://[YOUR-SERVER]:8000/api/v1/treasury/health
+   Expected: {"status": "healthy"}
+
+2. Login to get session:
+   POST http://[YOUR-SERVER]:8000/auth/login
+   Body: {"username": "your_username", "password": "your_password"}
+   Expected: {"status": "success"}
+   Save the session cookie from response
+
+3. Get summary statistics:
+   GET http://[YOUR-SERVER]:8000/api/v1/treasury/export/summary
+   Include session cookie from step 2
+   Expected: {"total_transactions": ..., "total_amount": ...}
+
+4. Get first 10 records:
+   GET http://[YOUR-SERVER]:8000/api/v1/treasury/export?limit=10
+   Include session cookie from step 2
+   Expected: Array of transaction objects
+
+5. Verify data format:
+   Check that each transaction has:
+   - code_yekta (string)
+   - amount (number)
+   - submission_date (YYYY-MM-DD)
+   - financial_event.id and financial_event.name
+   - activity.id and activity.name
+
+
+================================================================================
+13. INTEGRATION NOTES
+================================================================================
+
+Data Refresh Frequency:
+-----------------------
+- Data is real-time (no caching)
+- Each API call retrieves current database state
+- Recommended polling interval: Every 1 hour during business hours
+
+Data Quality:
+-------------
+- All transactions have passed 4-level approval workflow
+- Only APPROVED status transactions are exported by default
+- Transactions without required fields (code_yekta) are automatically excluded
+
+Character Encoding:
+-------------------
+- API returns UTF-8 encoded JSON
+- Persian/Farsi text is properly encoded
+- Ensure your system can handle UTF-8
+
+Amount Format:
+--------------
+- Amount is a NUMBER (not string)
+- Currency: Iranian Rial (IRR)
+- No decimal places (whole Rials only)
+- Example: 10000000 means 10,000,000 Rials
+
+
+================================================================================
+14. SUPPORT & TROUBLESHOOTING
+================================================================================
+
+Common Issues:
+-------------
+
+Issue: "احراز هویت الزامی است"
+Solution: You need to login first. Call /auth/login with credentials.
+
+Issue: Empty array returned []
+Solution: Check date filters. There may be no approved transactions in range.
+
+Issue: "Invalid date format"
+Solution: Use YYYY-MM-DD format (e.g., 2025-01-29, not 2025/01/29)
+
+Issue: Timeout or slow response
+Solution: Use smaller limit parameter (e.g., limit=100) or add date filters
+
+
+Contact Information:
+-------------------
+For technical issues:
+- Contact: IT Department
+- System: Municipality Financial System
+- Module: Treasury Integration API
+
+
+================================================================================
+15. API DOCUMENTATION (SWAGGER/OPENAPI)
+================================================================================
+
+Interactive API documentation is available at:
+
+URL: http://[YOUR-SERVER]:8000/docs
+
+This provides:
+- Interactive API testing interface
+- Automatic request/response examples
+- Schema definitions
+- Try-it-out functionality
+
+
+================================================================================
+16. SAMPLE INTEGRATION CODE
+================================================================================
+
+Python Example:
+--------------
+import requests
+import json
+
+# Configuration
+BASE_URL = "http://[YOUR-SERVER]:8000"
+USERNAME = "your_username"
+PASSWORD = "your_password"
+
+# Step 1: Login
+session = requests.Session()
+login_response = session.post(
+    f"{BASE_URL}/auth/login",
+    json={"username": USERNAME, "password": PASSWORD}
+)
+
+if login_response.status_code == 200:
+    print("Login successful")
+    
+    # Step 2: Get treasury data
+    treasury_response = session.get(
+        f"{BASE_URL}/api/v1/treasury/export",
+        params={
+            "date_from": "2025-01-01",
+            "date_to": "2025-01-31",
+            "limit": 1000
+        }
+    )
+    
+    if treasury_response.status_code == 200:
+        transactions = treasury_response.json()
+        print(f"Retrieved {len(transactions)} transactions")
+        
+        # Process transactions
+        for tx in transactions:
+            print(f"Code: {tx['code_yekta']}")
+            print(f"Amount: {tx['amount']}")
+            print(f"Date: {tx['submission_date']}")
+            print(f"Event: {tx['financial_event']['name']}")
+            print(f"Activity: {tx['activity']['name']}")
+            print("---")
+    else:
+        print(f"Error: {treasury_response.status_code}")
+else:
+    print("Login failed")
+
+
+cURL Example:
+------------
+# Step 1: Login and save cookies
+curl -X POST http://[YOUR-SERVER]:8000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"your_username","password":"your_password"}' \
+  -c cookies.txt
+
+# Step 2: Get treasury data
+curl -X GET "http://[YOUR-SERVER]:8000/api/v1/treasury/export?limit=10" \
+  -H "Content-Type: application/json" \
+  -b cookies.txt
+
+
+================================================================================
+17. CHANGE LOG
+================================================================================
+
+Version 1.0 (2025-01-29)
+------------------------
+- Initial release
+- Basic export functionality
+- Filter by status, date range, zone
+- Pagination support
+- Summary statistics endpoint
+- Health check endpoint
+
+
+================================================================================
+18. GLOSSARY
+================================================================================
+
+code_yekta         : Unique 11-part transaction identifier
+                     Format: XX-XX-XXX-XXXXXXXX-XXX-XX-XXX-XXXXXX-XXX-XXXX-XXX
+
+financial_event    : Type of financial operation
+                     Examples: تامین اعتبار (credit provision),
+                              پیش‌پرداخت (advance payment),
+                              علی‌الحساب (interim payment)
+
+activity           : Type of organizational activity
+                     Examples: پرداخت حقوق (salary payment),
+                              ثبت قرارداد (contract registration)
+
+zone               : Organizational region/zone (مناطق شهرداری)
+                     Examples: Region 1 through Region 14
+
+Rial (IRR)         : Iranian currency (smallest unit, no decimals)
+
+
+================================================================================
+                            END OF DOCUMENT
+================================================================================
+
+For questions or support, please contact the IT Department.
+
+Document prepared by: Treasury Integration Team
+Last updated: 2025-01-29

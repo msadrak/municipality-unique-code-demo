@@ -115,7 +115,7 @@ python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 1. **Test the API** using the test script:
    ```bash
-   python test_treasury_api.py
+   python scripts/test_treasury_api.py
    ```
 
 2. **View Documentation**:

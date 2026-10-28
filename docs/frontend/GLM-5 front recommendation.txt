@@ -1,0 +1,1049 @@
+# Comprehensive Documentation: RTL Municipality Financial ERP Dashboard
+
+## Table of Contents
+1. [Project Overview](#1-project-overview)
+2. [Architecture & Technology Stack](#2-architecture--technology-stack)
+3. [Design System & Visual Guidelines](#3-design-system--visual-guidelines)
+4. [Component Specifications](#4-component-specifications)
+5. [Layout Architecture](#5-layout-architecture)
+6. [RTL Implementation Guide](#6-rtl-implementation-guide)
+7. [Page-by-Page Documentation](#7-page-by-page-documentation)
+8. [Utility Functions Reference](#8-utility-functions-reference)
+9. [Data Structures & Mock Data](#9-data-structures--mock-data)
+10. [Improvement Recommendations](#10-improvement-recommendations)
+
+---
+
+## 1. Project Overview
+
+### 1.1 Purpose
+A comprehensive **Right-to-Left (RTL) Executive Dashboard** for a Municipality Financial ERP system, designed for Persian/Farsi-speaking users in Iran. The application manages budgets, contracts, and financial transactions for municipal administration.
+
+### 1.2 Target Users
+- **Municipal Executives**: High-level financial overview and KPI monitoring
+- **Financial Officers**: Contract creation and management
+- **Administrative Staff**: Transaction tracking and reporting
+
+### 1.3 Core Features
+| Feature | Description |
+|---------|-------------|
+| Executive Dashboard | KPI cards, charts, and transaction tables |
+| Contract Wizard | Multi-step form for contract creation |
+| Contract Details Hub | Comprehensive contract management with tabs |
+
+---
+
+## 2. Architecture & Technology Stack
+
+### 2.1 Frontend Stack
+```
+┌─────────────────────────────────────────────────────────┐
+│                    Frontend Stack                        │
+├─────────────────────────────────────────────────────────┤
+│ Framework      │ Next.js 16 (App Router)                │
+│ Language       │ TypeScript 5                            │
+│ Styling        │ Tailwind CSS 4                          │
+│ UI Components  │ shadcn/ui (New York style)              │
+│ Charts         │ Recharts 2.15                           │
+│ Icons          │ Lucide React                            │
+│ State          │ React useState (local component state)  │
+│ Font           │ Vazirmatn (Persian/Arabic script)       │
+└─────────────────────────────────────────────────────────┘
+```
+
+### 2.2 File Structure
+```
+src/
+├── app/
+│   ├── globals.css          # Global styles, CSS variables, RTL styles
+│   ├── layout.tsx           # Root layout with font loading
+│   └── page.tsx             # Main application (all views)
+├── components/ui/           # shadcn/ui components
+│   ├── badge.tsx
+│   ├── button.tsx
+│   ├── card.tsx
+│   ├── input.tsx
+│   ├── label.tsx
+│   ├── progress.tsx
+│   ├── select.tsx
+│   ├── table.tsx
+│   └── tabs.tsx
+├── lib/
+│   ├── persian-utils.ts     # Persian number/date formatting
+│   └── utils.ts             # General utilities (cn function)
+└── hooks/
+    ├── use-mobile.ts        # Mobile detection hook
+    └── use-toast.ts         # Toast notification hook
+```
+
+### 2.3 Dependencies (Key Packages)
+```json
+{
+  "recharts": "^2.15.4",      // Charts library
+  "lucide-react": "^0.525.0", // Icons
+  "tailwind-merge": "^3.3.1", // Class merging utility
+  "clsx": "^2.1.1"            // Conditional classes
+}
+```
+
+---
+
+## 3. Design System & Visual Guidelines
+
+### 3.1 Color Palette
+
+#### Primary Colors
+| Name | CSS Variable | Light Mode | Dark Mode | Usage |
+|------|-------------|------------|-----------|-------|
+| Background | `--background` | `oklch(0.985 0.002 247)` | `oklch(0.12 0.01 247)` | Page background |
+| Foreground | `--foreground` | `oklch(0.145 0.01 247)` | `oklch(0.95 0.005 247)` | Primary text |
+| Card | `--card` | `oklch(1 0 0)` | `oklch(0.18 0.01 247)` | Card backgrounds |
+| Primary | `--primary` | `oklch(0.205 0.02 247)` | `oklch(0.92 0.01 247)` | Buttons, active states |
+
+#### Semantic Colors (KPI Cards)
+| KPI Type | Icon Color | Background | Tailwind Classes |
+|----------|------------|------------|------------------|
+| Total Budget | Blue | Blue-50 | `text-blue-600 bg-blue-50` |
+| Blocked Funds | Amber | Amber-50 | `text-amber-600 bg-amber-50` |
+| Spent Funds | Green | Green-50 | `text-green-600 bg-green-50` |
+| Efficiency | Purple | Purple-50 | `text-purple-600 bg-purple-50` |
+
+#### Status Badge Colors
+| Status | Background | Text | Persian Label |
+|--------|------------|------|---------------|
+| PAID | `bg-green-100` | `text-green-700` | پرداخت شده |
+| PENDING | `bg-amber-100` | `text-amber-700` | در انتظار تایید |
+| REJECTED | `bg-red-100` | `text-red-700` | رد شده |
+| APPROVED | `bg-green-100` | `text-green-700` | تایید شده |
+| DRAFT | `bg-slate-100` | `text-slate-700` | پیش‌نویس |
+| IN_PROGRESS | `bg-blue-100` | `text-blue-700` | در حال اجرا |
+
+### 3.2 Typography
+
+#### Font Stack
+```css
+font-family: 'Vazirmatn', system-ui, sans-serif;
+```
+
+#### Font Weights Used
+| Weight | Name | Usage |
+|--------|------|-------|
+| 400 | Regular | Body text, labels |
+| 500 | Medium | Navigation, badges |
+| 600 | Semi-Bold | Card titles |
+| 700 | Bold | Page titles, KPI values |
+
+#### Typography Scale
+| Element | Size | Weight | Class |
+|---------|------|--------|-------|
+| Page Title | 24px (1.5rem) | Bold | `text-2xl font-bold` |
+| Card Title | 18px (1.125rem) | Semi-Bold | `text-lg font-semibold` |
+| KPI Value | 24px (1.5rem) | Bold | `text-2xl font-bold font-mono-num` |
+| Body Text | 14px (0.875rem) | Regular | `text-sm` |
+| Caption | 12px (0.75rem) | Regular | `text-xs` |
+
+#### Number Formatting
+```css
+/* Numbers should use monospace for alignment */
+.font-mono-num {
+  font-family: 'Vazirmatn', ui-monospace, monospace;
+  font-feature-settings: 'tnum' on, 'lnum' on;
+}
+```
+
+### 3.3 Spacing System
+| Spacing | Tailwind Class | Usage |
+|---------|---------------|-------|
+| 4px | `p-1`, `gap-1` | Tight spacing |
+| 8px | `p-2`, `gap-2` | Icon padding, small gaps |
+| 16px | `p-4`, `gap-4` | Card content padding |
+| 24px | `p-6`, `gap-6` | Section padding |
+| 32px | `p-8` | Container padding |
+| 48px | `space-y-12` | Major section gaps |
+
+### 3.4 Border & Shadow
+```css
+/* Card borders */
+border: 1px solid oklch(0.9 0.01 247);  /* border-slate-200 */
+
+/* Subtle shadows */
+shadow-sm;  /* Cards, inputs */
+
+/* Hover effect */
+.executive-card:hover {
+  box-shadow: 0 4px 12px -2px oklch(0.5 0.02 247 / 0.1);
+}
+```
+
+### 3.5 Border Radius
+| Element | Radius | Tailwind Class |
+|---------|--------|----------------|
+| Cards | 10px | `rounded-xl` |
+| Buttons | 8px | `rounded-lg` |
+| Badges | 9999px | `rounded-full` |
+| Inputs | 8px | `rounded-lg` |
+| Progress Bar | 9999px | `rounded-full` |
+
+---
+
+## 4. Component Specifications
+
+### 4.1 Sidebar Component
+
+#### Structure
+```
+┌─────────────────────────┐
+│ ┌─────────────────────┐ │
+│ │   Header            │ │
+│ │   ┌─────┐           │ │
+│ │   │ شا  │  شهرداری  │ │
+│ │   └─────┘           │ │
+│ │   [Toggle Button]   │ │
+│ └─────────────────────┘ │
+│ ┌─────────────────────┐ │
+│ │   Navigation        │ │
+│ │   ┌───────────────┐ │ │
+│ │   │ □ Dashboard   │ │ │
+│ │   │ □ Contract    │ │ │
+│ │   │ □ Details     │ │ │
+│ │   └───────────────┘ │ │
+│ └─────────────────────┘ │
+│ ┌─────────────────────┐ │
+│ │   Footer            │ │
+│ │   نسخه ۲.۰          │ │
+│ └─────────────────────┘ │
+└─────────────────────────┘
+```
+
+#### States
+| State | Width | Content |
+|-------|-------|---------|
+| Expanded | 256px (w-64) | Full labels visible |
+| Collapsed | 64px (w-16) | Only icons visible |
+
+#### Implementation Details
+```tsx
+// Key classes for RTL positioning
+aside: "fixed top-0 right-0 h-full"  // Right-aligned
+main: "mr-64" (expanded) / "mr-16" (collapsed)  // Margin-right for content
+
+// Menu item active state
+active: "bg-slate-900 text-white"
+inactive: "text-slate-600 hover:bg-slate-100"
+```
+
+### 4.2 KPI Card Component
+
+#### Structure
+```
+┌───────────────────────────────────────┐
+│ ┌─────────────────────┐  ┌─────────┐ │
+│ │ Total Budget        │  │  ┌───┐  │ │
+│ │ ۱۲۰ میلیارد         │  │  │ 💰 │  │ │
+│ │ ریال                │  │  └───┘  │ │
+│ └─────────────────────┘  └─────────┘ │
+└───────────────────────────────────────┘
+```
+
+#### Props Interface
+```typescript
+interface KPICardProps {
+  title: string;        // "بودجه کل"
+  value: string;        // "۱۲۰ میلیارد"
+  subtitle: string;     // "ریال"
+  icon: React.ElementType;  // Wallet, Lock, TrendingUp, BarChart3
+  iconColor: string;    // "text-blue-600"
+  iconBg: string;       // "bg-blue-50"
+}
+```
+
+#### CSS Classes
+```css
+/* Card container */
+.executive-card {
+  background: white;
+  border: 1px solid slate-200;
+  transition: all 0.2s ease;
+}
+
+/* Value styling */
+.value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-family: 'Vazirmatn', monospace;
+}
+
+/* Icon container */
+.icon-wrapper {
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+}
+```
+
+### 4.3 Charts
+
+#### Bar Chart (Departmental Budget vs. Spend)
+```typescript
+// Data Structure
+const departmentData = [
+  { name: "عمران", budget: 45, spent: 32, remaining: 13 },
+  { name: "خدمات", budget: 28, spent: 18, remaining: 10 },
+  // ...
+];
+
+// Configuration
+<BarChart data={departmentData} layout="vertical">
+  <Bar dataKey="budget" fill="#3b82f6" name="بودجه" />
+  <Bar dataKey="spent" fill="#10b981" name="مصرف" />
+</BarChart>
+```
+
+#### Pie Chart (Budget Distribution)
+```typescript
+// Data Structure
+const budgetDistributionData = [
+  { name: "پروژه‌های عمرانی", value: 45, color: "#3b82f6" },
+  { name: "خدمات شهری", value: 25, color: "#10b981" },
+  { name: "پارک‌ها و فضای سبز", value: 15, color: "#f59e0b" },
+  { name: "مدیریت ترافیک", value: 10, color: "#8b5cf6" },
+  { name: "سایر", value: 5, color: "#6b7280" },
+];
+
+// Configuration
+<PieChart>
+  <Pie 
+    innerRadius={60}    // Donut chart
+    outerRadius={100}
+    paddingAngle={2}
+    dataKey="value"
+  />
+</PieChart>
+```
+
+### 4.4 Stepper Component (Contract Wizard)
+
+#### Visual Structure
+```
+  ① ─── ② ─── ③ ─── ④ ─── ⑤
+پیمانکار  قالب  جزئیات  مالی  بازبینی
+                      ↑
+                   (Active)
+```
+
+#### Step States
+| State | Circle Style | Text Style |
+|-------|-------------|------------|
+| Active | `bg-blue-600 text-white` | `text-blue-600 font-medium` |
+| Completed | `bg-green-600 text-white` | `text-slate-500` |
+| Pending | `bg-slate-200 text-slate-500` | `text-slate-500` |
+
+#### Connector Line
+```css
+/* Between steps */
+width: 48px;
+height: 2px;
+background: green-600 (completed) | slate-200 (pending)
+```
+
+### 4.5 Budget Utilization Progress Bar
+
+#### Visual Design
+```
+┌────────────────────────────────────────────────────────┐
+│ ████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
+│ └─ Spent (24%) ─┘└── Blocked (10%) ──┘└─ Remaining ─┘ │
+└────────────────────────────────────────────────────────┘
+```
+
+#### Stacked Segments
+| Segment | Color | Pattern |
+|---------|-------|---------|
+| Spent | Green-500 | Solid |
+| Blocked | Slate-400 | Striped diagonal |
+| Remaining | White/Transparent | None |
+
+#### Striped Pattern CSS
+```css
+.striped-pattern {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 4px,
+    oklch(0.85 0.01 247 / 0.3) 4px,
+    oklch(0.85 0.01 247 / 0.3) 8px
+  );
+}
+```
+
+### 4.6 Status Badge
+
+#### Sizes
+| Size | Classes | Usage |
+|------|---------|-------|
+| Small | `text-xs px-2 py-0.5` | Table cells |
+| Medium | `text-sm px-3 py-1` | Headers |
+| Large | `text-base px-4 py-1` | Page titles |
+
+---
+
+## 5. Layout Architecture
+
+### 5.1 Main Layout Structure
+```
+┌──────────────────────────────────────────────────────────────┐
+│                          Sidebar (Right)                      │
+│                          ┌────────────┐                       │
+│                          │            │                       │
+│                          │  Nav       │                       │
+│                          │  Items     │                       │
+│                          │            │                       │
+│                          └────────────┘                       │
+├──────────────────────────────────────────────────────────────┤
+│                                                               │
+│                     Main Content Area                         │
+│                    (margin-right: 256px)                      │
+│                                                               │
+│  ┌─────────────────────────────────────────────────────────┐ │
+│  │                     Page Header                          │ │
+│  │  Title                              Badge/Actions        │ │
+│  └─────────────────────────────────────────────────────────┘ │
+│                                                               │
+│  ┌─────────────────────────────────────────────────────────┐ │
+│  │                   Content Area                           │ │
+│  │                                                           │ │
+│  │                   (p-6 or p-8)                           │ │
+│  │                                                           │ │
+│  └─────────────────────────────────────────────────────────┘ │
+│                                                               │
+├──────────────────────────────────────────────────────────────┤
+│                     Footer (Sticky Bottom)                    │
+└──────────────────────────────────────────────────────────────┘
+```
+
+### 5.2 Grid System
+
+#### KPI Cards Row
+```html
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+  <!-- 4 KPI cards -->
+</div>
+```
+
+#### Charts Row
+```html
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <!-- Bar Chart Card -->
+  <!-- Pie Chart Card -->
+</div>
+```
+
+#### Form Grid (2 Columns)
+```html
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+  <!-- Form fields -->
+</div>
+```
+
+### 5.3 Responsive Breakpoints
+| Breakpoint | Prefix | Min Width | Usage |
+|------------|--------|-----------|-------|
+| Small | `sm:` | 640px | Mobile landscape |
+| Medium | `md:` | 768px | Tablets |
+| Large | `lg:` | 1024px | Desktops |
+| Extra Large | `xl:` | 1280px | Large screens |
+
+---
+
+## 6. RTL Implementation Guide
+
+### 6.1 HTML Setup
+```html
+<html lang="fa" dir="rtl">
+```
+
+### 6.2 CSS Rules for RTL
+```css
+/* Base text alignment */
+[dir="rtl"] {
+  text-align: right;
+}
+
+/* Number inputs stay LTR for digit entry */
+input[type="number"] {
+  direction: ltr;
+  text-align: right;
+}
+
+/* Form inputs with LTR values */
+input[dir="ltr"] {
+  direction: ltr;
+  text-align: left;
+}
+```
+
+### 6.3 Icon Direction Handling
+
+#### Navigation Icons (Reversed for RTL)
+```tsx
+// "Next" button - Chevron points LEFT in RTL
+<Button>
+  مرحله بعد
+  <ChevronLeft className="h-4 w-4" />  // Points left!
+</Button>
+
+// "Previous" button - Chevron points RIGHT in RTL
+<Button>
+  <ChevronRight className="h-4 w-4" />  // Points right!
+  مرحله قبل
+</Button>
+```
+
+#### Sidebar Positioning
+```css
+/* Sidebar on RIGHT side */
+.sidebar {
+  right: 0;
+  border-left: 1px solid;  /* Border on left side */
+}
+
+/* Main content has margin on RIGHT */
+.main-content {
+  margin-right: 256px;  /* Not margin-left! */
+}
+```
+
+### 6.4 Recharts RTL Configuration
+```tsx
+// Y-axis labels on RIGHT side (automatic with RTL)
+<YAxis 
+  dataKey="name" 
+  type="category"
+  tick={{ fill: "#64748b", fontSize: 12 }}
+  width={60}
+/>
+
+// Tooltip text alignment
+<Tooltip 
+  contentStyle={{ 
+    direction: 'rtl',
+    textAlign: 'right' 
+  }} 
+/>
+```
+
+---
+
+## 7. Page-by-Page Documentation
+
+### 7.1 Executive Dashboard
+
+#### Page Structure
+```
+Executive Dashboard
+├── Page Header
+│   ├── Title: "داشبورد اجرایی"
+│   ├── Subtitle: "گزارش مالی سال ۱۴۰۳"
+│   └── Badge: "آخرین بروزرسانی: ۱۴۰۳/۰۸/۱۵"
+├── KPI Cards Row (4 cards)
+├── Charts Row
+│   ├── Bar Chart Card
+│   └── Pie Chart Card
+└── Transactions Table Card
+```
+
+#### Data Requirements
+| Data Point | Type | Format | Source |
+|------------|------|--------|--------|
+| Total Budget | Number | Rials (abbreviated) | Budget API |
+| Blocked Funds | Number | Rials (abbreviated) | Budget API |
+| Spent Funds | Number | Rials (abbreviated) | Transactions API |
+| Efficiency | Percentage | Number (0-100) | Calculated |
+| Department Data | Array | {name, budget, spent} | Budget API |
+| Distribution Data | Array | {name, value, color} | Budget API |
+| Transactions | Array | {id, desc, amount, date, status} | Transactions API |
+
+### 7.2 Contract Wizard
+
+#### Page Structure
+```
+Contract Wizard
+├── Card Container (max-w-4xl, centered)
+│   ├── Card Header
+│   │   └── Title: "ایجاد قرارداد جدید"
+│   ├── Stepper (5 steps)
+│   ├── Form Content
+│   │   ├── Contract Subject (full width)
+│   │   ├── 2-Column Grid
+│   │   │   ├── Contract Type (Select)
+│   │   │   ├── Duration (Number)
+│   │   │   ├── Start Date (Date Picker)
+│   │   │   ├── End Date (Date Picker)
+│   │   │   └── Guarantee Type (Select)
+│   │   └── Financial Amount (Prominent)
+│   └── Navigation Buttons
+│       ├── Next (Left side in RTL)
+│       └── Previous (Right side in RTL)
+```
+
+#### Form Fields Specification
+| Field | Type | Validation | Placeholder |
+|-------|------|------------|-------------|
+| Subject | Text | Required, min 3 chars | عنوان کامل قرارداد |
+| Type | Select | Required | انتخاب کنید |
+| Duration | Number | Required, positive | ۳۶۵ |
+| Start Date | Date | Required | ۱۴۰۳/۰۱/۰۱ |
+| End Date | Date | Required, after start | ۱۴۰۳/۱۲/۲۹ |
+| Guarantee | Select | Required | انتخاب کنید |
+| Amount | Number | Required, min 10000 | ۰ |
+
+#### Select Options
+```typescript
+// Contract Types
+const contractTypes = [
+  { value: "construction", label: "پیمانکاری" },
+  { value: "supply", label: "تأمین کالا" },
+  { value: "services", label: "خدماتی" },
+  { value: "consulting", label: "مشاوره" },
+];
+
+// Guarantee Types
+const guaranteeTypes = [
+  { value: "bank", label: "ضمانت بانکی" },
+  { value: "promissory", label: "سفته" },
+  { value: "check", label: "چک" },
+];
+```
+
+### 7.3 Contract Details Hub
+
+#### Page Structure
+```
+Contract Details
+├── Header Card
+│   ├── Contract ID + Status Badge
+│   ├── Project Title
+│   └── Action Bar
+│       ├── Add Statement (Primary)
+│       ├── Terminate (Destructive)
+│       └── Print (Outline)
+├── Budget Utilization Card
+│   ├── Stacked Progress Bar
+│   ├── Legend (Spent, Blocked, Remaining)
+│   └── Total Amount
+└── Tabs Card
+    ├── General Info Tab
+    ├── Statements Tab (Active)
+    ├── Guarantees Tab
+    └── Audit Logs Tab
+```
+
+#### Statement List Item Structure
+```
+┌─────────────────────────────────────────────────────────────┐
+│ صورت وضعیت شماره ۱    │ ۱۴۰۳/۰۵/۲۰ │ ۵۵۰,۰۰۰,۰۰۰ ریال │ پرداخت شده │ 👁 │
+│ └─ Title ────────────┘└── Date ────┘└──── Amount ────┘└─ Status ─┘└View┘│
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 8. Utility Functions Reference
+
+### 8.1 Number Formatting
+
+#### formatNumber()
+```typescript
+// Formats number with Persian locale and comma separators
+formatNumber(550000000)  // "۵۵۰,۰۰۰,۰۰۰"
+
+// Implementation
+function formatNumber(num: number): string {
+  return new Intl.NumberFormat('fa-IR').format(num);
+}
+```
+
+#### formatAmountAbbreviated()
+```typescript
+// Converts large numbers to abbreviated Persian format
+formatAmountAbbreviated(12000000000)  // "12.0 میلیارد"
+formatAmountAbbreviated(5000000)      // "5.0 میلیون"
+formatAmountAbbreviated(500)          // "۵۰۰"
+
+// Implementation
+function formatAmountAbbreviated(value: number): string {
+  if (value >= 1_000_000_000) {
+    return `${(value / 1_000_000_000).toFixed(1)} میلیارد`;
+  }
+  if (value >= 1_000_000) {
+    return `${(value / 1_000_000).toFixed(1)} میلیون`;
+  }
+  return formatNumber(value);
+}
+```
+
+### 8.2 Digit Conversion
+
+#### toPersianDigits()
+```typescript
+// Converts English digits to Persian
+toPersianDigits("1403")  // "۱۴۰۳"
+toPersianDigits(12345)   // "۱۲۳۴۵"
+
+// Implementation
+function toPersianDigits(str: string | number): string {
+  const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+  return str.toString().replace(/\d/g, (d) => persianDigits[parseInt(d)]);
+}
+```
+
+#### toEnglishDigits()
+```typescript
+// Converts Persian digits to English
+toEnglishDigits("۱۴۰۳")  // "1403"
+
+// Implementation
+function toEnglishDigits(str: string): string {
+  const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+  return str.replace(/[۰-۹]/g, (d) => String(persianDigits.indexOf(d)));
+}
+```
+
+### 8.3 Date Handling
+
+#### formatJalaliDate()
+```typescript
+// Simplified Jalali date conversion (approximate)
+formatJalaliDate(new Date('2024-03-20'))  // "۱۴۰۳/۰۱/۰۱"
+
+// Note: For production, use jalaali-js or date-fns-jalali
+```
+
+### 8.4 Status Labels & Colors
+
+```typescript
+// Status label translations
+const statusLabels: Record<string, string> = {
+  DRAFT: 'پیش‌نویس',
+  SUBMITTED: 'ارسال شده',
+  PENDING: 'در انتظار تایید',
+  APPROVED: 'تایید شده',
+  REJECTED: 'رد شده',
+  IN_PROGRESS: 'در حال اجرا',
+  PAID: 'پرداخت شده',
+  COMPLETED: 'تکمیل شده',
+};
+
+// Status color classes
+const statusColors: Record<string, { bg: string; text: string }> = {
+  PAID: { bg: 'bg-green-100', text: 'text-green-700' },
+  PENDING: { bg: 'bg-amber-100', text: 'text-amber-700' },
+  REJECTED: { bg: 'bg-red-100', text: 'text-red-700' },
+  APPROVED: { bg: 'bg-green-100', text: 'text-green-700' },
+};
+```
+
+---
+
+## 9. Data Structures & Mock Data
+
+### 9.1 KPI Data
+```typescript
+const kpiData = [
+  {
+    title: "بودجه کل",
+    value: "۱۲۰ میلیارد",
+    subtitle: "ریال",
+    icon: Wallet,
+    iconColor: "text-blue-600",
+    iconBg: "bg-blue-50",
+  },
+  // ... more KPIs
+];
+```
+
+### 9.2 Department Budget Data
+```typescript
+interface DepartmentBudget {
+  name: string;      // Department name (Persian)
+  budget: number;    // Budget in billions
+  spent: number;     // Amount spent in billions
+  remaining: number; // Remaining in billions
+}
+
+const departmentData: DepartmentBudget[] = [
+  { name: "عمران", budget: 45, spent: 32, remaining: 13 },
+  { name: "خدمات", budget: 28, spent: 18, remaining: 10 },
+  { name: "پارک‌ها", budget: 15, spent: 12, remaining: 3 },
+  { name: "ترافیک", budget: 20, spent: 15, remaining: 5 },
+  { name: "آبیاری", budget: 12, spent: 8, remaining: 4 },
+];
+```
+
+### 9.3 Transaction Data
+```typescript
+interface Transaction {
+  id: string;           // Transaction ID
+  description: string;  // Description (Persian)
+  amount: number;       // Amount in Rials
+  date: string;         // Jalali date
+  status: 'PAID' | 'PENDING' | 'REJECTED';
+}
+
+const recentTransactions: Transaction[] = [
+  {
+    id: "TXN-001",
+    description: "پرداخت پیمانکار پروژه پارک شهرداری",
+    amount: 550000000,
+    date: "۱۴۰۳/۰۸/۱۵",
+    status: "PAID",
+  },
+  // ... more transactions
+];
+```
+
+### 9.4 Progress Statement Data
+```typescript
+interface ProgressStatement {
+  id: number;
+  title: string;        // "صورت وضعیت شماره X"
+  date: string;         // Jalali date
+  amount: number;       // Amount in Rials
+  status: 'PAID' | 'APPROVED' | 'SUBMITTED' | 'DRAFT';
+}
+```
+
+---
+
+## 10. Improvement Recommendations
+
+### 10.1 Technical Improvements
+
+#### State Management
+```
+Current: React useState (local)
+Recommended: Zustand for global state + TanStack Query for server state
+
+Implementation:
+├── stores/
+│   ├── useUIStore.ts      // Sidebar collapse, active view
+│   └── useContractStore.ts // Wizard form data
+├── queries/
+│   ├── useBudgetQuery.ts
+│   ├── useTransactionsQuery.ts
+│   └── useContractsQuery.ts
+```
+
+#### Form Validation
+```
+Current: Basic HTML validation
+Recommended: React Hook Form + Zod
+
+Implementation:
+├── schemas/
+│   └── contract.schema.ts
+├── hooks/
+│   └── useContractForm.ts
+```
+
+#### Date Handling
+```
+Current: Manual string input
+Recommended: jalaali-js or date-fns-jalali
+
+Install: bun add jalaali-js
+Usage:
+import { toJalaali } from 'jalaali-js';
+const jDate = toJalaali(new Date());
+// { jy: 1403, jm: 8, jd: 15 }
+```
+
+### 10.2 UX Improvements
+
+#### Loading States
+```tsx
+// Add skeleton loading for charts
+<Skeleton className="h-80 w-full" />
+
+// Add loading spinner for data fetching
+<LoadingSpinner size="lg" />
+```
+
+#### Error Handling
+```tsx
+// Add error boundaries
+<ErrorBoundary fallback={<ErrorCard />}>
+  <Dashboard />
+</ErrorBoundary>
+
+// Add toast notifications
+toast.error("خطا در بارگذاری داده‌ها");
+toast.success("قرارداد با موفقیت ثبت شد");
+```
+
+#### Empty States
+```tsx
+// Better empty state design
+<div className="flex flex-col items-center justify-center py-12">
+  <FileText className="h-16 w-16 text-slate-300 mb-4" />
+  <p className="text-slate-500">هیچ قراردادی ثبت نشده است</p>
+  <Button className="mt-4">ایجاد قرارداد جدید</Button>
+</div>
+```
+
+### 10.3 Accessibility Improvements
+
+#### ARIA Labels
+```tsx
+// Add proper ARIA labels
+<nav aria-label="منوی اصلی">
+<button aria-label="بستن سایدبار">
+<table aria-label="تراکنش‌های مالی">
+```
+
+#### Focus Management
+```tsx
+// Focus trap for modals
+import { FocusTrap } from '@headlessui/react';
+
+// Focus on form errors
+useEffect(() => {
+  if (errors.subject) {
+    subjectInputRef.current?.focus();
+  }
+}, [errors]);
+```
+
+### 10.4 Performance Optimizations
+
+#### Code Splitting
+```tsx
+// Lazy load heavy components
+const BarChart = lazy(() => import('./BarChart'));
+const PieChart = lazy(() => import('./PieChart'));
+
+// Suspense wrapper
+<Suspense fallback={<ChartSkeleton />}>
+  <BarChart data={data} />
+</Suspense>
+```
+
+#### Memoization
+```tsx
+// Memoize expensive calculations
+const budgetUtilization = useMemo(() => {
+  return calculateUtilization(budget, spent, blocked);
+}, [budget, spent, blocked]);
+
+// Memoize chart data transformations
+const chartData = useMemo(() => 
+  transformDataForChart(rawData),
+  [rawData]
+);
+```
+
+### 10.5 Feature Additions
+
+#### Export Functionality
+```typescript
+// PDF Export for reports
+import { generatePDF } from '@/lib/pdf-export';
+
+// Excel Export for transactions
+import { exportToExcel } from '@/lib/excel-export';
+
+// Print functionality
+const handlePrint = () => {
+  window.print();
+};
+```
+
+#### Advanced Filtering
+```tsx
+// Transaction filters
+<TransactionFilters
+  dateRange={{ start, end }}
+  status={['PAID', 'PENDING']}
+  amountRange={{ min, max }}
+  onFilterChange={handleFilterChange}
+/>
+```
+
+#### Real-time Updates
+```typescript
+// WebSocket for live updates
+import { useWebSocket } from '@/hooks/useWebSocket';
+
+const { data, isConnected } = useWebSocket('/ws/transactions');
+```
+
+### 10.6 Dark Mode Support
+
+The CSS variables already support dark mode. Add toggle:
+```tsx
+// Theme toggle component
+import { useTheme } from 'next-themes';
+
+function ThemeToggle() {
+  const { theme, setTheme } = useTheme();
+  return (
+    <Button
+      variant="ghost"
+      onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+    >
+      {theme === 'dark' ? <Sun /> : <Moon />}
+    </Button>
+  );
+}
+```
+
+---
+
+## Quick Reference Card
+
+### Key CSS Classes
+```css
+/* Page container */
+min-h-screen bg-slate-50
+
+/* Card styling */
+bg-white border-slate-200 shadow-sm rounded-xl
+
+/* RTL positioning */
+fixed top-0 right-0 (sidebar)
+margin-right: 256px (main content)
+
+/* Number display */
+font-mono-num (tabular numbers)
+
+/* Status badges */
+bg-green-100 text-green-700 (success)
+bg-amber-100 text-amber-700 (warning)
+bg-red-100 text-red-700 (error)
+bg-blue-100 text-blue-700 (info)
+```
+
+### Key Component Imports
+```typescript
+// UI Components
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+// Charts
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+
+// Icons
+import { Wallet, Lock, TrendingUp, BarChart3, ChevronLeft, ChevronRight } from 'lucide-react';
+
+// Utilities
+import { formatNumber, formatAmountAbbreviated, toPersianDigits, statusLabels, statusColors } from '@/lib/persian-utils';
+```
+
+---
+
+This documentation provides a complete blueprint for replicating or extending the RTL Municipality Financial ERP Dashboard. Use it as a reference for design decisions, component implementation, and future improvements.

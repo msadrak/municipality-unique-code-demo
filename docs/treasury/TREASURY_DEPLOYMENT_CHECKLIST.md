@@ -30,7 +30,7 @@ Use this checklist to ensure successful deployment and handover of the Treasury 
 - [x] Deployment checklist created (this document)
 
 ### Testing Preparation
-- [x] Test suite created (`test_treasury_api.py`)
+- [x] Test suite created (`scripts/test_treasury_api.py`)
 - [x] Test cases cover all major scenarios
 - [x] Test instructions are clear
 
@@ -100,7 +100,7 @@ Use this checklist to ensure successful deployment and handover of the Treasury 
 ### Automated Testing
 - [ ] Run test suite
   ```bash
-  python test_treasury_api.py
+  python scripts/test_treasury_api.py
   ```
   Expected: All 8 tests PASS
 

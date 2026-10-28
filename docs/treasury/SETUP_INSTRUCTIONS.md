@@ -139,7 +139,7 @@ pip install fastapi uvicorn[standard] sqlalchemy psycopg2-binary pydantic python
 After server is running, test the API:
 
 ```bash
-python test_treasury_api.py
+python scripts/test_treasury_api.py
 ```
 
 This will run 8 automated tests to verify everything works.
@@ -153,7 +153,7 @@ Once the server is running:
 1. **View API Documentation**: http://localhost:8000/docs
 2. **Read Treasury API Guide**: `TREASURY_API_DOC.txt`
 3. **Test the endpoints** using the interactive docs
-4. **Run automated tests**: `python test_treasury_api.py`
+4. **Run automated tests**: `python scripts/test_treasury_api.py`
 
 ---
 
@@ -170,7 +170,7 @@ python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 curl http://localhost:8000/api/v1/treasury/health
 
 # Run tests
-python test_treasury_api.py
+python scripts/test_treasury_api.py
 ```
 
 ---

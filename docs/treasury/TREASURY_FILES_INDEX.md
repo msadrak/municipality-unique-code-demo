@@ -164,7 +164,7 @@ This document provides an index of all files created or modified for the Treasur
 ## 🧪 Testing Files
 
 ### 1. Automated Test Suite
-**File**: `test_treasury_api.py`  
+**File**: `scripts/test_treasury_api.py`  
 **Status**: ✅ NEW  
 **Lines**: 420+  
 **Language**: Python  
@@ -181,7 +181,7 @@ This document provides an index of all files created or modified for the Treasur
 
 **Usage**:
 ```bash
-python test_treasury_api.py
+python scripts/test_treasury_api.py
 ```
 
 **Expected Output**:
@@ -214,15 +214,17 @@ municipality_demo/
 │   │   └── treasury_integration.py .......... [NEW] ✓
 │   └── main.py .............................. [MODIFIED]
 │
-├── TREASURY_API_DOC.txt ..................... [NEW] ✓
-├── TREASURY_QUICK_REFERENCE.md .............. [NEW] ✓
-├── TREASURY_TECHNICAL_SUMMARY.md ............ [NEW] ✓
-├── TREASURY_README.md ....................... [NEW] ✓
-├── TREASURY_INTEGRATION_SUMMARY.txt ......... [NEW] ✓
-├── TREASURY_DATA_FLOW_DIAGRAM.txt ........... [NEW] ✓
-├── TREASURY_FILES_INDEX.md .................. [NEW] ✓ (This file)
+├── docs/treasury/
+│   ├── TREASURY_API_DOC.txt ................. [NEW] ✓
+│   ├── TREASURY_QUICK_REFERENCE.md .......... [NEW] ✓
+│   ├── TREASURY_TECHNICAL_SUMMARY.md ........ [NEW] ✓
+│   ├── TREASURY_README.md ................... [NEW] ✓
+│   ├── TREASURY_INTEGRATION_SUMMARY.txt ..... [NEW] ✓
+│   ├── TREASURY_DATA_FLOW_DIAGRAM.txt ....... [NEW] ✓
+│   └── TREASURY_FILES_INDEX.md .............. [NEW] ✓ (This file)
 │
-└── test_treasury_api.py ..................... [NEW] ✓
+└── scripts/
+    └── test_treasury_api.py ................. [NEW] ✓
 ```
 
 ---
@@ -238,7 +240,7 @@ municipality_demo/
 1. **Start here**: `TREASURY_README.md` - Module overview
 2. **Deep dive**: `TREASURY_TECHNICAL_SUMMARY.md` - Technical details
 3. **Source code**: `app/routers/treasury_integration.py` - Implementation
-4. **Testing**: `test_treasury_api.py` - Test suite
+4. **Testing**: `scripts/test_treasury_api.py` - Test suite
 
 ### For Project Managers
 1. **Start here**: `TREASURY_INTEGRATION_SUMMARY.txt` - Project summary
@@ -259,7 +261,7 @@ municipality_demo/
 → `TREASURY_README.md` (Integration Examples section)
 
 ### Need to test?
-→ `test_treasury_api.py`
+→ `scripts/test_treasury_api.py`
 
 ### Need technical details?
 → `TREASURY_TECHNICAL_SUMMARY.md`
@@ -319,7 +321,7 @@ municipality_demo/
 | `TREASURY_INTEGRATION_SUMMARY.txt` | Project summary | Project Managers |
 | `TREASURY_DATA_FLOW_DIAGRAM.txt` | Visual diagrams | All users |
 | `TREASURY_FILES_INDEX.md` | File organization | All users |
-| `test_treasury_api.py` | Automated tests | QA/Developers |
+| `scripts/test_treasury_api.py` | Automated tests | QA/Developers |
 
 ---
 
@@ -332,7 +334,7 @@ treasury_integration.py
     ├─ app.models (Transaction, FinancialEventRef, etc.)
     └─ app.routers.auth (get_current_user)
 
-test_treasury_api.py
+scripts/test_treasury_api.py
     ↓ calls
     └─ treasury_integration.py endpoints
         (via HTTP requests)

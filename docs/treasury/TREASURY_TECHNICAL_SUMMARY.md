@@ -450,7 +450,7 @@ def export_transactions(...):
 ### Related Documentation
 - `TREASURY_API_DOC.txt` - Complete handover documentation
 - `TREASURY_QUICK_REFERENCE.md` - Quick reference guide
-- `PROJECT_DOCUMENTATION.md` - Overall system documentation
+- `docs/project/PROJECT_DOCUMENTATION.md` - Overall system documentation
 
 ### Database Schema
 - `app/models.py` - SQLAlchemy models

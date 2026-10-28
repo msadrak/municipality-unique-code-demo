@@ -1,0 +1,331 @@
+================================================================================
+          TREASURY INTEGRATION - DATA FLOW DIAGRAM
+================================================================================
+
+
+1. REQUEST FLOW
+================================================================================
+
+    Treasury System                Municipality API               Database
+         │                              │                             │
+         │  1. Login Request            │                             │
+         ├─────────────────────────────>│                             │
+         │  POST /auth/login            │                             │
+         │  {username, password}        │                             │
+         │                              │  Query user                 │
+         │                              ├────────────────────────────>│
+         │                              │<────────────────────────────┤
+         │  Session Cookie              │  User record                │
+         │<─────────────────────────────┤                             │
+         │                              │                             │
+         │  2. Export Request           │                             │
+         ├─────────────────────────────>│                             │
+         │  GET /api/v1/treasury/export │                             │
+         │  + Session Cookie            │                             │
+         │  + Filters (date, zone, etc) │                             │
+         │                              │                             │
+         │                              │  3. Validate Session        │
+         │                              ├────────────────────────────>│
+         │                              │<────────────────────────────┤
+         │                              │                             │
+         │                              │  4. Query Transactions      │
+         │                              ├────────────────────────────>│
+         │                              │  SELECT transactions.*,     │
+         │                              │    financial_event_refs.*,  │
+         │                              │    subsystem_activities.*   │
+         │                              │  FROM transactions          │
+         │                              │  WHERE status='APPROVED'    │
+         │                              │  AND date filters...        │
+         │                              │<────────────────────────────┤
+         │                              │  Transaction records        │
+         │                              │                             │
+         │  5. JSON Response            │                             │
+         │<─────────────────────────────┤                             │
+         │  [                           │                             │
+         │    {                         │                             │
+         │      code_yekta,             │                             │
+         │      amount,                 │                             │
+         │      submission_date,        │                             │
+         │      financial_event,        │                             │
+         │      activity                │                             │
+         │    }                         │                             │
+         │  ]                           │                             │
+         │                              │                             │
+
+
+2. DATABASE SCHEMA RELATIONSHIPS
+================================================================================
+
+┌──────────────────────────────────────────────────────────────────────────┐
+│                            transactions                                   │
+├────────────────────┬─────────────────────────────────────────────────────┤
+│ id                 │ Primary Key                                         │
+│ unique_code        │ ──────────────────────────> API: code_yekta        │
+│ amount             │ ──────────────────────────> API: amount            │
+│ reviewed_at        │ ──────────────────────────> API: submission_date   │
+│ created_at         │ (fallback for submission_date)                      │
+│ status             │ Filter: APPROVED                                    │
+│ financial_event_id │ ───┐                                                │
+│ subsystem_activity_id ─┼┐                                                │
+│ zone_id            │ ──┼┼──> Filter parameter                            │
+└────────────────────┴───┼┼──────────────────────────────────────────────┘
+                         ││
+                    ┌────┘│
+                    │     │
+                    ▼     │
+┌──────────────────────────────────┐     │
+│    financial_event_refs          │     │
+├──────────────┬───────────────────┤     │
+│ id           │ Foreign Key       │     │
+│ code         │                   │     │
+│ title        │ ─────────> API: financial_event.name                      │
+└──────────────┴───────────────────┘     │
+                                         │
+                                    ┌────┘
+                                    │
+                                    ▼
+                    ┌──────────────────────────────────┐
+                    │    subsystem_activities          │
+                    ├──────────────┬───────────────────┤
+                    │ id           │ Foreign Key       │
+                    │ code         │                   │
+                    │ title        │ ─────────> API: activity.name
+                    │ subsystem_id │                   │
+                    └──────────────┴───────────────────┘
+
+
+3. DATA TRANSFORMATION FLOW
+================================================================================
+
+Database Record                      API Output
+─────────────────                    ──────────
+
+transactions.unique_code            code_yekta
+"20-02-015-11020401..."      ───>   "20-02-015-11020401..."
+
+transactions.amount                  amount
+10000000.0 (float)           ───>   10000000 (number)
+
+transactions.reviewed_at             submission_date
+2025-01-29 10:30:45.123     ───>   "2025-01-29"
+(or transactions.created_at)
+
+financial_event_refs:                financial_event
+  id = 1                      ───>   {
+  title = "تامین اعتبار"                "id": 1,
+                                        "name": "تامین اعتبار"
+                                      }
+
+subsystem_activities:                activity
+  id = 1                      ───>   {
+  title = "پرداخت حقوق"                  "id": 1,
+                                        "name": "پرداخت حقوق"
+                                      }
+
+
+4. FILTER FLOW
+================================================================================
+
+Query Parameters           SQL WHERE Clause
+──────────────             ────────────────
+
+status=APPROVED     ───>   WHERE status = 'APPROVED'
+
+date_from=2025-01-01 ──>   AND reviewed_at >= '2025-01-01'
+
+date_to=2025-01-31  ───>   AND reviewed_at <= '2025-01-31'
+
+zone_id=5           ───>   AND zone_id = 5
+
+limit=1000          ───>   LIMIT 1000
+
+offset=0            ───>   OFFSET 0
+
+
+5. AUTHENTICATION & AUTHORIZATION FLOW
+================================================================================
+
+                    ┌─────────────────────────────────┐
+                    │   1. Request arrives            │
+                    └──────────────┬──────────────────┘
+                                   │
+                                   ▼
+                    ┌─────────────────────────────────┐
+                    │   2. Extract session cookie     │
+                    └──────────────┬──────────────────┘
+                                   │
+                                   ▼
+                    ┌─────────────────────────────────┐
+                    │   3. Validate session           │
+                    │   (get_current_user)            │
+                    └──────────────┬──────────────────┘
+                                   │
+                    ┌──────────────┴──────────────┐
+                    │                             │
+        ┌───────────▼──────────┐   ┌────────────▼──────────┐
+        │  Session Invalid     │   │  Session Valid        │
+        │  or Missing          │   │                       │
+        └───────────┬──────────┘   └────────────┬──────────┘
+                    │                            │
+                    ▼                            ▼
+        ┌──────────────────────┐   ┌───────────────────────┐
+        │  Return 401          │   │  4. Check user role   │
+        │  Unauthorized        │   │                       │
+        └──────────────────────┘   └────────────┬──────────┘
+                                                 │
+                                ┌────────────────┴────────────────┐
+                                │                                 │
+                    ┌───────────▼──────────┐       ┌────────────▼─────────┐
+                    │  Role NOT allowed    │       │  Role allowed        │
+                    │  (user, etc.)        │       │  (admin, ACCOUNTANT) │
+                    └───────────┬──────────┘       └────────────┬─────────┘
+                                │                                │
+                                ▼                                ▼
+                    ┌──────────────────────┐       ┌───────────────────────┐
+                    │  Return 403          │       │  5. Execute query     │
+                    │  Forbidden           │       │  Return data          │
+                    └──────────────────────┘       └───────────────────────┘
+
+
+6. ERROR HANDLING FLOW
+================================================================================
+
+Input Validation
+─────────────────
+Query Parameters  ──> Validate Format  ──> Valid?
+                                              │
+                          ┌───────────────────┴────────────────┐
+                          │                                    │
+                    ┌─────▼─────┐                      ┌──────▼──────┐
+                    │    NO     │                      │    YES      │
+                    └─────┬─────┘                      └──────┬──────┘
+                          │                                    │
+                          ▼                                    ▼
+                  ┌────────────────┐              ┌──────────────────┐
+                  │ Return 400     │              │ Continue         │
+                  │ Bad Request    │              │ Processing       │
+                  └────────────────┘              └──────────────────┘
+
+
+Data Validation
+───────────────
+Database Query  ──> Check Required Fields  ──> Complete?
+                                                    │
+                            ┌───────────────────────┴─────────────┐
+                            │                                     │
+                      ┌─────▼─────┐                       ┌──────▼──────┐
+                      │    NO     │                       │    YES      │
+                      └─────┬─────┘                       └──────┬──────┘
+                            │                                     │
+                            ▼                                     ▼
+                  ┌──────────────────┐              ┌───────────────────┐
+                  │ Use placeholders │              │ Use actual data   │
+                  │ or skip record   │              │                   │
+                  └──────────────────┘              └───────────────────┘
+
+
+7. COMPLETE END-TO-END FLOW
+================================================================================
+
+Treasury System              Municipality API              Database
+     ↓                              ↓                          ↓
+┌─────────┐                  ┌──────────┐               ┌──────────┐
+│  Login  │ ──Session────>   │  Verify  │ ──Query────>  │  Users   │
+└─────────┘     Cookie       │   User   │    User       │  Table   │
+     ↓                        └──────────┘               └──────────┘
+     │                              ↓                          ↓
+     │                         ┌──────────┐                    │
+     │                         │  Check   │                    │
+     │                         │   Role   │                    │
+     │                         └──────────┘                    │
+     │                              ↓                          │
+┌─────────┐                  ┌──────────┐               ┌──────────┐
+│ Request │ ──GET /export──> │  Build   │               │          │
+│  Data   │    + Filters     │  Query   │               │          │
+└─────────┘                  └──────────┘               │          │
+     ↑                              ↓                    │          │
+     │                        ┌──────────┐               │          │
+     │                        │ Execute  │ ──Query────>  │ Multiple │
+     │                        │  Query   │    Data       │  Tables  │
+     │                        └──────────┘               │  (JOIN)  │
+     │                              ↓                    │          │
+     │                        ┌──────────┐               │          │
+     │                        │Transform │ <──Results──  │          │
+     │                        │   Data   │               └──────────┘
+     │                        └──────────┘
+     │                              ↓
+     │                        ┌──────────┐
+     │   <──JSON Response──   │  Return  │
+     │                        │   JSON   │
+└────┴────────────────────────└──────────┘
+
+
+8. PAGINATION FLOW
+================================================================================
+
+Request: /export?limit=100&offset=0
+                    ↓
+┌───────────────────────────────────────────────┐
+│  SELECT * FROM transactions                   │
+│  WHERE status = 'APPROVED'                    │
+│  ORDER BY reviewed_at DESC                    │
+│  LIMIT 100 OFFSET 0                           │
+└───────────────┬───────────────────────────────┘
+                ↓
+        Records 1-100 returned
+
+Request: /export?limit=100&offset=100
+                    ↓
+┌───────────────────────────────────────────────┐
+│  SELECT * FROM transactions                   │
+│  WHERE status = 'APPROVED'                    │
+│  ORDER BY reviewed_at DESC                    │
+│  LIMIT 100 OFFSET 100                         │
+└───────────────┬───────────────────────────────┘
+                ↓
+        Records 101-200 returned
+
+Continue until: returned_count < limit
+
+
+9. SUMMARY STATISTICS FLOW
+================================================================================
+
+Request: /export/summary
+            ↓
+┌────────────────────────────────────┐
+│  COUNT(*) FROM transactions        │
+│  WHERE status = 'APPROVED'         │
+└──────────┬─────────────────────────┘
+           ↓
+    total_transactions
+
+┌────────────────────────────────────┐
+│  SUM(amount) FROM transactions     │
+│  WHERE status = 'APPROVED'         │
+└──────────┬─────────────────────────┘
+           ↓
+    total_amount
+
+┌────────────────────────────────────┐
+│  COUNT(DISTINCT zone_id)           │
+│  FROM transactions                 │
+│  WHERE status = 'APPROVED'         │
+└──────────┬─────────────────────────┘
+           ↓
+    zones_count
+
+┌────────────────────────────────────┐
+│  MIN(reviewed_at), MAX(reviewed_at)│
+│  FROM transactions                 │
+│  WHERE status = 'APPROVED'         │
+└──────────┬─────────────────────────┘
+           ↓
+    date_range
+
+All combined into single JSON response
+
+
+================================================================================
+                            END OF DIAGRAM
+================================================================================
