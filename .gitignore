@@ -5,6 +5,7 @@ fresh_venv/
 venv_new/
 .linux-venv/
 __pycache__/
+.pytest_cache/
 *.pyc
 *.pyo
 *.db
@@ -16,6 +17,8 @@ __pycache__/
 # IDE
 .vscode/
 .idea/
+.continue/
+.codex
 
 # Build artifacts
 .vite/
@@ -27,12 +30,18 @@ dist/
 *.zip
 *.7z
 
-# Data files (gitignored - use data/ folder)
-data/
+# Data files (gitignored - use the root data/ folder)
+/data/
 *.xlsx
 *.pptx
 *.xls
 *.log
+
+# Runtime uploads and local scratch output
+/uploads/
+/tmp/
+tests/e2e/**/screenshots/
+tests/e2e/**/e2e_result.json
 
 # Temporary scripts
 analyze_*.py
@@ -44,10 +53,12 @@ verify_*.py
 .DS_Store
 Thumbs.db
 
-# Missing data formats
+# Data dumps (root working files and script outputs)
 *.csv
 *.txt
-*.json
+!docs/**/*.txt
+/*.json
+scripts/**/*.json
 
 # Binaries
 *.exe

@@ -1,6 +1,0 @@
-models:
-  - title: FreeModel OpenAI
-    provider: openai
-    model: gpt-5.5
-    apiKey: "fe_oa_a7aeb0df5b8f3b9d0ac89edaac241ff3ad406ea99d3b9df6"
-    apiBase: "https://api.freemodel.dev/v1"
